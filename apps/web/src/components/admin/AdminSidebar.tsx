@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Badge, Icon } from '@rk/ui';
 import { env } from '../../config/env';
@@ -13,6 +13,10 @@ import { useMediaQuery } from '../../lib/useMediaQuery';
  * from `lg` up it is a permanent column, and the drawer machinery switches off
  * rather than being duplicated in a second component that would drift.
  *
+ * On fine-pointer desktops the column auto-hides: it slides closed when the
+ * pointer leaves, and reopens when the pointer approaches the start edge. Touch
+ * and coarse pointers keep the permanent column so the nav stays reachable.
+ *
  * The structure is header / scrolling nav / footer inside a viewport-height
  * column. That is the fix for the console's worst bug: the sidebar was given
  * `height: 100vh` with no overflow handling, so eighteen links overflowed the
@@ -22,6 +26,15 @@ import { useMediaQuery } from '../../lib/useMediaQuery';
 
 /** Matches the `@media (min-width: 1024px)` rule that makes this a column. */
 export const DESKTOP_SIDEBAR_QUERY = '(min-width: 1024px)';
+
+/** Auto-hide only where hover is reliable; touch keeps the permanent column. */
+const FINE_HOVER_QUERY = '(hover: hover) and (pointer: fine)';
+
+/** Pointer within this many CSS pixels of the start edge reopens the panel. */
+const EDGE_OPEN_PX = 20;
+
+/** Delay before collapse so the pointer can cross the panel edge without flicker. */
+const CLOSE_DELAY_MS = 220;
 
 const FOCUSABLE = 'a[href], button:not([disabled])';
 
@@ -37,6 +50,7 @@ export function AdminSidebar({ id, open, onClose, toggleRef }: AdminSidebarProps
   const { t } = useAdminI18n();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const closeTimerRef = useRef<number | null>(null);
 
   /*
    * `inert` is a DOM attribute, so CSS cannot scope it to a breakpoint.
@@ -47,8 +61,87 @@ export function AdminSidebar({ id, open, onClose, toggleRef }: AdminSidebarProps
    * navigation from keyboards and tests.
    */
   const isDesktop = useMediaQuery(DESKTOP_SIDEBAR_QUERY, true);
+  /*
+   * Fine-hover fallback is `false`: without the API, keep the permanent column
+   * so jsdom and touch-first environments never start with a hidden nav.
+   */
+  const fineHover = useMediaQuery(FINE_HOVER_QUERY, false);
+  const autoHide = isDesktop && fineHover;
   const isDrawer = !isDesktop;
   const hidden = isDrawer && !open;
+
+  const [desktopOpen, setDesktopOpen] = useState(false);
+  const desktopOpenRef = useRef(desktopOpen);
+  desktopOpenRef.current = desktopOpen;
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current == null) return;
+    window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }, []);
+
+  const openDesktop = useCallback(() => {
+    clearCloseTimer();
+    setDesktopOpen(true);
+  }, [clearCloseTimer]);
+
+  const scheduleDesktopClose = useCallback(() => {
+    if (closeTimerRef.current != null) return;
+    closeTimerRef.current = window.setTimeout(() => {
+      closeTimerRef.current = null;
+      setDesktopOpen(false);
+    }, CLOSE_DELAY_MS);
+  }, []);
+
+  useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
+
+  /*
+   * When auto-hide is off, the panel is always shown. When it turns on (resize
+   * onto a fine pointer), start closed so content gets the full width until the
+   * pointer approaches the edge.
+   */
+  useEffect(() => {
+    if (!autoHide) {
+      clearCloseTimer();
+      setDesktopOpen(true);
+      return;
+    }
+    setDesktopOpen(false);
+  }, [autoHide, clearCloseTimer]);
+
+  /*
+   * One pointer listener drives open/close.
+   *
+   * Relying on mouseenter alone glitches: opening from the edge slides the
+   * panel under a stationary cursor, and browsers do not fire mouseenter for
+   * that. Hit-testing the panel bounds on pointermove stays in sync with the
+   * transform animation and avoids a stuck-open or flicker state.
+   */
+  useEffect(() => {
+    if (!autoHide) return;
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+
+      const bounds = panelRef.current?.getBoundingClientRect();
+      const overPanel =
+        bounds != null &&
+        event.clientX >= bounds.left &&
+        event.clientX <= bounds.right &&
+        event.clientY >= bounds.top &&
+        event.clientY <= bounds.bottom;
+
+      if (event.clientX <= EDGE_OPEN_PX || overPanel) {
+        openDesktop();
+        return;
+      }
+
+      if (desktopOpenRef.current) scheduleDesktopClose();
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onPointerMove);
+  }, [autoHide, openDesktop, scheduleDesktopClose]);
 
   // Focus handling and Escape apply only while it is a drawer that is open.
   useEffect(() => {
@@ -101,12 +194,16 @@ export function AdminSidebar({ id, open, onClose, toggleRef }: AdminSidebarProps
     };
   }, [isDrawer, open]);
 
+  const desktopExpanded = !autoHide || desktopOpen;
+
   return (
     <div
       className="admin-sidebar"
       id={id}
       data-open={open}
       data-drawer={isDrawer}
+      data-autohide={autoHide}
+      data-desktop-open={desktopExpanded}
       aria-hidden={hidden || undefined}
       inert={hidden || undefined}
     >
@@ -114,7 +211,11 @@ export function AdminSidebar({ id, open, onClose, toggleRef }: AdminSidebarProps
           accessible routes out, so this is not a control of its own. */}
       <div className="admin-sidebar__scrim" onClick={onClose} aria-hidden="true" />
 
-      <div className="admin-sidebar__panel" ref={panelRef}>
+      <div
+        className="admin-sidebar__panel"
+        ref={panelRef}
+        onFocusCapture={autoHide ? openDesktop : undefined}
+      >
         <div className="admin-sidebar__header">
           <Link to="/" className="brand brand--inverse">
             <span className="brand__mark" aria-hidden="true">

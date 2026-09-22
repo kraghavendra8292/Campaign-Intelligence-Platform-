@@ -71,7 +71,8 @@ function campaignRow(overrides: Record<string, unknown> = {}) {
     totalScans: 1248,
     issueCount: 42,
     openIssueCount: 11,
-    conversionRatePct: 3.4,
+    siteFeedbackCount: 18,
+    conversionRatePct: 4.8,
     ...overrides,
   };
 }
@@ -142,6 +143,21 @@ function analytics(overrides: Record<string, unknown> = {}) {
       { key: 'MEDIUM', label: 'Medium', count: 28 },
       { key: 'HIGH', label: 'High', count: 10 },
     ],
+    siteFeedbacksFromQr: 18,
+    siteFeedbackConversionRatePct: 1.4,
+    siteFeedbackByReaction: [
+      { key: 'GREAT', label: 'Great', count: 10 },
+      { key: 'OK', label: 'Ok', count: 5 },
+      { key: 'WORST', label: 'Worst', count: 3 },
+    ],
+    recentSiteFeedbacks: [
+      {
+        id: 'sf-1',
+        reaction: 'GREAT',
+        comment: 'Roads look better',
+        submittedAt: '2026-01-15T00:00:00.000Z',
+      },
+    ],
     trend: [
       { date: '2026-01-01T00:00:00.000Z', scans: 30 },
       { date: '2026-01-02T00:00:00.000Z', scans: 52 },
@@ -199,10 +215,14 @@ describe('QR campaigns list', () => {
     const table = screen.getByRole('table');
     expect(within(table).getByText('1,248')).toBeInTheDocument();
     expect(within(table).getByText('3')).toBeInTheDocument();
-    expect(within(table).getByText('42')).toBeInTheDocument();
-    expect(within(table).getByText('3.4%')).toBeInTheDocument();
+    expect(within(table).getByText('18')).toBeInTheDocument();
+    expect(within(table).getByText('4.8%')).toBeInTheDocument();
     expect(within(table).getByText('active')).toBeInTheDocument();
-    expect(within(table).getByRole('link', { name: 'Feedbacks' })).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Actions for Ward 12 Awareness (DEMO)' }),
+    );
+    expect(screen.getByRole('menuitem', { name: 'Feedbacks' })).toBeInTheDocument();
   });
 
   it('shows a specific empty state, not a bare table', async () => {
@@ -255,6 +275,21 @@ describe('QR campaigns list', () => {
     });
   });
 
+  it('refetches campaigns when the refresh control is used', async () => {
+    const mock = renderAdmin('/admin/qr-campaigns', {
+      QrCampaigns: { qrCampaigns: { nodes: [campaignRow()], totalCount: 1 } },
+    });
+
+    await screen.findByRole('link', { name: 'Ward 12 Awareness (DEMO)' });
+    const before = mock.operations().filter((op) => op === 'QrCampaigns').length;
+
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh campaigns' }));
+
+    await waitFor(() => {
+      expect(mock.operations().filter((op) => op === 'QrCampaigns').length).toBeGreaterThan(before);
+    });
+  });
+
   it('sends the lifecycle transition the button names', async () => {
     const mock = renderAdmin('/admin/qr-campaigns', {
       QrCampaigns: { qrCampaigns: { nodes: [campaignRow()], totalCount: 1 } },
@@ -284,12 +319,14 @@ describe('QR permission-shaped UI', () => {
     await screen.findByRole('link', { name: 'Ward 12 Awareness (DEMO)' });
 
     expect(screen.queryByRole('link', { name: 'New campaign' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Edit' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Edit Ward 12/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
-    // No analytics link either: seeing that a code exists and seeing how it
-    // performed are different disclosures.
-    expect(screen.queryByRole('link', { name: 'Analytics' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Analytics for/i })).not.toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Actions for Ward 12 Awareness (DEMO)' }),
+    );
+    expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument();
   });
 
   it('offers the full control set to a campaign administrator', async () => {
@@ -299,7 +336,7 @@ describe('QR permission-shaped UI', () => {
 
     await screen.findByRole('link', { name: 'Ward 12 Awareness (DEMO)' });
     expect(screen.getByRole('link', { name: 'New campaign' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Analytics' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Analytics for Ward 12/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
   });
 
@@ -348,10 +385,33 @@ describe('QR campaign detail', () => {
   it('shows an empty state when a campaign has no codes yet', async () => {
     renderAdmin('/admin/qr-campaigns/camp-1', {
       QrCampaignDetail: {
-        qrCampaign: campaignRow({ qrCodeCount: 0, totalScans: 0, issueCount: 0, openIssueCount: 0, conversionRatePct: null }),
+        qrCampaign: campaignRow({
+          qrCodeCount: 0,
+          totalScans: 0,
+          issueCount: 0,
+          openIssueCount: 0,
+          siteFeedbackCount: 0,
+          conversionRatePct: null,
+        }),
         qrCodes: { nodes: [], totalCount: 0 },
       },
-      QrAnalytics: { qrAnalytics: analytics({ totalScans: 0, trend: [], issuesFromQr: 0, openIssues: 0, conversionRatePct: null }) },
+      QrAnalytics: {
+        qrAnalytics: analytics({
+          totalScans: 0,
+          trend: [],
+          issuesFromQr: 0,
+          openIssues: 0,
+          conversionRatePct: null,
+          siteFeedbacksFromQr: 0,
+          siteFeedbackConversionRatePct: null,
+          siteFeedbackByReaction: [
+            { key: 'GREAT', label: 'Great', count: 0 },
+            { key: 'OK', label: 'Ok', count: 0 },
+            { key: 'WORST', label: 'Worst', count: 0 },
+          ],
+          recentSiteFeedbacks: [],
+        }),
+      },
       Issues: { issues: { nodes: [], totalCount: 0, hasMore: false } },
     });
 
@@ -572,6 +632,48 @@ describe('QR analytics', () => {
     );
   });
 
+  it('surfaces secondary metrics through the More metrics filter', async () => {
+    renderAdmin('/admin/qr-analytics', {
+      QrOverview: {
+        qrAnalytics: analytics({ estimatedUniqueScans: null }),
+        qrCampaignComparison: { range: analytics().range, campaigns: [] },
+      },
+    });
+
+    await screen.findByText('Total scans');
+    expect(screen.getByRole('combobox', { name: /more metrics/i })).toBeInTheDocument();
+
+    const focus = document.querySelector('.analytics-focus');
+    expect(focus?.textContent).toMatch(/Estimated unique visits/);
+    expect(focus?.textContent).toMatch(/Not available for this period/);
+
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: /more metrics/i }),
+      'activeQrCodes',
+    );
+    expect(document.querySelector('.analytics-focus')?.textContent).toMatch(/Active QR codes/);
+  });
+
+  it('offers a Refresh control that re-queries analytics', async () => {
+    const mock = renderAdmin('/admin/qr-analytics', {
+      QrOverview: {
+        qrAnalytics: analytics(),
+        qrCampaignComparison: { range: analytics().range, campaigns: [] },
+      },
+    });
+
+    await screen.findByText('Total scans');
+    const before = mock.calls.filter((call) => call.operation === 'QrOverview').length;
+
+    await userEvent.click(screen.getByRole('button', { name: /refresh data/i }));
+
+    await waitFor(() => {
+      expect(mock.calls.filter((call) => call.operation === 'QrOverview').length).toBeGreaterThan(
+        before,
+      );
+    });
+  });
+
   it('reports an unavailable unique estimate as a dash, never as zero', async () => {
     renderAdmin('/admin/qr-analytics', {
       QrOverview: {
@@ -580,8 +682,11 @@ describe('QR analytics', () => {
       },
     });
 
-    await screen.findByText('Estimated unique visits');
-    expect(screen.getByText('Not available for this period')).toBeInTheDocument();
+    await screen.findByText('Total scans');
+    const focus = document.querySelector('.analytics-focus');
+    expect(focus?.textContent).toMatch(/Estimated unique visits/);
+    expect(focus?.textContent).toMatch(/Not available for this period/);
+    expect(focus?.textContent).toMatch(/—/);
   });
 
   it('re-queries when the date range changes', async () => {

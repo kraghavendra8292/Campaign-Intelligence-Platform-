@@ -1402,6 +1402,8 @@ model QrCampaign {
   /// Phase 5: submissions attributed to this campaign. SetNull on the Issue
   /// side, so retiring a campaign never deletes a citizen's report.
   issues       Issue[]
+  /// Homepage opinions attributed via rk_qr to this campaign.
+  siteFeedback SiteFeedback[]
 
   /// Slugs are unique per tenant, matching the Phase 2/3 convention.
   @@unique([organizationId, slug])
@@ -1465,6 +1467,8 @@ model QrCode {
   scanEvents   QrScanEvent[]
   /// Phase 5: submissions attributed to this specific printed code.
   issues       Issue[]
+  /// Homepage opinions attributed via rk_qr to this printed code.
+  siteFeedback SiteFeedback[]
 
   @@index([organizationId, campaignId])
   @@index([organizationId, status])
@@ -2515,12 +2519,21 @@ model SiteFeedback {
   /// Set only when a signed-in user submits from the public site.
   submittedByUserId String? @db.Uuid
 
+  /// Channel attribution when the visitor arrived via a printed QR code
+  /// (`rk_qr`). Both SetNull: retiring a campaign must not delete the opinion.
+  campaignId String? @db.Uuid
+  qrCodeId   String? @db.Uuid
+
   createdAt DateTime @default(now()) @db.Timestamptz(6)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   submittedBy  User?        @relation("SiteFeedbackSubmitter", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  campaign     QrCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  qrCode       QrCode?      @relation(fields: [qrCodeId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, createdAt])
   @@index([organizationId, reaction, createdAt])
+  @@index([campaignId, createdAt])
+  @@index([qrCodeId, createdAt])
   @@map("site_feedback")
 }

@@ -23,6 +23,7 @@ const CAMPAIGN_FIELDS = /* GraphQL */ `
     totalScans
     issueCount
     openIssueCount
+    siteFeedbackCount
     conversionRatePct
   }
 `;
@@ -89,6 +90,19 @@ const ANALYTICS_FIELDS = /* GraphQL */ `
       key
       label
       count
+    }
+    siteFeedbacksFromQr
+    siteFeedbackConversionRatePct
+    siteFeedbackByReaction {
+      key
+      label
+      count
+    }
+    recentSiteFeedbacks {
+      id
+      reaction
+      comment
+      submittedAt
     }
     trend {
       date
@@ -289,6 +303,7 @@ export interface QrCampaignRow {
   totalScans: number;
   issueCount: number;
   openIssueCount: number;
+  siteFeedbackCount: number;
   conversionRatePct: number | null;
 }
 
@@ -347,6 +362,15 @@ export interface QrAnalyticsData {
   conversionRatePct: number | null;
   issuesByStatus: QrCountBucket[];
   issuesByPriority: QrCountBucket[];
+  siteFeedbacksFromQr: number;
+  siteFeedbackConversionRatePct: number | null;
+  siteFeedbackByReaction: QrCountBucket[];
+  recentSiteFeedbacks: Array<{
+    id: string;
+    reaction: string;
+    comment: string | null;
+    submittedAt: string;
+  }>;
   trend: Array<{ date: string; scans: number }>;
   byQrCode: ScanBucket[];
   bySource: ScanBucket[];

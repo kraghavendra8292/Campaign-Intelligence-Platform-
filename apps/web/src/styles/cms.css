@@ -105,6 +105,10 @@
   border-bottom: 0;
 }
 
+.cms-table tbody tr:hover td {
+  background-color: var(--color-surface-subtle);
+}
+
 .cms-table__link {
   color: var(--color-primary);
   font-weight: var(--font-weight-medium);

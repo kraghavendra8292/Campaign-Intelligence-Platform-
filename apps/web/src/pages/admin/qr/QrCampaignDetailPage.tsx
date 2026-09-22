@@ -224,15 +224,15 @@ export function QrCampaignDetailPage() {
                 />
                 <StatCard
                   label="Feedbacks"
-                  value={campaign.issueCount.toLocaleString()}
-                  hint={`${campaign.openIssueCount.toLocaleString()} open`}
+                  value={campaign.siteFeedbackCount.toLocaleString()}
+                  hint={`${campaign.issueCount.toLocaleString()} issues · ${campaign.openIssueCount.toLocaleString()} open`}
                 />
                 <StatCard
                   label="Conversion"
                   value={
                     campaign.conversionRatePct === null ? '—' : `${campaign.conversionRatePct}%`
                   }
-                  hint={campaign.conversionRatePct === null ? 'No scans yet' : 'Issues per scan'}
+                  hint={campaign.conversionRatePct === null ? 'No scans yet' : 'Feedbacks per scan'}
                   tone="accent"
                 />
                 <StatCard
@@ -259,8 +259,8 @@ export function QrCampaignDetailPage() {
                     />
                     <StatCard
                       label="Feedbacks (30 days)"
-                      value={summary.issuesFromQr.toLocaleString()}
-                      hint={`${summary.openIssues.toLocaleString()} open`}
+                      value={summary.siteFeedbacksFromQr.toLocaleString()}
+                      hint={`${summary.issuesFromQr.toLocaleString()} issues`}
                     />
                     <StatCard
                       label="Top performing QR"

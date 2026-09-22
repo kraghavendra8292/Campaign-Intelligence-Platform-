@@ -67,8 +67,8 @@ export function ChartEmpty({ message = 'No data available yet.' }: { message?: s
 // ---------------------------------------------------------------------------
 
 const TREND_WIDTH = 720;
-const TREND_HEIGHT = 220;
-const TREND_PADDING = { top: 12, right: 12, bottom: 26, left: 40 };
+const TREND_HEIGHT = 260;
+const TREND_PADDING = { top: 16, right: 16, bottom: 28, left: 44 };
 
 export interface TrendPoint {
   readonly date: string;
@@ -124,6 +124,8 @@ export function TrendChart({
   const first = points[0];
   const last = points.at(-1);
 
+  const gradientId = `${titleId}-fill`;
+
   return (
     <figure className="trend">
       <svg
@@ -138,6 +140,13 @@ export function TrendChart({
             ` ${total} in total, peaking at ${max}.`}
         </title>
 
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" className="trend__gradient-start" />
+            <stop offset="100%" className="trend__gradient-end" />
+          </linearGradient>
+        </defs>
+
         {/* Gridlines at 0, half and full scale: enough to read a value from, */}
         {/* few enough not to compete with the data. */}
         {[0, 0.5, 1].map((fraction) => {
@@ -151,18 +160,18 @@ export function TrendChart({
                 y2={y}
                 className="trend__grid"
               />
-              <text x={0} y={y + 4} className="trend__axis-label">
-                {Math.round(max * fraction)}
+              <text x={4} y={y + 4} className="trend__axis-label">
+                {Math.round(max * fraction).toLocaleString()}
               </text>
             </g>
           );
         })}
 
-        <path d={area} className="trend__area" />
+        <path d={area} style={{ fill: `url(#${gradientId})` }} />
         <path d={line} className="trend__line" />
 
         {coordinates.map((c) => (
-          <circle key={c.point.date} cx={c.x} cy={c.y} r={2.5} className="trend__dot">
+          <circle key={c.point.date} cx={c.x} cy={c.y} r={3} className="trend__dot">
             <title>{`${c.point.date.slice(0, 10)}: ${c.point.value} ${unit}`}</title>
           </circle>
         ))}
@@ -285,5 +294,191 @@ export function ColumnChart({
         </li>
       ))}
     </ul>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sparkline
+// ---------------------------------------------------------------------------
+
+/**
+ * Tiny inline trend for KPI cards. Always starts at zero on the Y axis so a
+ * flat jitter cannot look like a surge.
+ */
+export function Sparkline({
+  values,
+  label = 'Trend',
+}: {
+  values: readonly number[];
+  label?: string;
+}) {
+  if (values.length < 2) return null;
+
+  const width = 72;
+  const height = 28;
+  const max = Math.max(...values, 1);
+  const step = width / (values.length - 1);
+  const points = values
+    .map((value, index) => {
+      const x = index * step;
+      const y = height - (value / max) * (height - 2) - 1;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+
+  return (
+    <svg
+      className="sparkline"
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+      height={height}
+      role="img"
+      aria-label={label}
+    >
+      <polyline points={points} className="sparkline__line" fill="none" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Donut
+// ---------------------------------------------------------------------------
+
+const DONUT_PALETTE = [
+  'var(--color-primary)',
+  'var(--color-info)',
+  'var(--color-accent)',
+  'var(--color-brand)',
+  'var(--color-success)',
+  'var(--color-warning)',
+  'var(--color-error)',
+  'var(--color-text-muted)',
+] as const;
+
+function polar(cx: number, cy: number, r: number, angleDeg: number) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
+  const start = polar(cx, cy, r, endDeg);
+  const end = polar(cx, cy, r, startDeg);
+  const large = endDeg - startDeg > 180 ? 1 : 0;
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 0 ${end.x} ${end.y}`;
+}
+
+/**
+ * Category mix as a donut with a centre total and a legend of exact counts.
+ * Prefer this over pie charts when the mix (not ranking) is the question.
+ */
+export function DonutChart({
+  buckets,
+  unit = '',
+  emptyMessage,
+  centreLabel,
+}: {
+  buckets: readonly ChartBucket[];
+  unit?: string;
+  emptyMessage?: string;
+  centreLabel?: string;
+}) {
+  const titleId = useId();
+
+  if (buckets.length === 0)
+    return <ChartEmpty {...(emptyMessage ? { message: emptyMessage } : {})} />;
+
+  const total = buckets.reduce((sum, bucket) => sum + bucket.value, 0);
+  if (total === 0)
+    return <ChartEmpty {...(emptyMessage ? { message: emptyMessage } : {})} />;
+
+  const size = 180;
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = 64;
+  const stroke = 16;
+
+  let cursor = 0;
+  const arcs = buckets
+    .filter((bucket) => bucket.value > 0)
+    .map((bucket, index) => {
+      const sweep = (bucket.value / total) * 360;
+      const start = cursor;
+      const end = cursor + Math.min(sweep, 359.99);
+      cursor += sweep;
+      return {
+        ...bucket,
+        start,
+        end,
+        share: (bucket.value / total) * 100,
+        color: DONUT_PALETTE[index % DONUT_PALETTE.length]!,
+      };
+    });
+
+  return (
+    <div className="donut">
+      <figure className="donut__figure">
+        <svg
+          className="donut__svg"
+          viewBox={`0 0 ${size} ${size}`}
+          role="img"
+          aria-labelledby={titleId}
+        >
+          <title id={titleId}>
+            {`${total.toLocaleString()} ${unit}`.trim() +
+              `. ` +
+              arcs.map((arc) => `${arc.label} ${arc.value}`).join(', ')}
+          </title>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={radius}
+            className="donut__track"
+            fill="none"
+            strokeWidth={stroke}
+          />
+          {arcs.length === 1 && arcs[0] ? (
+            <circle
+              cx={cx}
+              cy={cy}
+              r={radius}
+              fill="none"
+              strokeWidth={stroke}
+              stroke={arcs[0].color}
+            />
+          ) : (
+            arcs.map((arc) => (
+              <path
+                key={arc.key}
+                d={arcPath(cx, cy, radius, arc.start, arc.end)}
+                fill="none"
+                stroke={arc.color}
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+              >
+                <title>{`${arc.label}: ${arc.value.toLocaleString()} (${arc.share.toFixed(0)}%)`}</title>
+              </path>
+            ))
+          )}
+          <text x={cx} y={cy - 4} textAnchor="middle" className="donut__value">
+            {total.toLocaleString()}
+          </text>
+          <text x={cx} y={cy + 14} textAnchor="middle" className="donut__caption">
+            {centreLabel ?? unit}
+          </text>
+        </svg>
+      </figure>
+      <ul className="donut__legend">
+        {arcs.map((arc) => (
+          <li key={arc.key} className="donut__legend-row">
+            <span className="donut__swatch" style={{ backgroundColor: arc.color }} aria-hidden="true" />
+            <span className="donut__legend-label">{arc.label}</span>
+            <span className="donut__legend-value">
+              {arc.value.toLocaleString()}
+              <span className="donut__legend-share">{arc.share.toFixed(0)}%</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

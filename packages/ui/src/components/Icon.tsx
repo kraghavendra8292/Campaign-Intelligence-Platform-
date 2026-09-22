@@ -22,6 +22,11 @@ export const ICON_NAMES = [
   'chevronRight',
   'pause',
   'play',
+  'refresh',
+  'moreVertical',
+  'pencil',
+  'trash',
+  'columns',
   // Console navigation.
   'dashboard',
   'user',
@@ -51,6 +56,11 @@ const PATHS: Record<IconName, string> = {
   chevronRight: 'm9 6 6 6-6 6',
   pause: 'M10 5v14M15 5v14',
   play: 'M8 5.5v13l11-6.5z',
+  refresh: 'M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5',
+  moreVertical: 'M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5M12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5M12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5',
+  pencil: 'M14.5 5.5 18.5 9.5M4 20l1.2-4.4L15.8 5l4 4L9.2 19.6z',
+  trash: 'M5 7h14M9.5 7V5.5h5V7M8 7l.7 12h6.6L16 7',
+  columns: 'M5 5h4v14H5zM10.5 5h3v14h-3zM15 5h4v14h-4z',
 
   dashboard: 'M4 4h6v7H4zM14 4h6v4h-6zM14 12h6v8h-6zM4 15h6v5H4z',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4.5 20a7.5 7.5 0 0 1 15 0',

@@ -1,4 +1,4 @@
-import { ISSUE_LIMITS, isQrCodeIdentifier, type IssueSource, type SubmissionType } from '@rk/types';
+import { ISSUE_LIMITS, type IssueSource, type SubmissionType } from '@rk/types';
 import { prisma } from '../../../database/prisma';
 import { AppError } from '../../../errors/AppError';
 import { getEnv } from '../../../config/env';
@@ -8,6 +8,7 @@ import { enqueueNotification } from '../../communication/notificationQueue';
 import { issueTrackingToken } from '../../communication/shared/trackingToken';
 import { getAttemptLimiter } from '../../auth/rateLimiter';
 import { publicTenantService } from '../../content/public/publicTenant.service';
+import { resolveQrAttribution } from '../../qr/shared/resolveQrAttribution';
 import {
   generateReferenceNumber,
   optionalCoordinate,
@@ -98,22 +99,11 @@ async function resolveAttribution(
   organizationId: string,
   rawCode: string | null | undefined,
 ): Promise<{ source: IssueSource; campaignId: string | null; qrCodeId: string | null }> {
-  const code = rawCode?.trim().toUpperCase();
-
-  if (!code || !isQrCodeIdentifier(code)) {
+  const attributed = await resolveQrAttribution(organizationId, rawCode);
+  if (!attributed.qrCodeId) {
     return { source: 'DIRECT_WEBSITE', campaignId: null, qrCodeId: null };
   }
-
-  const qr = await prisma.qrCode.findFirst({
-    where: { code, organizationId },
-    select: { id: true, campaignId: true },
-  });
-
-  if (!qr) {
-    return { source: 'DIRECT_WEBSITE', campaignId: null, qrCodeId: null };
-  }
-
-  return { source: 'QR', campaignId: qr.campaignId, qrCodeId: qr.id };
+  return { source: 'QR', ...attributed };
 }
 
 export const issueSubmissionService = {

@@ -11,6 +11,7 @@ import { getAttemptLimiter } from '../../auth/rateLimiter';
 import { authorizationService } from '../../auth/authorization.service';
 import { publicTenantService } from '../../content/public/publicTenant.service';
 import { organizationService } from '../../identity/organization.service';
+import { resolveQrAttribution } from '../../qr/shared/resolveQrAttribution';
 
 /**
  * Homepage opinion pulse.
@@ -23,6 +24,8 @@ export interface SubmitSiteFeedbackInput {
   readonly organizationSlug?: string | null;
   readonly reaction: SiteFeedbackReaction;
   readonly comment?: string | null;
+  /** Public QR code identifier (`rk_qr`) when the visitor arrived via a poster. */
+  readonly qrCode?: string | null;
 }
 
 export interface SubmissionContext {
@@ -137,6 +140,7 @@ export const siteFeedbackService = {
     });
 
     const comment = normalizeComment(input.comment);
+    const attribution = await resolveQrAttribution(tenant.organizationId, input.qrCode);
 
     const row = await prisma.siteFeedback.create({
       data: {
@@ -144,6 +148,8 @@ export const siteFeedbackService = {
         reaction: input.reaction,
         comment,
         submittedByUserId: ctx.userId ?? null,
+        campaignId: attribution.campaignId,
+        qrCodeId: attribution.qrCodeId,
       },
       select: { id: true, reaction: true, createdAt: true },
     });
@@ -154,7 +160,12 @@ export const siteFeedbackService = {
       actorUserId: ctx.userId ?? null,
       entityType: 'SiteFeedback',
       entityId: row.id,
-      metadata: { reaction: row.reaction, hasComment: Boolean(comment) },
+      metadata: {
+        reaction: row.reaction,
+        hasComment: Boolean(comment),
+        campaignId: attribution.campaignId,
+        qrCodeId: attribution.qrCodeId,
+      },
       ipAddress: null,
       userAgent: null,
       correlationId: ctx.correlationId,

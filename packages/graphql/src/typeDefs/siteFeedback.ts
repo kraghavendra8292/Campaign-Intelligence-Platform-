@@ -22,6 +22,13 @@ export const siteFeedbackTypeDefs = /* GraphQL */ `
     reaction: SiteFeedbackReaction!
     "Optional commentary, max 500 characters."
     comment: String
+    """
+    Public QR code identifier from rk_qr, when the visitor arrived via a poster.
+
+    Soft-matched to a code in this tenant. Unknown or missing codes are ignored
+    rather than rejecting the opinion.
+    """
+    qrCode: String
   }
 
   "One row in the admin opinion list. No contact fields exist on this model."

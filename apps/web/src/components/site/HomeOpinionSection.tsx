@@ -4,6 +4,7 @@ import type { SiteFeedbackReaction } from '@rk/types';
 import { SITE_FEEDBACK_LIMITS } from '@rk/types';
 import { ApiError, graphqlRequest } from '../../features/auth/authClient';
 import { useSite } from '../../features/site/SiteContext';
+import { readQrReferrer } from '../../features/site/useIssueSubmission';
 
 const SUBMIT_SITE_FEEDBACK = /* GraphQL */ `
   mutation SubmitSiteFeedback($input: SubmitSiteFeedbackInput!) {
@@ -64,6 +65,7 @@ export function HomeOpinionSection() {
               organizationSlug: organizationSlug || null,
               reaction,
               comment: comment.trim() || null,
+              qrCode: readQrReferrer(),
             },
           },
         });

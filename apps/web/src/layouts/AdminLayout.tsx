@@ -13,9 +13,10 @@ loadConsoleStyles();
 /**
  * Shell for the authenticated campaign console.
  *
- * A permanent sidebar from `lg` up; below it, a drawer that starts CLOSED and
- * is opened from the topbar. The navigation itself lives in `AdminSidebar` and
- * its structure in `config/adminNav.ts`.
+ * From `lg` up the sidebar is a column (or an auto-hiding overlay on fine
+ * pointers). Below that it is a drawer that starts CLOSED and is opened from
+ * the topbar. The navigation itself lives in `AdminSidebar` and its structure
+ * in `config/adminNav.ts`.
  *
  * Mounted behind `ProtectedRoute`, so it renders only for a signed-in user.
  * That guard governs rendering; the API authorises every query independently.
@@ -90,7 +91,7 @@ function AdminConsole() {
       <div className="admin-content-wrapper">
         <header className="admin-topbar">
           <div className="admin-topbar__lead">
-            {/* Hidden from `lg` up, where the sidebar is always on screen. */}
+            {/* Hidden from `lg` up, where the sidebar is the desktop column/overlay. */}
             <button
               type="button"
               className="admin-topbar__menu"

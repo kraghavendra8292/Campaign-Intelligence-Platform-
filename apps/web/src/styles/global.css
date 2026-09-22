@@ -604,15 +604,20 @@ img {
 }
 
 /*
- * From `lg` the sidebar stops being an overlay and becomes a column.
+ * From `lg` the sidebar stops being a modal drawer.
  *
- * The wrapper drops its fixed positioning entirely - it is no longer a layer
- * over the page, so there is nothing left to intercept clicks or trap scroll,
- * and the panel simply fills the grid track.
+ * Default: a sticky grid column (touch / coarse pointers). Fine-pointer
+ * desktops opt into auto-hide (`data-autohide`) - the panel becomes a fixed
+ * overlay that slides with `transform` only, so the main column never reflows
+ * while the pointer enters and leaves.
  */
 @media (min-width: 1024px) {
   .admin-layout {
     grid-template-columns: 17rem 1fr;
+  }
+
+  .admin-layout:has(.admin-sidebar[data-autohide='true']) {
+    grid-template-columns: 1fr;
   }
 
   .admin-sidebar {
@@ -636,6 +641,40 @@ img {
     transition: none;
   }
 
+  .admin-sidebar[data-autohide='true'] {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 17rem;
+    height: 100vh;
+    z-index: var(--z-index-sticky);
+    pointer-events: none;
+  }
+
+  .admin-sidebar[data-autohide='true'] .admin-sidebar__panel {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 17rem;
+    height: 100%;
+    pointer-events: auto;
+    /*
+     * A 4px brand peek keeps the edge discoverable without covering content.
+     * Opening uses the full slide; closing keeps the peek so the edge zone and
+     * the visible strip stay aligned and do not fight the pointer.
+     */
+    transform: translateX(calc(-100% + 4px));
+    transition:
+      transform var(--motion-duration-normal) var(--motion-easing-standard),
+      box-shadow var(--motion-duration-normal) var(--motion-easing-standard);
+    box-shadow: var(--shadow-none);
+    will-change: transform;
+  }
+
+  .admin-sidebar[data-autohide='true'][data-desktop-open='true'] .admin-sidebar__panel {
+    transform: translateX(0);
+    box-shadow: var(--shadow-lg);
+  }
+
   .admin-topbar__menu {
     display: none;
   }
@@ -649,6 +688,10 @@ img {
   .admin-topbar__menu {
     transition-duration: 1ms;
     transition-delay: 0s;
+  }
+
+  .admin-sidebar[data-autohide='true'] .admin-sidebar__panel {
+    will-change: auto;
   }
 }
 

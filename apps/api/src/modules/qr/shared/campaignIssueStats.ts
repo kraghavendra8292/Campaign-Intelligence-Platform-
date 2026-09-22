@@ -2,9 +2,10 @@ import { TERMINAL_ISSUE_STATUSES } from '@rk/types';
 import type { Prisma } from '../../../generated/prisma/client';
 import { prisma } from '../../../database/prisma';
 import { rate } from '../../analytics/shared/analyticsFilters';
+import { siteFeedbackCountsForCampaigns } from './campaignSiteFeedbackStats';
 
 /**
- * Per-campaign issue rollups attributed via rk_qr (`Issue.campaignId`).
+ * Per-campaign issue + opinion rollups attributed via rk_qr.
  *
  * Batched with `groupBy` so a campaign list never becomes an N+1 of counts.
  * Open = not CLOSED/REJECTED, matching the rest of the analytics surface.
@@ -13,6 +14,7 @@ import { rate } from '../../analytics/shared/analyticsFilters';
 export interface CampaignIssueStats {
   readonly issueCount: number;
   readonly openIssueCount: number;
+  readonly siteFeedbackCount: number;
   readonly conversionRatePct: number | null;
 }
 
@@ -23,18 +25,20 @@ const OPEN_FILTER: Prisma.IssueWhereInput = {
 const EMPTY: CampaignIssueStats = {
   issueCount: 0,
   openIssueCount: 0,
+  siteFeedbackCount: 0,
   conversionRatePct: null,
 };
 
-export function conversionFrom(issues: number, scans: number): number | null {
-  return rate(issues, scans);
+export function conversionFrom(submissions: number, scans: number): number | null {
+  return rate(submissions, scans);
 }
 
 /**
- * All-time issue counts for the given campaign ids within one tenant.
+ * All-time issue + SiteFeedback counts for the given campaign ids within one tenant.
  *
  * `scansByCampaignId` supplies the denominator for conversion; pass the
  * campaign's all-time scan total when enriching list/detail rows.
+ * Conversion uses issues + homepage opinions as the numerator.
  */
 export async function issueStatsForCampaigns(
   organizationId: string,
@@ -47,13 +51,14 @@ export async function issueStatsForCampaigns(
     result.set(id, {
       issueCount: 0,
       openIssueCount: 0,
+      siteFeedbackCount: 0,
       conversionRatePct: conversionFrom(0, scans),
     });
   }
 
   if (campaignIds.length === 0) return result;
 
-  const [allRows, openRows] = await Promise.all([
+  const [allRows, openRows, siteFeedbackById] = await Promise.all([
     prisma.issue.groupBy({
       by: ['campaignId'],
       where: {
@@ -71,6 +76,7 @@ export async function issueStatsForCampaigns(
       },
       _count: { _all: true },
     }),
+    siteFeedbackCountsForCampaigns(organizationId, campaignIds),
   ]);
 
   const openById = new Map(
@@ -79,15 +85,22 @@ export async function issueStatsForCampaigns(
       .map((row) => [row.campaignId, row._count._all]),
   );
 
-  for (const row of allRows) {
-    if (!row.campaignId) continue;
-    const issueCount = row._count._all;
-    const openIssueCount = openById.get(row.campaignId) ?? 0;
-    const scans = scansByCampaignId.get(row.campaignId) ?? 0;
-    result.set(row.campaignId, {
+  const issueById = new Map(
+    allRows
+      .filter((row): row is typeof row & { campaignId: string } => row.campaignId !== null)
+      .map((row) => [row.campaignId, row._count._all]),
+  );
+
+  for (const id of campaignIds) {
+    const issueCount = issueById.get(id) ?? 0;
+    const openIssueCount = openById.get(id) ?? 0;
+    const siteFeedbackCount = siteFeedbackById.get(id) ?? 0;
+    const scans = scansByCampaignId.get(id) ?? 0;
+    result.set(id, {
       issueCount,
       openIssueCount,
-      conversionRatePct: conversionFrom(issueCount, scans),
+      siteFeedbackCount,
+      conversionRatePct: conversionFrom(issueCount + siteFeedbackCount, scans),
     });
   }
 

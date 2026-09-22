@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Button } from '@rk/ui';
+import { Button, Icon } from '@rk/ui';
 import { graphqlRequest } from '../../../features/auth/authClient';
 import { useAdminQuery } from '../../../features/admin/adminApi';
 import {
@@ -18,7 +18,11 @@ import {
   QrBoundary,
   type RangeSelection,
 } from '../../../components/qr/QrShell';
-import { AnalyticsPanel } from '../../../components/qr/AnalyticsPanel';
+import {
+  ANALYTICS_FOCUS_OPTIONS,
+  AnalyticsPanel,
+  type AnalyticsFocusMetric,
+} from '../../../components/qr/AnalyticsPanel';
 import { ChartCard, RankedBars } from '../../../components/qr/charts';
 
 /**
@@ -82,8 +86,13 @@ function AnalyticsScreen({
 }) {
   const [range, setRange] = useState<RangeSelection>(DEFAULT_RANGE);
   const [excludeAutomated, setExcludeAutomated] = useState(false);
+  const [focusMetric, setFocusMetric] = useState<AnalyticsFocusMetric>('uniqueVisits');
   const [exporting, setExporting] = useState(false);
   const { toasts, success, failure } = useToasts();
+  const lastGood = useRef<{
+    qrAnalytics: QrAnalyticsData;
+    qrCampaignComparison?: { campaigns: CampaignComparisonRow[] };
+  } | null>(null);
 
   const filter = useMemo(
     () => toFilter(range, campaignId, qrCodeId, excludeAutomated),
@@ -94,6 +103,18 @@ function AnalyticsScreen({
     qrAnalytics: QrAnalyticsData;
     qrCampaignComparison?: { campaigns: CampaignComparisonRow[] };
   }>(showComparison ? QR_CAMPAIGN_COMPARISON : QR_ANALYTICS, { filter });
+
+  useEffect(() => {
+    lastGood.current = null;
+  }, [filter]);
+
+  useEffect(() => {
+    if (state.status === 'success') {
+      lastGood.current = state.data;
+    }
+  }, [state]);
+
+  const isRefreshing = state.status === 'loading' && lastGood.current !== null;
 
   async function exportCsv(): Promise<void> {
     setExporting(true);
@@ -127,6 +148,21 @@ function AnalyticsScreen({
 
       <FilterBar>
         <DateRangePicker value={range} onChange={setRange} />
+        <label className="analytics-metric-filter">
+          <span className="visually-hidden">More metrics</span>
+          <select
+            className="rk-select__control"
+            value={focusMetric}
+            onChange={(event) => setFocusMetric(event.target.value as AnalyticsFocusMetric)}
+            aria-label="More metrics"
+          >
+            {ANALYTICS_FOCUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="cms-checkbox">
           <input
             type="checkbox"
@@ -135,43 +171,93 @@ function AnalyticsScreen({
           />
           <span>Exclude automated traffic</span>
         </label>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={refetch}
+          disabled={isRefreshing}
+          leadingIcon={
+            <Icon name="refresh" className={isRefreshing ? 'analytics-refresh--spin' : undefined} />
+          }
+          aria-label="Refresh data"
+        >
+          Refresh
+        </Button>
       </FilterBar>
 
-      <QrBoundary state={state} refetch={refetch}>
-        {(data) => (
-          <>
-            <AnalyticsPanel
-              data={data.qrAnalytics}
-              showQrBreakdown={showQrBreakdown}
-              onExportCsv={() => void exportCsv()}
-              exporting={exporting}
-              feedbacksHref={
-                campaignId
-                  ? `/admin/issues?campaignId=${encodeURIComponent(campaignId)}`
-                  : qrCodeId
-                    ? `/admin/issues?qrCodeId=${encodeURIComponent(qrCodeId)}`
-                    : '/admin/issues?source=QR'
-              }
-            />
+      {/* Soft refresh: keep the last good payload on screen while refetching so
+          the KPI cards do not flash to a full-page spinner. First load and
+          hard errors still go through QrBoundary. */}
+      {isRefreshing && lastGood.current ? (
+        <div className="analytics analytics--refreshing" aria-busy="true">
+          <AnalyticsPanel
+            data={lastGood.current.qrAnalytics}
+            showQrBreakdown={showQrBreakdown}
+            onExportCsv={() => void exportCsv()}
+            exporting={exporting}
+            focusMetric={focusMetric}
+            feedbacksHref={
+              campaignId
+                ? `/admin/issues?campaignId=${encodeURIComponent(campaignId)}`
+                : qrCodeId
+                  ? `/admin/issues?qrCodeId=${encodeURIComponent(qrCodeId)}`
+                  : '/admin/issues?source=QR'
+            }
+          />
+          {showComparison && lastGood.current.qrCampaignComparison ? (
+            <ChartCard
+              title="Campaign comparison"
+              description="Scans per campaign over the selected range."
+            >
+              <RankedBars
+                buckets={lastGood.current.qrCampaignComparison.campaigns.map((campaign) => ({
+                  key: campaign.id,
+                  label: campaign.name,
+                  scans: campaign.scans,
+                }))}
+                emptyMessage="No campaigns have recorded scans in this range."
+              />
+            </ChartCard>
+          ) : null}
+        </div>
+      ) : (
+        <QrBoundary state={state} refetch={refetch}>
+          {(data) => (
+            <>
+              <AnalyticsPanel
+                data={data.qrAnalytics}
+                showQrBreakdown={showQrBreakdown}
+                onExportCsv={() => void exportCsv()}
+                exporting={exporting}
+                focusMetric={focusMetric}
+                feedbacksHref={
+                  campaignId
+                    ? `/admin/issues?campaignId=${encodeURIComponent(campaignId)}`
+                    : qrCodeId
+                      ? `/admin/issues?qrCodeId=${encodeURIComponent(qrCodeId)}`
+                      : '/admin/issues?source=QR'
+                }
+              />
 
-            {showComparison && data.qrCampaignComparison ? (
-              <ChartCard
-                title="Campaign comparison"
-                description="Scans per campaign over the selected range."
-              >
-                <RankedBars
-                  buckets={data.qrCampaignComparison.campaigns.map((campaign) => ({
-                    key: campaign.id,
-                    label: campaign.name,
-                    scans: campaign.scans,
-                  }))}
-                  emptyMessage="No campaigns have recorded scans in this range."
-                />
-              </ChartCard>
-            ) : null}
-          </>
-        )}
-      </QrBoundary>
+              {showComparison && data.qrCampaignComparison ? (
+                <ChartCard
+                  title="Campaign comparison"
+                  description="Scans per campaign over the selected range."
+                >
+                  <RankedBars
+                    buckets={data.qrCampaignComparison.campaigns.map((campaign) => ({
+                      key: campaign.id,
+                      label: campaign.name,
+                      scans: campaign.scans,
+                    }))}
+                    emptyMessage="No campaigns have recorded scans in this range."
+                  />
+                </ChartCard>
+              ) : null}
+            </>
+          )}
+        </QrBoundary>
+      )}
 
       <ToastRegion toasts={toasts} />
     </div>

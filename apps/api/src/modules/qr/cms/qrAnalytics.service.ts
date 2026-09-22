@@ -11,6 +11,7 @@ import { prisma } from '../../../database/prisma';
 import { AppError } from '../../../errors/AppError';
 import { requireQrAnalytics } from '../shared/qrGuards';
 import { issueAnalyticsForQrScope } from '../shared/campaignIssueStats';
+import { siteFeedbackAnalyticsForQrScope } from '../shared/campaignSiteFeedbackStats';
 
 /**
  * Aggregate QR analytics.
@@ -178,6 +179,15 @@ export interface QrAnalyticsResult {
   readonly conversionRatePct: number | null;
   readonly issuesByStatus: ReadonlyArray<{ key: string; label: string; count: number }>;
   readonly issuesByPriority: ReadonlyArray<{ key: string; label: string; count: number }>;
+  readonly siteFeedbacksFromQr: number;
+  readonly siteFeedbackConversionRatePct: number | null;
+  readonly siteFeedbackByReaction: ReadonlyArray<{ key: string; label: string; count: number }>;
+  readonly recentSiteFeedbacks: ReadonlyArray<{
+    id: string;
+    reaction: string;
+    comment: string | null;
+    submittedAt: Date;
+  }>;
 }
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -373,6 +383,15 @@ export const qrAnalyticsService = {
       totalScans,
     });
 
+    const siteFeedbackStats = await siteFeedbackAnalyticsForQrScope({
+      organizationId,
+      from: range.from,
+      to: range.to,
+      campaignId: args.campaignId,
+      qrCodeId: args.qrCodeId,
+      totalScans,
+    });
+
     return {
       range,
       totalScans,
@@ -409,6 +428,7 @@ export const qrAnalyticsService = {
       })),
       topQrCodeId: ranked[0] && ranked[0].scans > 0 ? ranked[0].key : null,
       ...issueStats,
+      ...siteFeedbackStats,
     };
   },
 

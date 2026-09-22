@@ -2,7 +2,9 @@ import type { ScanBucket } from '../../features/qr/qrQueries';
 import {
   ChartEmpty as SharedChartEmpty,
   ColumnChart as SharedColumnChart,
+  DonutChart as SharedDonutChart,
   RankedBars as SharedRankedBars,
+  Sparkline as SharedSparkline,
   TrendChart as SharedTrendChart,
 } from '../analytics/charts';
 
@@ -24,7 +26,7 @@ import {
  * than widening this file.
  */
 
-export { ChartCard } from '../analytics/charts';
+export { ChartCard, Sparkline } from '../analytics/charts';
 export type { ChartBucket, TrendPoint } from '../analytics/charts';
 
 export function ChartEmpty({ message = 'No scan data available yet.' }: { message?: string }) {
@@ -77,4 +79,44 @@ export function ColumnChart({ buckets }: { buckets: ScanBucket[] }) {
       emptyMessage="No scan data available yet."
     />
   );
+}
+
+export function DonutChart({
+  buckets,
+  total,
+  emptyMessage,
+  unit = 'scans',
+  centreLabel,
+}: {
+  buckets: ScanBucket[];
+  total?: number;
+  emptyMessage?: string;
+  unit?: string;
+  centreLabel?: string;
+}) {
+  const mapped = buckets.map((bucket) => ({
+    key: bucket.key,
+    label: bucket.label,
+    value: bucket.scans,
+  }));
+
+  // When a total is supplied that exceeds the visible buckets (e.g. top-N),
+  // pad with an "Other" slice so the donut still reads as a full mix.
+  if (total !== undefined && total > mapped.reduce((sum, b) => sum + b.value, 0)) {
+    const visible = mapped.reduce((sum, b) => sum + b.value, 0);
+    mapped.push({ key: '__other', label: 'Other', value: total - visible });
+  }
+
+  return (
+    <SharedDonutChart
+      buckets={mapped}
+      unit={unit}
+      emptyMessage={emptyMessage ?? 'No scan data available yet.'}
+      {...(centreLabel === undefined ? {} : { centreLabel })}
+    />
+  );
+}
+
+export function ScanSparkline({ values }: { values: readonly number[] }) {
+  return <SharedSparkline values={values} label="Scan trend" />;
 }

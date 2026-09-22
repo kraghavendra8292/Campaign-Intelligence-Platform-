@@ -45,13 +45,21 @@ type CodeRow = Awaited<ReturnType<typeof qrCodeService.getById>>;
 
 /** Flattens Prisma's `_count` into the scalar fields the schema exposes. */
 function mapCampaign(row: CampaignRow) {
-  const { _count, issueCount, openIssueCount, conversionRatePct, ...rest } = row;
+  const {
+    _count,
+    issueCount,
+    openIssueCount,
+    siteFeedbackCount,
+    conversionRatePct,
+    ...rest
+  } = row;
   return {
     ...rest,
     qrCodeCount: _count.qrCodes,
     totalScans: _count.scanEvents,
     issueCount,
     openIssueCount,
+    siteFeedbackCount,
     conversionRatePct,
   };
 }

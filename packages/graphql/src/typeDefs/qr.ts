@@ -96,8 +96,10 @@ export const qrTypeDefs = /* GraphQL */ `
     issueCount: Int!
     "Attributed issues that are not closed or rejected."
     openIssueCount: Int!
+    "Homepage opinions (Great/Ok/Worst) attributed to this QR campaign."
+    siteFeedbackCount: Int!
     """
-    Issue submissions per scan, as a percentage.
+    Combined issue + opinion submissions per scan, as a percentage.
 
     Null when there are no scans: a rate with an empty denominator is undefined,
     and "0%" would read as failure when the truth is that nobody scanned yet.
@@ -256,6 +258,22 @@ export const qrTypeDefs = /* GraphQL */ `
     conversionRatePct: Float
     issuesByStatus: [QrCountBucket!]!
     issuesByPriority: [QrCountBucket!]!
+
+    "Homepage opinions (Great/Ok/Worst) attributed to this QR scope via rk_qr."
+    siteFeedbacksFromQr: Int!
+    "Opinions per scan in the window. Null when there were no scans."
+    siteFeedbackConversionRatePct: Float
+    siteFeedbackByReaction: [QrCountBucket!]!
+    recentSiteFeedbacks: [QrSiteFeedbackEntry!]!
+  }
+
+  "One recent homepage opinion attributed to a QR campaign or code."
+  type QrSiteFeedbackEntry {
+    id: ID!
+    "GREAT, OK, or WORST — same values as SiteFeedbackReaction."
+    reaction: String!
+    comment: String
+    submittedAt: DateTime!
   }
 
   type CampaignComparisonRow {

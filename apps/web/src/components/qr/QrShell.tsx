@@ -118,22 +118,35 @@ export function QrStatusBadge({ value }: { value: string }) {
  * unavailable figure can be rendered as an em dash rather than as a zero.
  * Reporting "0 unique visits" when the number is simply not available would be
  * a claim the data cannot support.
+ *
+ * Optional `sparkline` / `delta` keep the card scannable at a glance without
+ * turning every KPI into a chart.
  */
 export function StatCard({
   label,
   value,
   hint,
   tone,
+  sparkline,
+  delta,
 }: {
   label: string;
   value: string;
   hint?: string;
-  tone?: 'primary' | 'accent' | 'neutral';
+  tone?: 'primary' | 'accent' | 'neutral' | 'info';
+  sparkline?: ReactNode;
+  delta?: string;
 }) {
   return (
     <div className={`stat-card${tone ? ` stat-card--${tone}` : ''}`}>
-      <p className="stat-card__label">{label}</p>
-      <p className="stat-card__value">{value}</p>
+      <div className="stat-card__top">
+        <p className="stat-card__label">{label}</p>
+        {delta ? <span className="stat-card__delta">{delta}</span> : null}
+      </div>
+      <div className="stat-card__body">
+        <p className="stat-card__value">{value}</p>
+        {sparkline ? <div className="stat-card__spark">{sparkline}</div> : null}
+      </div>
       {hint ? <p className="stat-card__hint">{hint}</p> : null}
     </div>
   );
