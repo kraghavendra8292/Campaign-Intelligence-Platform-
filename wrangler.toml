@@ -1,0 +1,19 @@
+# Cloudflare Workers/Pages static deploy for the Vite web app.
+#
+# This repo is an npm workspace. Bare `wrangler deploy` (what Cloudflare CI
+# runs) refuses to auto-detect a target at the workspace root. An explicit
+# `[assets]` directory skips that detection and uploads the Vite build output.
+#
+# Cloudflare dashboard (Git integration):
+#   Build command:          npm run build
+#   Build output directory: apps/web/dist
+#   Root directory:         (leave empty — repository root)
+#
+# Or use `npm run build:pages` to compile only the web app.
+
+name = "rk-campaign-intelligence-platform"
+compatibility_date = "2026-09-22"
+
+[assets]
+directory = "./apps/web/dist"
+not_found_handling = "single-page-application"

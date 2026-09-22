@@ -1,0 +1,2 @@
+# SPA fallback: React Router owns client routes; asset files still take precedence.
+/*    /index.html   200
