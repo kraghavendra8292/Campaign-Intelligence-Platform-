@@ -1,0 +1,25 @@
+{
+  "name": "@rk/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable React (web) design-system primitives built on @rk/design-tokens",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles/ui.css"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@rk/design-tokens": "*"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.4",
+    "react": "^19.2.3"
+  }
+}

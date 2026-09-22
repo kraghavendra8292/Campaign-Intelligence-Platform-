@@ -1,0 +1,519 @@
+/**
+ * QR campaign console.
+ *
+ * Built on the CMS styles rather than beside them: tables, cards, forms and
+ * dialogs are reused as-is, and only the things Phase 4 genuinely introduces -
+ * stat cards, charts, the QR preview and the print sheet - are defined here.
+ *
+ * Every value resolves to a design token, so the QR console re-themes with the
+ * rest of the product from one file.
+ */
+
+/* --------------------------------------------------------------------------
+ * Filters
+ * ----------------------------------------------------------------------- */
+.cms-filters__link {
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin-left: auto;
+}
+
+.range-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.range-picker__custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* --------------------------------------------------------------------------
+ * Stat cards
+ * ----------------------------------------------------------------------- */
+.stat-grid {
+  display: grid;
+  /* auto-fit rather than fixed columns, so four cards become two and then one
+     as the viewport narrows - no breakpoint list to maintain. */
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--spacing-4);
+}
+
+.stat-card {
+  padding: var(--spacing-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  border-top: 3px solid var(--color-border-strong);
+}
+
+.stat-card--primary {
+  border-top-color: var(--color-primary);
+}
+
+.stat-card--accent {
+  border-top-color: var(--color-accent);
+}
+
+.stat-card__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+}
+
+.stat-card__value {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  /* Long campaign names land in this slot on the "top performing" card. */
+  overflow-wrap: anywhere;
+}
+
+.stat-card__hint {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+ * Charts
+ * ----------------------------------------------------------------------- */
+.analytics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.analytics__note {
+  padding: var(--spacing-4);
+  background-color: var(--color-surface-subtle);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--spacing-4);
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-5);
+}
+
+.chart-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.chart-card__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.chart-card__description {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.chart-card__body {
+  flex: 1;
+}
+
+.chart-empty {
+  padding: var(--spacing-8) var(--spacing-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* --- Trend line --------------------------------------------------------- */
+.trend {
+  margin: 0;
+}
+
+.trend__svg {
+  width: 100%;
+  height: 14rem;
+}
+
+.trend__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.trend__axis-label {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.trend__area {
+  fill: var(--color-primary-subtle);
+}
+
+.trend__line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  /* The viewBox is stretched by preserveAspectRatio="none"; without this the
+     stroke would be stretched with it and look thicker horizontally. */
+  vector-effect: non-scaling-stroke;
+}
+
+.trend__dot {
+  fill: var(--color-primary);
+}
+
+/* --- Ranked bars -------------------------------------------------------- */
+.ranked-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.ranked-bars__row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 10rem) 1fr auto;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-sm);
+}
+
+.ranked-bars__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranked-bars__track {
+  height: 0.65rem;
+  background-color: var(--color-surface-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.ranked-bars__fill {
+  display: block;
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.ranked-bars__value {
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ranked-bars__share {
+  display: inline-block;
+  min-width: 2.5rem;
+  text-align: right;
+  margin-left: var(--spacing-2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* On a phone the label and the bar stack, so neither is squeezed to nothing. */
+@media (max-width: 600px) {
+  .ranked-bars__row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ranked-bars__track {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}
+
+/* --- Columns ------------------------------------------------------------ */
+.columns {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+  min-height: 11rem;
+  /* Seven weekday columns stay legible on a narrow screen by scrolling rather
+     than compressing into unreadable slivers. */
+  overflow-x: auto;
+}
+
+.columns__item {
+  flex: 1 1 0;
+  min-width: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.columns__value {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.columns__track {
+  width: 100%;
+  height: 7rem;
+  display: flex;
+  align-items: flex-end;
+}
+
+.columns__fill {
+  width: 100%;
+  background-color: var(--color-accent);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.columns__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  /* Weekday names are long; three letters is enough to identify them. */
+  max-width: 5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+ * QR preview
+ * ----------------------------------------------------------------------- */
+.qr-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--spacing-4);
+}
+
+.qr-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--spacing-5);
+}
+
+.qr-preview__image {
+  width: 15rem;
+  height: 15rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.qr-preview--compact .qr-preview__image {
+  width: 8rem;
+  height: 8rem;
+}
+
+.qr-preview__meta {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.qr-preview__code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.qr-preview__url {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.qr-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-4);
+}
+
+/* --------------------------------------------------------------------------
+ * Detail facts
+ * ----------------------------------------------------------------------- */
+.detail-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
+}
+
+.detail-facts dt {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+}
+
+.detail-facts dd {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  font-family: var(--font-family-mono);
+  font-size: 0.95em;
+}
+
+/* --------------------------------------------------------------------------
+ * Print sheet
+ * ----------------------------------------------------------------------- */
+.print-page__toolbar {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-5);
+}
+
+.print-sheet {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--spacing-10) var(--spacing-8);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  text-align: center;
+}
+
+.print-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-8);
+}
+
+.print-sheet__mark {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-brand);
+  color: var(--color-text-inverse);
+  font-weight: var(--font-weight-bold);
+}
+
+.print-sheet__org {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.print-sheet__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.print-sheet__campaign {
+  margin-top: var(--spacing-2);
+  color: var(--color-text-muted);
+}
+
+.print-sheet__symbol {
+  margin: var(--spacing-8) auto;
+  width: 18rem;
+  max-width: 100%;
+}
+
+.print-sheet__symbol svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.print-sheet__code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wider);
+}
+
+.print-sheet__description {
+  margin-top: var(--spacing-4);
+  color: var(--color-text-muted);
+}
+
+.print-sheet__footer {
+  margin-top: var(--spacing-8);
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.print-sheet__url {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.print-sheet__placement {
+  margin-top: var(--spacing-2);
+}
+
+/**
+ * Printing.
+ *
+ * The console chrome is hidden and the sheet loses its card styling, so the
+ * browser's own print dialog produces a clean page. No extra tooling, and it
+ * works from any browser a field coordinator happens to have.
+ */
+@media print {
+  .admin-sidebar,
+  .admin-topbar,
+  .print-page__toolbar,
+  .skip-link {
+    display: none !important;
+  }
+
+  .admin-layout,
+  .admin-content-wrapper,
+  .admin-main {
+    display: block;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .print-sheet {
+    border: 0;
+    border-radius: 0;
+    max-width: none;
+    padding: 0;
+    /* Keeps the symbol and its identifier from being split across two sheets. */
+    break-inside: avoid;
+  }
+
+  .print-sheet__symbol {
+    width: 60mm;
+  }
+}

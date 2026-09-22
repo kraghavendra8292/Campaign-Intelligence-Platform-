@@ -1,0 +1,2490 @@
+// ---------------------------------------------------------------------------
+// RK Campaign Intelligence Platform - database schema
+//
+// PHASE 2 SCOPE
+// Identity, authentication, multi-tenancy, RBAC and audit. No business entity
+// (candidates, content, projects, QR campaigns, feedback, issues) exists yet -
+// those belong to Phase 3 and later.
+//
+// MULTI-TENANCY RULE
+// Organization is the tenant root. Every business entity added from Phase 3
+// onwards MUST carry `organizationId`, index it, and scope every query by it.
+// Campaign is a sub-scope *within* an organisation, never a tenant of its own.
+//
+// DELETION RULE
+// Security-relevant history is never cascade-deleted. Audit rows keep nullable,
+// SetNull references to actors and tenants so revoking access or removing a
+// tenant can never erase the record of what was done.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7 no longer accepts a connection URL here. The CLI reads it from
+// prisma.config.ts, and the runtime client receives it through the PrismaPg
+// driver adapter in src/database/prisma.ts. One environment variable
+// (DATABASE_URL) still feeds both.
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// Account lifecycle. Access is withdrawn by status, never by deletion, so
+/// audit history keeps a valid actor reference.
+enum UserStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  DISABLED
+
+  @@map("user_status")
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+
+  @@map("organization_status")
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+
+  @@map("campaign_status")
+}
+
+/// PLATFORM roles are global (SUPER_ADMIN); ORGANIZATION roles are granted
+/// through a membership in exactly one tenant.
+enum RoleScope {
+  PLATFORM
+  ORGANIZATION
+
+  @@map("role_scope")
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy
+// ---------------------------------------------------------------------------
+
+/// A tenant. One campaign / candidate organisation on the platform.
+model Organization {
+  id        String             @id @default(uuid()) @db.Uuid
+  /// URL-safe public identifier, for example "north-district-campaign".
+  slug      String             @unique @db.VarChar(63)
+  name      String             @db.VarChar(200)
+  status    OrganizationStatus @default(ACTIVE)
+  createdAt DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime           @updatedAt @db.Timestamptz(6)
+
+  memberships OrganizationMembership[]
+  campaigns   Campaign[]
+  invitations Invitation[]
+  auditLogs   AuditLog[]
+
+  // Phase 3 content. Every one of these is tenant-owned.
+  mediaAssets        MediaAsset[]
+  candidateProfiles  CandidateProfile[]
+  visions            Vision[]
+  priorities         Priority[]
+  projects           Project[]
+  achievements       Achievement[]
+  newsArticles       NewsArticle[]
+  events             Event[]
+  galleryAlbums      GalleryAlbum[]
+  videoEntries       VideoEntry[]
+  contactInformation ContactInformation[]
+  socialLinks        SocialLink[]
+
+  // Phase 4 QR campaigns. Tenant-owned like everything else.
+  qrCampaigns  QrCampaign[]
+  qrCodes      QrCode[]
+  qrScanEvents QrScanEvent[]
+
+  // Phase 5 citizen submissions.
+  issueCategories     IssueCategory[]
+  issues              Issue[]
+  issueAttachments    IssueAttachment[]
+  issueHistoryEntries IssueHistory[]
+  issueNotes          IssueInternalNote[]
+
+  // Phase 6 AI intelligence. Derived from tenant data, so tenant-owned too:
+  // cascading from the organisation is what guarantees an AI summary cannot
+  // outlive the submission it describes.
+  issueAiInsights      IssueAiInsight[]
+  issueAiTopics        IssueAiTopic[]
+  issueThemes          IssueTheme[]
+  aiExecutiveSummaries AiExecutiveSummary[]
+  aiUsageLogs          AiUsageLog[]
+
+  // Phase 8 citizen communication. Tenant-owned like everything else.
+  issuePublicUpdates IssuePublicUpdate[]
+  issueSubscriptions IssueSubscription[]
+  issueNotifications IssueNotification[]
+  issueFollowUps     IssueFollowUp[]
+
+  // Phase 9 verified work.
+  workEvidence       WorkEvidence[]
+  verificationEvents VerificationEvent[]
+
+  @@index([status])
+  @@map("organizations")
+}
+
+/// A campaign inside an organisation. A sub-scope, never a tenant boundary:
+/// every campaign query must still be filtered by organizationId.
+model Campaign {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @db.Uuid
+  slug           String         @db.VarChar(63)
+  name           String         @db.VarChar(200)
+  status         CampaignStatus @default(DRAFT)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships  CampaignMembership[]
+
+  /// Slugs are unique per tenant, not globally: two organisations may both
+  /// have a "ward-5" campaign.
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@map("campaigns")
+}
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+/// A platform user.
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  /// Canonical (trimmed, lower-cased) email. The login identifier.
+  email        String     @unique @db.VarChar(320)
+  /// Argon2id digest. NEVER selected into a GraphQL type.
+  passwordHash String?    @db.VarChar(255)
+  fullName     String     @db.VarChar(200)
+  status       UserStatus @default(INVITED)
+
+  /// Invalidates access tokens issued before this instant. Bumped on password
+  /// change and on global revocation, so a stolen access token stops working
+  /// without waiting for it to expire.
+  tokenValidFrom DateTime @default(now()) @db.Timestamptz(6)
+
+  lastLoginAt DateTime? @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  memberships         OrganizationMembership[]
+  campaignMemberships CampaignMembership[]
+  platformRoles       PlatformRoleAssignment[]
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  invitationsSent     Invitation[]             @relation("InvitationCreatedBy")
+  invitationAccepted  Invitation[]             @relation("InvitationAcceptedBy")
+  auditLogs           AuditLog[]               @relation("AuditActor")
+
+  // Phase 3 authorship. All SetNull, so removing a user never deletes content.
+  uploadedMedia        MediaAsset[]   @relation("MediaUploader")
+  authoredProjects     Project[]      @relation("ProjectAuthor")
+  authoredNews         NewsArticle[]  @relation("NewsAuthor")
+  verifiedAchievements Achievement[]  @relation("AchievementVerifier")
+  uploadedEvidence     WorkEvidence[] @relation("EvidenceUploader")
+
+  // Phase 9. SetNull like every other authorship relation, and for the Phase 6
+  // reason sharpened further: these record who ATTESTED that a public claim is
+  // supported by evidence. The attribution must outlive the reviewer leaving,
+  // because the organisation still stands behind the badge.
+  verifiedProjects      Project[]           @relation("ProjectVerifier")
+  submittedProjects     Project[]           @relation("ProjectSubmitter")
+  reviewingProjects     Project[]           @relation("ProjectReviewer")
+  submittedAchievements Achievement[]       @relation("AchievementSubmitter")
+  reviewingAchievements Achievement[]       @relation("AchievementReviewer")
+  verificationEvents    VerificationEvent[] @relation("VerificationActor")
+
+  // Phase 4 authorship. SetNull for the same reason: removing a user must not
+  // delete a QR code that is already printed on a poster.
+  createdQrCampaigns QrCampaign[] @relation("QrCampaignCreatedBy")
+  createdQrCodes     QrCode[]     @relation("QrCodeCreatedBy")
+
+  // Phase 5. All SetNull: a citizen's report and the record of how it was
+  // handled must outlive the staff member who handled it.
+  assignedIssues      Issue[]             @relation("IssueAssignee")
+  issueHistoryActions IssueHistory[]      @relation("IssueHistoryActor")
+  issueNotesAuthored  IssueInternalNote[] @relation("IssueNoteAuthor")
+
+  // Phase 6. SetNull as well, and for a sharper reason than authorship: these
+  // record who APPROVED model output. That attribution must survive the
+  // reviewer leaving, because the organisation still stands behind what they
+  // approved - but it must not hold the account open.
+  aiInsightsReviewed   IssueAiInsight[]     @relation("AiInsightReviewer")
+  aiThemesReviewed     IssueTheme[]         @relation("AiThemeReviewer")
+  aiSummariesGenerated AiExecutiveSummary[] @relation("AiSummaryAuthor")
+  aiSummariesReviewed  AiExecutiveSummary[] @relation("AiSummaryReviewer")
+  aiUsage              AiUsageLog[]         @relation("AiUsageActor")
+
+  // Phase 8. SetNull for the same reason as every other authorship relation:
+  // the record of what a citizen was told must outlive the staff member who
+  // told them, but must not hold their account open.
+  publicUpdatesAuthored  IssuePublicUpdate[] @relation("PublicUpdateAuthor")
+  publicUpdatesPublished IssuePublicUpdate[] @relation("PublicUpdatePublisher")
+  followUpsReviewed      IssueFollowUp[]     @relation("FollowUpReviewer")
+
+  @@index([status])
+  @@map("users")
+}
+
+/// A named role. The stable `key` is the authorization identifier; `name` is a
+/// display label and must never be used for an authorization decision.
+model Role {
+  id          String    @id @default(uuid()) @db.Uuid
+  key         String    @unique @db.VarChar(50)
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(500)
+  scope       RoleScope @default(ORGANIZATION)
+  /// Privilege rank. An actor may only grant a role ranked strictly below
+  /// their own highest rank, which bounds privilege escalation.
+  rank        Int       @default(0)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  permissions         RolePermission[]
+  memberships         OrganizationMembership[]
+  campaignMemberships CampaignMembership[]
+  platformAssignments PlatformRoleAssignment[]
+  invitations         Invitation[]
+
+  @@index([scope])
+  @@map("roles")
+}
+
+/// A single capability. Authorization is evaluated on these, never on roles.
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique @db.VarChar(64)
+  description String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String   @db.Uuid
+  permissionId String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+/// Grant of a PLATFORM-scoped role (SUPER_ADMIN). Kept separate from
+/// organisation memberships so a global grant can never be created by writing
+/// a tenant-scoped row, and so it is independently auditable.
+model PlatformRoleAssignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  roleId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@map("platform_role_assignments")
+}
+
+/// Binds a User to an Organization with a Role. The seam that makes the
+/// platform multi-tenant: one user may belong to several organisations with a
+/// different role in each.
+model OrganizationMembership {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  userId         String   @db.Uuid
+  roleId         String   @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  /// A user holds at most one role per organisation.
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("organization_memberships")
+}
+
+/// Optional narrower scope within an organisation.
+model CampaignMembership {
+  id         String   @id @default(uuid()) @db.Uuid
+  campaignId String   @db.Uuid
+  userId     String   @db.Uuid
+  roleId     String   @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
+  @@map("campaign_memberships")
+}
+
+// ---------------------------------------------------------------------------
+// Authentication
+// ---------------------------------------------------------------------------
+
+/// A refresh-token session.
+///
+/// Only the SHA-256 digest of the refresh token is stored, so a database leak
+/// does not yield usable credentials. `rotatedAt` + `replacedById` form a token
+/// family: presenting an already-rotated token is replay, and revokes the whole
+/// family rather than just failing.
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  /// SHA-256 of the refresh token. Unique so a digest cannot be shared.
+  refreshTokenHash String    @unique @db.VarChar(64)
+  /// Groups every rotation of one login, so replay can revoke the lineage.
+  familyId         String    @db.Uuid
+  expiresAt        DateTime  @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  lastUsedAt       DateTime  @default(now()) @db.Timestamptz(6)
+  rotatedAt        DateTime? @db.Timestamptz(6)
+  revokedAt        DateTime? @db.Timestamptz(6)
+  /// Why the session ended: LOGOUT, ROTATED, REPLAY, PASSWORD_CHANGE, ADMIN.
+  revokedReason    String?   @db.VarChar(50)
+  replacedById     String?   @db.Uuid
+
+  /// Coarse client metadata for session review. No credentials.
+  ipAddress String? @db.VarChar(45)
+  userAgent String? @db.VarChar(500)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+/// A single-use password reset grant. Only the token digest is stored.
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique @db.VarChar(64)
+  expiresAt DateTime  @db.Timestamptz(6)
+  usedAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  requestedIp String? @db.VarChar(45)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+/// A single-use invitation into an organisation. Only the digest is stored.
+model Invitation {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  email          String    @db.VarChar(320)
+  roleId         String    @db.Uuid
+  tokenHash      String    @unique @db.VarChar(64)
+  expiresAt      DateTime  @db.Timestamptz(6)
+  acceptedAt     DateTime? @db.Timestamptz(6)
+  revokedAt      DateTime? @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+
+  createdByUserId  String? @db.Uuid
+  acceptedByUserId String? @db.Uuid
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdBy    User?        @relation("InvitationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  acceptedBy   User?        @relation("InvitationAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([expiresAt])
+  @@map("invitations")
+}
+
+// ---------------------------------------------------------------------------
+// Audit
+// ---------------------------------------------------------------------------
+
+/// Append-only record of security-relevant actions.
+///
+/// No update or delete path exists in application code. References are
+/// nullable + SetNull so removing a user or tenant cannot erase the history of
+/// what they did. `metadata` is redacted before write - it must never contain a
+/// password, token digest, cookie or authorization header.
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  /// Null for platform-level events that belong to no single tenant.
+  organizationId String?  @db.Uuid
+  campaignId     String?  @db.Uuid
+  /// Null when the actor is anonymous, e.g. a failed login.
+  actorUserId    String?  @db.Uuid
+  action         String   @db.VarChar(64)
+  entityType     String?  @db.VarChar(64)
+  entityId       String?  @db.VarChar(64)
+  /// Sanitised, non-sensitive context.
+  metadata       Json?
+  ipAddress      String?  @db.VarChar(45)
+  userAgent      String?  @db.VarChar(500)
+  correlationId  String?  @db.VarChar(128)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  actor        User?         @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 3 - Public candidate website + CMS
+//
+// PUBLISHING RULE
+// ContentStatus.PUBLISHED is the only status the public API returns. Every
+// other status is CMS-only and requires CONTENT_READ_UNPUBLISHED.
+//
+// TRANSLATIONS
+// Content rows carry a `locale` and are keyed (organizationId, slug, locale).
+// A Kannada translation is therefore a sibling ROW sharing the slug, not a
+// column on the English one - so each locale publishes independently and a
+// half-finished translation can never leak onto the live site.
+//
+// TENANCY
+// Every model below carries organizationId, indexes it, and is queried through
+// it. Slugs are unique PER TENANT, never globally.
+// ---------------------------------------------------------------------------
+
+/// Editorial lifecycle. Distinct from domain status and from verification.
+enum ContentStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+
+  @@map("content_status")
+}
+
+/// Domain lifecycle of a development project.
+enum ProjectStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+
+  @@map("project_status")
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+
+  @@map("event_status")
+}
+
+/// Whether staff have checked a claim. Separate from publishing on purpose.
+///
+/// Phase 9 added REJECTED. Without it a reviewer who found the evidence
+/// insufficient had to set the claim back to UNVERIFIED, which is
+/// indistinguishable from "nobody has looked yet" - so the next reviewer began
+/// from scratch and whoever submitted it was never told anything.
+enum VerificationStatus {
+  UNVERIFIED
+  IN_REVIEW
+  VERIFIED
+  REJECTED
+
+  @@map("verification_status")
+}
+
+/// Shared taxonomy across projects, achievements and news.
+enum ContentCategory {
+  INFRASTRUCTURE
+  EDUCATION
+  HEALTHCARE
+  WATER
+  AGRICULTURE
+  EMPLOYMENT
+  PUBLIC_SERVICES
+  ENVIRONMENT
+  OTHER
+
+  @@map("content_category")
+}
+
+enum ContentLocale {
+  en
+  kn
+
+  @@map("content_locale")
+}
+
+enum MediaKind {
+  IMAGE
+  DOCUMENT
+  VIDEO_LINK
+
+  @@map("media_kind")
+}
+
+enum VideoPlatform {
+  YOUTUBE
+  VIMEO
+  OTHER
+
+  @@map("video_platform")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 9 - verified work and evidence
+// ---------------------------------------------------------------------------
+
+/// Which kind of record a piece of evidence or a verification decision is about.
+///
+/// A discriminated subject rather than a third "work" table. Phase 3 already
+/// models a work (Project) and a claimed accomplishment (Achievement); a third
+/// entity spanning both would have duplicated whichever it resembled more and
+/// left the public site with two answers to "what work was done here?".
+enum WorkSubjectType {
+  PROJECT
+  ACHIEVEMENT
+
+  @@map("work_subject_type")
+}
+
+/// What kind of artefact a piece of evidence is.
+///
+/// A DESCRIPTION, NOT AN ASSERTION OF AUTHORITY. Recording GOVERNMENT_ORDER
+/// says a staff member believes the document is one; it does not make the
+/// public badge claim government endorsement, and no code path treats any type
+/// as self-authenticating. A forged work order and a real one are the same
+/// value here, which is exactly why a person decides verification.
+enum EvidenceType {
+  OFFICIAL_DOCUMENT
+  WORK_ORDER
+  COMPLETION_CERTIFICATE
+  GOVERNMENT_ORDER
+  OFFICIAL_LETTER
+  BEFORE_PHOTO
+  DURING_PHOTO
+  AFTER_PHOTO
+  PROJECT_PHOTO
+  PRESS_DOCUMENTATION
+  PUBLIC_RECORD
+  OTHER
+
+  @@map("evidence_type")
+}
+
+/// What happened to a claim's verification. Written once, never updated.
+enum VerificationEventAction {
+  SUBMITTED_FOR_REVIEW
+  REVIEWER_ASSIGNED
+  REVIEW_STARTED
+  VERIFIED
+  REJECTED
+  VERIFICATION_WITHDRAWN
+  EVIDENCE_CHANGED
+
+  @@map("verification_event_action")
+}
+
+/// How an image is used by a project.
+enum ProjectMediaRole {
+  GALLERY
+  BEFORE
+  AFTER
+
+  @@map("project_media_role")
+}
+
+// ---------------------------------------------------------------------------
+// Media library
+// ---------------------------------------------------------------------------
+
+/// An uploaded file or an external video reference.
+///
+/// Bytes live behind a storage abstraction (storageKey); this row is metadata
+/// only. checksumSha256 is recorded so a duplicate upload is detectable and a
+/// stored object can be integrity-checked.
+model MediaAsset {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  kind           MediaKind
+  /// Opaque key for the storage adapter. Never a client-supplied path.
+  storageKey     String    @db.VarChar(512)
+  /// Original client filename, kept for display only - never used as a path.
+  originalName   String    @db.VarChar(255)
+  mimeType       String    @db.VarChar(127)
+  sizeBytes      Int
+  checksumSha256 String?   @db.VarChar(64)
+  width          Int?
+  height         Int?
+  altText        String?   @db.VarChar(300)
+  caption        String?   @db.VarChar(500)
+
+  uploadedByUserId String?  @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedBy   User?        @relation("MediaUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  candidateProfileImages CandidateProfile[] @relation("CandidateProfileImage")
+  candidateCoverImages   CandidateProfile[] @relation("CandidateCoverImage")
+  priorityImages         Priority[]
+  projectCovers          Project[]          @relation("ProjectCover")
+  projectMedia           ProjectMedia[]
+  achievementCovers      Achievement[]      @relation("AchievementCover")
+  achievementMedia       AchievementMedia[]
+  evidenceDocuments      WorkEvidence[]
+  newsCovers             NewsArticle[]      @relation("NewsCover")
+  eventCovers            Event[]            @relation("EventCover")
+  albumCovers            GalleryAlbum[]     @relation("AlbumCover")
+  albumItems             GalleryItem[]
+  videoThumbnails        VideoEntry[]       @relation("VideoThumbnail")
+
+  @@index([organizationId, kind])
+  @@index([organizationId, createdAt])
+  @@map("media_assets")
+}
+
+// ---------------------------------------------------------------------------
+// Candidate profile, vision, priorities
+// ---------------------------------------------------------------------------
+
+/// The public profile of the candidate. One row per tenant per locale.
+model CandidateProfile {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+
+  fullName          String            @db.VarChar(200)
+  displayName       String?           @db.VarChar(200)
+  designation       String?           @db.VarChar(200)
+  /// Plain text. Rendered as text, never as HTML.
+  shortBio          String?           @db.VarChar(600)
+  /// Sanitised HTML. Written only through the sanitiser.
+  fullBioHtml       String?
+  /// Sanitised HTML.
+  experienceHtml    String?
+  /// Sanitised HTML.
+  publicServiceHtml String?
+  focusAreas        ContentCategory[]
+
+  profileImageId String? @db.Uuid
+  coverImageId   String? @db.Uuid
+
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?     @db.Timestamptz(6)
+
+  metaTitle       String? @db.VarChar(200)
+  metaDescription String? @db.VarChar(400)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  profileImage MediaAsset?  @relation("CandidateProfileImage", fields: [profileImageId], references: [id], onDelete: SetNull)
+  coverImage   MediaAsset?  @relation("CandidateCoverImage", fields: [coverImageId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, locale])
+  @@index([organizationId, status])
+  @@map("candidate_profiles")
+}
+
+/// The vision statement. One row per tenant per locale.
+model Vision {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+
+  headline      String  @db.VarChar(300)
+  /// Sanitised HTML.
+  statementHtml String?
+  summary       String? @db.VarChar(600)
+
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?     @db.Timestamptz(6)
+
+  metaTitle       String? @db.VarChar(200)
+  metaDescription String? @db.VarChar(400)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, locale])
+  @@index([organizationId, status])
+  @@map("visions")
+}
+
+/// A priority area shown on the vision page and the homepage.
+model Priority {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+  slug           String        @db.VarChar(120)
+
+  title       String          @db.VarChar(200)
+  description String?         @db.VarChar(1000)
+  /// Icon key resolved by the frontend to a vetted icon. Never raw SVG.
+  iconKey     String?         @db.VarChar(60)
+  category    ContentCategory @default(OTHER)
+  imageId     String?         @db.Uuid
+
+  displayOrder Int           @default(0)
+  status       ContentStatus @default(DRAFT)
+  publishedAt  DateTime?     @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  image        MediaAsset?  @relation(fields: [imageId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug, locale])
+  @@index([organizationId, status, displayOrder])
+  @@map("priorities")
+}
+
+// ---------------------------------------------------------------------------
+// Projects
+// ---------------------------------------------------------------------------
+
+model Project {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+  slug           String        @db.VarChar(160)
+
+  title            String          @db.VarChar(250)
+  shortDescription String?         @db.VarChar(600)
+  /// Sanitised HTML.
+  descriptionHtml  String?
+  category         ContentCategory @default(OTHER)
+  area             String?         @db.VarChar(160)
+  locationName     String?         @db.VarChar(250)
+  latitude         Decimal?        @db.Decimal(9, 6)
+  longitude        Decimal?        @db.Decimal(9, 6)
+
+  startDate      DateTime? @db.Date
+  completionDate DateTime? @db.Date
+
+  projectStatus ProjectStatus @default(PLANNED)
+
+  /// Phase 9 brought verification to projects, which had none.
+  ///
+  /// A completed road and a CLAIM that a road was completed are different
+  /// things, and before this a project could say COMPLETED on the public site
+  /// with nothing behind it. `projectStatus` is what the work is doing;
+  /// `verification` is whether anybody checked. They are never derived from
+  /// each other - COMPLETED does not imply VERIFIED, and that is the point.
+  verification     VerificationStatus @default(UNVERIFIED)
+  verifiedByUserId String?            @db.Uuid
+  verifiedAt       DateTime?          @db.Timestamptz(6)
+
+  submittedForReviewAt DateTime? @db.Timestamptz(6)
+  submittedByUserId    String?   @db.Uuid
+  assignedReviewerId   String?   @db.Uuid
+  /// INTERNAL. Never in a public selection.
+  rejectionReason      String?   @db.VarChar(2000)
+
+  /// Who did the work. Displayed only when filled in; never inferred.
+  department String? @db.VarChar(200)
+  agency     String? @db.VarChar(200)
+
+  /// Optional metrics. Never invented - absent means "not stated".
+  costAmount       Decimal? @db.Decimal(14, 2)
+  costCurrency     String?  @db.VarChar(3)
+  beneficiaryCount Int?
+
+  coverImageId String? @db.Uuid
+
+  featured     Boolean       @default(false)
+  displayOrder Int           @default(0)
+  status       ContentStatus @default(DRAFT)
+  publishedAt  DateTime?     @db.Timestamptz(6)
+
+  metaTitle       String? @db.VarChar(200)
+  metaDescription String? @db.VarChar(400)
+
+  createdByUserId String?  @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coverImage       MediaAsset?     @relation("ProjectCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  createdBy        User?           @relation("ProjectAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  verifiedBy       User?           @relation("ProjectVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+  submittedBy      User?           @relation("ProjectSubmitter", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  assignedReviewer User?           @relation("ProjectReviewer", fields: [assignedReviewerId], references: [id], onDelete: SetNull)
+  media            ProjectMedia[]
+  updates          ProjectUpdate[]
+  evidence         WorkEvidence[]
+
+  @@unique([organizationId, slug, locale])
+  @@index([organizationId, status, publishedAt])
+  @@index([organizationId, category, status])
+  @@index([organizationId, featured, status])
+  /// The verification queue and the transparency counters read exactly these.
+  @@index([organizationId, verification, submittedForReviewAt])
+  @@index([organizationId, status, projectStatus])
+  @@map("projects")
+}
+
+/// Join between a project and the media library, carrying the image's role.
+model ProjectMedia {
+  id        String           @id @default(uuid()) @db.Uuid
+  projectId String           @db.Uuid
+  mediaId   String           @db.Uuid
+  role      ProjectMediaRole @default(GALLERY)
+  caption   String?          @db.VarChar(400)
+  sortOrder Int              @default(0)
+
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  media   MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, mediaId, role])
+  @@index([projectId, role, sortOrder])
+  @@map("project_media")
+}
+
+/// A dated progress note on a project.
+model ProjectUpdate {
+  id         String   @id @default(uuid()) @db.Uuid
+  projectId  String   @db.Uuid
+  title      String   @db.VarChar(250)
+  /// Sanitised HTML.
+  bodyHtml   String?
+  occurredOn DateTime @db.Date
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, occurredOn])
+  @@map("project_updates")
+}
+
+// ---------------------------------------------------------------------------
+// Achievements
+// ---------------------------------------------------------------------------
+
+model Achievement {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+  slug           String        @db.VarChar(160)
+
+  title           String          @db.VarChar(250)
+  summary         String?         @db.VarChar(600)
+  /// Sanitised HTML.
+  descriptionHtml String?
+  category        ContentCategory @default(OTHER)
+  area            String?         @db.VarChar(160)
+  achievedOn      DateTime?       @db.Date
+
+  coverImageId String? @db.Uuid
+
+  /// Verification is independent of publishing and needs ACHIEVEMENT_VERIFY.
+  verification     VerificationStatus @default(UNVERIFIED)
+  verifiedByUserId String?            @db.Uuid
+  verifiedAt       DateTime?          @db.Timestamptz(6)
+
+  /// Phase 9 review workflow. `rejectionReason` is INTERNAL and is never in a
+  /// public selection: it explains to staff why a claim did not hold up, which
+  /// is working material and occasionally names a source.
+  submittedForReviewAt DateTime? @db.Timestamptz(6)
+  submittedByUserId    String?   @db.Uuid
+  assignedReviewerId   String?   @db.Uuid
+  rejectionReason      String?   @db.VarChar(2000)
+
+  /// Who did the work. Displayed only when filled in; never inferred.
+  department String? @db.VarChar(200)
+  agency     String? @db.VarChar(200)
+
+  featured     Boolean       @default(false)
+  displayOrder Int           @default(0)
+  status       ContentStatus @default(DRAFT)
+  publishedAt  DateTime?     @db.Timestamptz(6)
+
+  metaTitle       String? @db.VarChar(200)
+  metaDescription String? @db.VarChar(400)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coverImage       MediaAsset?        @relation("AchievementCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  verifiedBy       User?              @relation("AchievementVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+  submittedBy      User?              @relation("AchievementSubmitter", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  assignedReviewer User?              @relation("AchievementReviewer", fields: [assignedReviewerId], references: [id], onDelete: SetNull)
+  media            AchievementMedia[]
+  evidence         WorkEvidence[]
+
+  @@unique([organizationId, slug, locale])
+  @@index([organizationId, status, publishedAt])
+  @@index([organizationId, category, status])
+  @@index([organizationId, featured, status])
+  /// The verification queue reads exactly this.
+  @@index([organizationId, verification, submittedForReviewAt])
+  @@map("achievements")
+}
+
+model AchievementMedia {
+  id            String  @id @default(uuid()) @db.Uuid
+  achievementId String  @db.Uuid
+  mediaId       String  @db.Uuid
+  caption       String? @db.VarChar(400)
+  sortOrder     Int     @default(0)
+
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  media       MediaAsset  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([achievementId, mediaId])
+  @@index([achievementId, sortOrder])
+  @@map("achievement_media")
+}
+
+/// Supporting evidence for a claim.
+///
+/// TABLE NAME LAG: the table is still `achievement_evidence` because Phase 9
+/// was required to be additive, and renaming a table is not. The Prisma model
+/// was renamed because evidence now attaches to a project as well, and calling
+/// it AchievementEvidence in code would mislead every future reader about what
+/// it holds. The mismatch is deliberate and documented rather than hidden.
+///
+/// EXACTLY ONE OF achievementId / projectId IS SET. Enforced by a CHECK
+/// constraint in the migration, not only in the service, because a service is
+/// one refactor away from a second write path and a constraint is not.
+///
+/// isPublic gates publication of an individual item, and internalNote is NEVER
+/// selected by the public API - staff need somewhere to record how a claim was
+/// checked without that reasoning becoming a public statement.
+model WorkEvidence {
+  id            String  @id @default(uuid()) @db.Uuid
+  achievementId String? @db.Uuid
+  projectId     String? @db.Uuid
+
+  /// Denormalised from the parent so evidence can be tenant-filtered without a
+  /// join. Every query in the module filters on it; the join would otherwise be
+  /// the only thing standing between a bug and cross-tenant evidence.
+  organizationId String @db.Uuid
+
+  title        String       @db.VarChar(250)
+  description  String?      @db.VarChar(1000)
+  evidenceType EvidenceType @default(OTHER)
+
+  /// Public provenance, for example a municipal order reference.
+  sourceNote   String? @db.VarChar(500)
+  /// Staff-only. Excluded from every public selection.
+  internalNote String? @db.VarChar(2000)
+  documentId   String? @db.Uuid
+
+  /// Document metadata. All optional: a photograph has no reference number,
+  /// and demanding one would push staff to invent something.
+  referenceNumber  String?   @db.VarChar(120)
+  issuingAuthority String?   @db.VarChar(250)
+  issuedOn         DateTime? @db.Date
+  /// Caption, date and place for a photograph.
+  capturedOn       DateTime? @db.Date
+  capturedLocation String?   @db.VarChar(250)
+
+  isPublic  Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  uploadedByUserId String?  @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  achievement  Achievement? @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  project      Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  document     MediaAsset?  @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  uploadedBy   User?        @relation("EvidenceUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([achievementId, sortOrder])
+  @@index([projectId, sortOrder])
+  @@index([organizationId, isPublic])
+  @@index([documentId])
+  @@map("achievement_evidence")
+}
+
+/// One entry in a claim's verification history. Append-only.
+///
+/// WHY A TABLE RATHER THAN OVERWRITING THE STATUS. The status answers "what is
+/// it now"; this answers "how did it get there", which is the question somebody
+/// actually asks when a claim carries a badge. Submitted, rejected, evidence
+/// revised, submitted again, verified is a story the status cannot tell, and
+/// silently overwriting a rejection erases the one record showing that the
+/// first attempt did not hold up.
+///
+/// `reason` is INTERNAL. It is never selected by any public query, and it is
+/// never copied into audit metadata - the audit log is readable by everyone
+/// with AUDIT_READ, which is a wider grant than EVIDENCE_READ.
+model VerificationEvent {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+
+  subjectType WorkSubjectType
+  subjectId   String          @db.Uuid
+
+  action     VerificationEventAction
+  fromStatus VerificationStatus?
+  toStatus   VerificationStatus?
+
+  /// Internal. A rejection must carry one; other actions may.
+  reason String? @db.VarChar(2000)
+
+  actorUserId String?  @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor        User?        @relation("VerificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, subjectType, subjectId, createdAt])
+  @@index([organizationId, createdAt])
+  @@map("verification_events")
+}
+
+// ---------------------------------------------------------------------------
+// News
+// ---------------------------------------------------------------------------
+
+model NewsArticle {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+  slug           String        @db.VarChar(160)
+
+  title       String          @db.VarChar(250)
+  summary     String?         @db.VarChar(600)
+  /// Sanitised HTML.
+  contentHtml String?
+  category    ContentCategory @default(OTHER)
+  tags        String[]
+
+  coverImageId String? @db.Uuid
+  /// Display byline. Not a user reference: a press release may have no author.
+  authorName   String? @db.VarChar(160)
+
+  featured    Boolean       @default(false)
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?     @db.Timestamptz(6)
+
+  metaTitle       String? @db.VarChar(200)
+  metaDescription String? @db.VarChar(400)
+
+  createdByUserId String?  @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coverImage   MediaAsset?  @relation("NewsCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  createdBy    User?        @relation("NewsAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug, locale])
+  @@index([organizationId, status, publishedAt])
+  @@index([organizationId, category, status])
+  @@map("news_articles")
+}
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+model Event {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+  slug           String        @db.VarChar(160)
+
+  title           String  @db.VarChar(250)
+  summary         String? @db.VarChar(600)
+  /// Sanitised HTML.
+  descriptionHtml String?
+
+  startsAt     DateTime  @db.Timestamptz(6)
+  endsAt       DateTime? @db.Timestamptz(6)
+  locationName String?   @db.VarChar(250)
+  address      String?   @db.VarChar(500)
+  organizer    String?   @db.VarChar(200)
+
+  coverImageId String? @db.Uuid
+
+  eventStatus EventStatus   @default(UPCOMING)
+  featured    Boolean       @default(false)
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?     @db.Timestamptz(6)
+
+  metaTitle       String? @db.VarChar(200)
+  metaDescription String? @db.VarChar(400)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coverImage   MediaAsset?  @relation("EventCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug, locale])
+  @@index([organizationId, status, startsAt])
+  @@index([organizationId, eventStatus, status])
+  @@map("events")
+}
+
+// ---------------------------------------------------------------------------
+// Galleries
+// ---------------------------------------------------------------------------
+
+model GalleryAlbum {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+  slug           String        @db.VarChar(160)
+
+  title        String          @db.VarChar(250)
+  description  String?         @db.VarChar(1000)
+  category     ContentCategory @default(OTHER)
+  coverImageId String?         @db.Uuid
+
+  displayOrder Int           @default(0)
+  status       ContentStatus @default(DRAFT)
+  publishedAt  DateTime?     @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coverImage   MediaAsset?   @relation("AlbumCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  items        GalleryItem[]
+
+  @@unique([organizationId, slug, locale])
+  @@index([organizationId, status, displayOrder])
+  @@map("gallery_albums")
+}
+
+model GalleryItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  albumId   String  @db.Uuid
+  mediaId   String  @db.Uuid
+  caption   String? @db.VarChar(400)
+  sortOrder Int     @default(0)
+
+  album GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  media MediaAsset   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([albumId, mediaId])
+  @@index([albumId, sortOrder])
+  @@map("gallery_items")
+}
+
+/// An externally hosted video. No streaming infrastructure is provided.
+model VideoEntry {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+  slug           String        @db.VarChar(160)
+
+  title       String          @db.VarChar(250)
+  description String?         @db.VarChar(1000)
+  /// Validated against an allow-list of hosts before it is stored.
+  videoUrl    String          @db.VarChar(600)
+  platform    VideoPlatform   @default(YOUTUBE)
+  category    ContentCategory @default(OTHER)
+  thumbnailId String?         @db.Uuid
+
+  featured     Boolean       @default(false)
+  displayOrder Int           @default(0)
+  status       ContentStatus @default(DRAFT)
+  publishedAt  DateTime?     @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  thumbnail    MediaAsset?  @relation("VideoThumbnail", fields: [thumbnailId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug, locale])
+  @@index([organizationId, status, displayOrder])
+  @@map("video_entries")
+}
+
+// ---------------------------------------------------------------------------
+// Contact
+// ---------------------------------------------------------------------------
+
+model ContactInformation {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  locale         ContentLocale @default(en)
+
+  officeName     String?  @db.VarChar(200)
+  addressLine1   String?  @db.VarChar(250)
+  addressLine2   String?  @db.VarChar(250)
+  city           String?  @db.VarChar(120)
+  state          String?  @db.VarChar(120)
+  postalCode     String?  @db.VarChar(20)
+  phone          String?  @db.VarChar(40)
+  alternatePhone String?  @db.VarChar(40)
+  email          String?  @db.VarChar(320)
+  officeHours    String?  @db.VarChar(300)
+  mapEmbedUrl    String?  @db.VarChar(600)
+  latitude       Decimal? @db.Decimal(9, 6)
+  longitude      Decimal? @db.Decimal(9, 6)
+
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?     @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, locale])
+  @@map("contact_information")
+}
+
+model SocialLink {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+
+  /// Platform key resolved to a vetted icon by the frontend.
+  platform     String  @db.VarChar(40)
+  label        String? @db.VarChar(120)
+  /// Validated as an absolute https URL before storage.
+  url          String  @db.VarChar(600)
+  displayOrder Int     @default(0)
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, platform])
+  @@index([organizationId, isActive, displayOrder])
+  @@map("social_links")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 - QR campaign platform
+//
+// Three tables and one rule: they describe outreach CHANNELS, not people.
+// There is no column here that can hold an identity, a political opinion or an
+// affiliation, and none may be added.
+// ---------------------------------------------------------------------------
+
+/// Where a QR campaign's codes are physically distributed.
+enum QrCampaignType {
+  POSTER
+  PAMPHLET
+  BANNER
+  EVENT
+  SOCIAL_MEDIA
+  OFFICE
+  DOOR_TO_DOOR
+  OTHER
+}
+
+/// Campaign lifecycle. Independent of the status of its individual codes.
+enum QrCampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+/// QR code lifecycle. Only ACTIVE redirects; the other two show a notice.
+enum QrCodeStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+/// Coarse device class derived from the User-Agent, which is then discarded.
+enum ScanDeviceCategory {
+  MOBILE
+  TABLET
+  DESKTOP
+  BOT
+  UNKNOWN
+}
+
+/// Coarse operating-system family. Never a version, never a build.
+enum ScanOsCategory {
+  IOS
+  ANDROID
+  WINDOWS
+  MACOS
+  LINUX
+  OTHER
+  UNKNOWN
+}
+
+/// Bucketed referrer. The full referrer URL is never stored.
+enum ScanReferrerCategory {
+  DIRECT
+  SEARCH
+  SOCIAL
+  MESSAGING
+  OTHER
+}
+
+/// A measurable outreach channel: one printing run, one event, one drive.
+model QrCampaign {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+
+  /// Tenant-scoped URL-safe identifier, for example "ward-12-development".
+  slug        String  @db.VarChar(80)
+  name        String  @db.VarChar(200)
+  description String? @db.VarChar(1000)
+
+  campaignType QrCampaignType   @default(OTHER)
+  status       QrCampaignStatus @default(DRAFT)
+
+  /// Planned run of the campaign. Descriptive only: these dates do not gate
+  /// redirects, because a poster outlives its campaign window and a scan on
+  /// day 91 should still reach the website rather than a dead end.
+  startDate DateTime? @db.Timestamptz(6)
+  endDate   DateTime? @db.Timestamptz(6)
+
+  createdById String? @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?         @relation("QrCampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  qrCodes      QrCode[]
+  scanEvents   QrScanEvent[]
+  /// Phase 5: submissions attributed to this campaign. SetNull on the Issue
+  /// side, so retiring a campaign never deletes a citizen's report.
+  issues       Issue[]
+
+  /// Slugs are unique per tenant, matching the Phase 2/3 convention.
+  @@unique([organizationId, slug])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@map("qr_campaigns")
+}
+
+/// One printed code. The unit a campaign team actually compares.
+model QrCode {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  campaignId     String @db.Uuid
+
+  /// The public identifier printed under the QR image, e.g. "RK-QR-7F3K9XQ2".
+  ///
+  /// GLOBALLY unique, not per tenant: it appears in a URL that carries no
+  /// tenant of its own, so the code alone must resolve the organisation.
+  /// Random rather than sequential so the space cannot be enumerated.
+  code String @unique @db.VarChar(40)
+
+  name        String  @db.VarChar(200)
+  description String? @db.VarChar(1000)
+
+  /// Validated INTERNAL path on the public site, e.g. "/work/road-project".
+  /// Never an absolute URL: storing one would turn this row into an open
+  /// redirect that an editor could point anywhere.
+  destinationPath String @db.VarChar(500)
+
+  status QrCodeStatus @default(ACTIVE)
+
+  /// Attribution metadata. Free text describing the physical placement, used
+  /// only to group scans - none of it describes a person.
+  source    String? @db.VarChar(120)
+  placement String? @db.VarChar(200)
+  area      String? @db.VarChar(120)
+  ward      String? @db.VarChar(120)
+  locality  String? @db.VarChar(120)
+
+  /// Where the poster is, not where a scanner is.
+  latitude  Decimal? @db.Decimal(8, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+
+  /// Appended to the destination on redirect, so downstream analytics can see
+  /// the channel too. Defaulted from the campaign when not supplied.
+  utmSource   String? @db.VarChar(120)
+  utmMedium   String? @db.VarChar(120)
+  utmCampaign String? @db.VarChar(120)
+  utmContent  String? @db.VarChar(120)
+
+  createdById String? @db.Uuid
+
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+  activatedAt   DateTime? @db.Timestamptz(6)
+  deactivatedAt DateTime? @db.Timestamptz(6)
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign     QrCampaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdBy    User?         @relation("QrCodeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  scanEvents   QrScanEvent[]
+  /// Phase 5: submissions attributed to this specific printed code.
+  issues       Issue[]
+
+  @@index([organizationId, campaignId])
+  @@index([organizationId, status])
+  @@index([campaignId, status])
+  @@map("qr_codes")
+}
+
+/// One scan. Aggregate analytics input, never a profile.
+///
+/// WHAT IS DELIBERATELY ABSENT: no IP address, no raw User-Agent, no referrer
+/// URL, no cookie, no account link, no location of the person scanning, and no
+/// identifier that survives the day. Everything retained is either a coarse
+/// category or a foreign key to a channel.
+model QrScanEvent {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  campaignId     String @db.Uuid
+  qrCodeId       String @db.Uuid
+
+  scannedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  /// Pre-computed UTC buckets. Stored rather than derived at query time so
+  /// day-of-week and time-of-day rollups are an indexed GROUP BY instead of a
+  /// per-row timezone computation over the whole table.
+  scanDate      DateTime @db.Date
+  scanHour      Int      @db.SmallInt
+  scanDayOfWeek Int      @db.SmallInt
+
+  deviceCategory   ScanDeviceCategory   @default(UNKNOWN)
+  osCategory       ScanOsCategory       @default(UNKNOWN)
+  referrerCategory ScanReferrerCategory @default(DIRECT)
+
+  /// True for link-preview crawlers, messaging-app scanners and obvious bots.
+  /// Kept as a column rather than silently dropped, so totals stay honest and
+  /// the UI can say "excluding automated traffic" and mean it.
+  isAutomated Boolean @default(false)
+
+  /// Where the citizen was sent, as resolved at scan time. Retained even if the
+  /// code is later repointed, so history reflects what actually happened.
+  landingPath String @db.VarChar(500)
+
+  utmSource   String? @db.VarChar(120)
+  utmMedium   String? @db.VarChar(120)
+  utmCampaign String? @db.VarChar(120)
+  utmContent  String? @db.VarChar(120)
+
+  /// Short-lived, salted, non-reversible visit hash used ONLY to estimate
+  /// repeat scans within a single UTC day.
+  ///
+  /// The salt rotates daily and is derived from a server secret, so the same
+  /// device produces a different value tomorrow and the value cannot be
+  /// reversed to an IP address. It is never exposed through the API, never
+  /// exported, and cannot be joined to anything outside this table.
+  visitHash String? @db.VarChar(64)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign     QrCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  qrCode       QrCode       @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  /// Analytics always filters by tenant and a time range first, then narrows to
+  /// a campaign or a single code. These three cover every query the analytics
+  /// service issues; nothing is indexed speculatively.
+  @@index([organizationId, scannedAt])
+  @@index([campaignId, scannedAt])
+  @@index([qrCodeId, scannedAt])
+  @@map("qr_scan_events")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5 - citizen feedback and issue reporting
+//
+// These tables hold data that members of the public volunteered. Two rules
+// govern every column below:
+//
+//  1. NOTHING HERE DESCRIBES A PERSON'S POLITICS. There is no score, no
+//     affiliation, no inference drawn from what somebody reported. A citizen
+//     writing about a blocked drain has told us about a drain.
+//  2. CONTACT DETAILS ARE OPTIONAL AND SEPARATELY PERMISSIONED. They exist so
+//     the campaign can reply, and for no other purpose.
+// ---------------------------------------------------------------------------
+
+/// What the citizen came to say.
+enum SubmissionType {
+  FEEDBACK
+  ISSUE
+  SUGGESTION
+  COMPLAINT
+}
+
+/// Where the reported problem has got to. About the PROBLEM, not the report.
+enum IssueStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REJECTED
+}
+
+/// Administrative triage, always set by a person. Never inferred.
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+/// Whether a human has vetted the SUBMISSION. Distinct from its status.
+enum ModerationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  SPAM
+}
+
+/// How the citizen arrived. Channel attribution only, never a trait of theirs.
+enum IssueSource {
+  DIRECT_WEBSITE
+  QR
+  CAMPAIGN_PAGE
+  OTHER
+}
+
+/// What happened to a submission, for the staff-facing timeline.
+enum IssueHistoryAction {
+  SUBMITTED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  CATEGORY_CHANGED
+  LOCATION_UPDATED
+  MODERATED
+  NOTE_ADDED
+}
+
+/// Submission categories, per tenant.
+///
+/// A table rather than an enum so a campaign can deactivate the categories that
+/// do not apply to it - a city ward has no agriculture reports - and so a later
+/// phase can let administrators add their own without a migration.
+model IssueCategory {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+
+  /// Stable machine key, e.g. "ROADS". Used by seeds and analytics.
+  key     String  @db.VarChar(60)
+  label   String  @db.VarChar(120)
+  /// Kannada label. Null falls back to `label`, matching the Phase 3 rule that
+  /// a missing translation shows the original rather than a placeholder.
+  labelKn String? @db.VarChar(160)
+
+  /// Deactivated categories stay selectable in FILTERS but disappear from the
+  /// public form, so historical submissions keep a category that still renders.
+  isActive     Boolean @default(true)
+  displayOrder Int     @default(0)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issues         Issue[]
+  /// Phase 6: insights that PROPOSED this category. A suggestion is not an
+  /// assignment, so these are deliberately not counted as `issues`.
+  aiSuggestedFor IssueAiInsight[] @relation("AiSuggestedCategory")
+
+  @@unique([organizationId, key])
+  @@index([organizationId, isActive, displayOrder])
+  @@map("issue_categories")
+}
+
+/// One thing a citizen told the campaign.
+model Issue {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+
+  /// The human-friendly handle the citizen is given, e.g. "ISS-2026-7F3K9XQ2".
+  ///
+  /// GLOBALLY unique, and random rather than sequential: a counter would let
+  /// anyone walk the range, learn a campaign's submission volume, and - if
+  /// tracking ever widened - read other people's reports.
+  referenceNumber String @unique @db.VarChar(32)
+
+  type        SubmissionType
+  title       String         @db.VarChar(200)
+  description String         @db.Text
+
+  categoryId String? @db.Uuid
+
+  status           IssueStatus      @default(SUBMITTED)
+  priority         IssuePriority    @default(MEDIUM)
+  moderationStatus ModerationStatus @default(PENDING_REVIEW)
+
+  /// Channel attribution, carried from Phase 4 when the citizen arrived via a
+  /// printed code. Both SetNull: retiring a QR campaign must not delete the
+  /// reports that came through it.
+  source     IssueSource @default(DIRECT_WEBSITE)
+  campaignId String?     @db.Uuid
+  qrCodeId   String?     @db.Uuid
+
+  /// Where the PROBLEM is. Volunteered, and every field optional.
+  ward               String?  @db.VarChar(160)
+  locality           String?  @db.VarChar(160)
+  area               String?  @db.VarChar(160)
+  addressDescription String?  @db.VarChar(500)
+  latitude           Decimal? @db.Decimal(8, 6)
+  longitude          Decimal? @db.Decimal(9, 6)
+
+  /// Contact details, if the citizen chose to give them.
+  ///
+  /// All nullable, and all gated behind ISSUE_CONTACT_READ. A submission with
+  /// `isAnonymous` true has none of these, and the API refuses to store them
+  /// for such a submission rather than trusting the client to have cleared the
+  /// fields.
+  isAnonymous  Boolean   @default(true)
+  contactName  String?   @db.VarChar(160)
+  contactPhone String?   @db.VarChar(40)
+  contactEmail String?   @db.VarChar(254)
+  /// Recorded only when contact details were actually given, together with the
+  /// instant, so the basis for holding them is evidenced rather than assumed.
+  consentGiven Boolean   @default(false)
+  consentAt    DateTime? @db.Timestamptz(6)
+
+  /// Phase 8 tracking secret. ONLY THE SHA-256 DIGEST IS STORED, following the
+  /// Phase 2 password-reset and invitation pattern - a leaked database row must
+  /// not yield a working token.
+  ///
+  /// The plaintext is generated at submission, returned exactly once in the
+  /// receipt, and never persisted or re-derivable. A citizen who loses it keeps
+  /// read-only status lookup by reference; what the token gates is everything
+  /// that WRITES or touches contact data - following the issue, setting a
+  /// notification address, submitting follow-up. See the Phase 8 docs for why
+  /// the reference alone remains sufficient for reading status.
+  trackingTokenHash     String?   @unique @db.VarChar(64)
+  trackingTokenIssuedAt DateTime? @db.Timestamptz(6)
+
+  assignedToUserId String? @db.Uuid
+
+  submittedAt DateTime  @default(now()) @db.Timestamptz(6)
+  resolvedAt  DateTime? @db.Timestamptz(6)
+  closedAt    DateTime? @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category     IssueCategory?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  campaign     QrCampaign?         @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  qrCode       QrCode?             @relation(fields: [qrCodeId], references: [id], onDelete: SetNull)
+  assignedTo   User?               @relation("IssueAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  attachments  IssueAttachment[]
+  history      IssueHistory[]
+  notes        IssueInternalNote[]
+
+  // Phase 6 derived data. Cascade, unlike everything above: an AI summary of a
+  // deleted submission describes text that no longer exists, and keeping it
+  // would leave a paraphrase of a citizen's report behind after the report
+  // itself was removed.
+  aiInsight        IssueAiInsight?
+  aiTopics         IssueAiTopic[]
+  themeMemberships IssueThemeMembership[]
+
+  // Phase 8 communication. Cascade: a deleted submission must not leave behind
+  // messages about it, a consent record for an address, or a citizen's reply.
+  publicUpdates IssuePublicUpdate[]
+  subscriptions IssueSubscription[]
+  notifications IssueNotification[]
+  followUps     IssueFollowUp[]
+
+  /// Indexes follow the admin console's actual queries: the inbox is always
+  /// scoped to a tenant and then sorted or filtered by one of these. Nothing
+  /// speculative - ward is indexed because the ward rollup groups by it.
+  @@index([organizationId, status])
+  @@index([organizationId, submittedAt])
+  @@index([organizationId, priority])
+  @@index([organizationId, categoryId])
+  @@index([organizationId, assignedToUserId])
+  @@index([organizationId, moderationStatus])
+  @@index([organizationId, ward])
+  @@index([campaignId])
+  /// Phase 7 decision analytics. Two indexes, both earned by a query shape the
+  /// dashboard issues on every load, rather than one per column:
+  ///
+  ///  - `resolvedAt` backs every resolution metric - "resolved in this period",
+  ///    average and median time to resolution, and the timing distribution.
+  ///    Without it each of those is a scan of the tenant's whole issue table.
+  ///  - `(status, submittedAt)` backs the filtered aggregates. Almost every
+  ///    dashboard query is "this tenant, open or closed, inside this window",
+  ///    and the existing single-column `status` and `submittedAt` indexes make
+  ///    the planner choose one and filter the rest by hand.
+  ///
+  /// Deliberately NOT added: an index per filterable column. `categoryId`,
+  /// `priority` and `ward` already have tenant-scoped indexes from Phase 5, and
+  /// the aggregates over them are bounded by the date window this pair narrows.
+  @@index([organizationId, resolvedAt])
+  @@index([organizationId, status, submittedAt])
+  @@map("issues")
+}
+
+/// A file a citizen attached: usually a photograph of the problem.
+///
+/// NEVER PUBLICLY SERVED. Unlike Phase 3 media - which backs `<img>` on the
+/// public site and is therefore world-readable - these are photographs of
+/// somebody's street, sometimes of their home, and are reachable only through
+/// an authenticated route gated on ISSUE_ATTACHMENT_READ.
+model IssueAttachment {
+  id             String  @id @default(uuid()) @db.Uuid
+  organizationId String  @db.Uuid
+  /// Null while an upload is pending: the public form uploads first and submits
+  /// afterwards, so a row exists briefly before it belongs to anything.
+  issueId        String? @db.Uuid
+
+  /// Opaque key from the storage adapter. Never derived from the filename.
+  storageKey     String @db.VarChar(255)
+  /// Kept for display only. Shown escaped; never used to build a path.
+  originalName   String @db.VarChar(255)
+  mimeType       String @db.VarChar(120)
+  sizeBytes      Int
+  checksumSha256 String @db.VarChar(64)
+
+  /// Secret returned only to whoever uploaded the file, and required to attach
+  /// it to a submission. Without it, one anonymous visitor could claim another
+  /// visitor's pending upload by guessing an id.
+  claimToken String? @db.VarChar(64)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue        Issue?       @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, issueId])
+  /// Supports sweeping unclaimed uploads; see the retention note in the docs.
+  @@index([issueId, createdAt])
+  @@map("issue_attachments")
+}
+
+/// The timeline of what staff did with a submission.
+///
+/// Separate from the Phase 2 audit log on purpose. The audit log is a security
+/// record, append-only and read by administrators; this is an operational
+/// record shown on the issue page so whoever picks the case up next can see what
+/// has already been tried. Both are written, for different readers.
+model IssueHistory {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  issueId        String @db.Uuid
+
+  action IssueHistoryAction
+
+  previousStatus   IssueStatus?
+  newStatus        IssueStatus?
+  previousPriority IssuePriority?
+  newPriority      IssuePriority?
+
+  /// Short, non-sensitive context - a category name, an assignee's name. Never
+  /// citizen contact details, and never the body of an internal note.
+  detail String? @db.VarChar(500)
+
+  /// Null for the submission entry itself: a member of the public is not a user
+  /// and there is deliberately nothing to attribute it to.
+  performedByUserId String? @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue        Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  performedBy  User?        @relation("IssueHistoryActor", fields: [performedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([issueId, createdAt])
+  @@index([organizationId, createdAt])
+  @@map("issue_history")
+}
+
+/// A staff note about a submission. Never public, never shown to the citizen.
+model IssueInternalNote {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  issueId        String @db.Uuid
+
+  note String @db.Text
+
+  authorUserId String? @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue        Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author       User?        @relation("IssueNoteAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([issueId, createdAt])
+  @@map("issue_internal_notes")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6 - AI issue intelligence
+// ---------------------------------------------------------------------------
+
+/// How far an AI generation has got. See `packages/types/src/ai.ts` for why
+/// this is separate from review state: this tracks the MACHINE, not the human.
+enum AiProcessingStatus {
+  NOT_PROCESSED
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  REQUIRES_REVIEW
+
+  @@map("ai_processing_status")
+}
+
+/// What a human has decided about a generation.
+///
+/// STALE is set by the system when the underlying issue changes, never by a
+/// person. An approved summary that goes stale KEEPS its approval metadata,
+/// because somebody did approve it - of text that has since been edited.
+enum AiReviewStatus {
+  GENERATED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  STALE
+
+  @@map("ai_review_status")
+}
+
+/// The three operations the platform asks a model to perform. The complete set.
+enum AiOperation {
+  ISSUE_INSIGHT
+  THEME_DETECTION
+  EXECUTIVE_SUMMARY
+
+  @@map("ai_operation")
+}
+
+/// Why a generation failed. Categories, never provider strings - a raw provider
+/// error can carry request payloads, so it is logged server-side and reduced to
+/// one of these before it reaches a column an administrator can read.
+enum AiFailureKind {
+  PROVIDER_UNAVAILABLE
+  PROVIDER_ERROR
+  TIMEOUT
+  RATE_LIMITED
+  INVALID_OUTPUT
+  SAFETY_REJECTED
+  NOT_CONFIGURED
+  UNKNOWN
+
+  @@map("ai_failure_kind")
+}
+
+/// Everything one AI pass produced about one issue.
+///
+/// ONE ROW PER ISSUE, holding summary, category suggestion and processing
+/// state together, because they come from a single provider call and splitting
+/// them across three tables would let them disagree about which generation they
+/// belong to. Topics are the exception - they are a list, so they get their own
+/// table and a foreign key back to here.
+///
+/// THIS TABLE IS DERIVED DATA AND NEVER AUTHORITATIVE. It cannot overwrite the
+/// citizen's words: `Issue.title`, `Issue.description` and `Issue.categoryId`
+/// are untouched by every code path in this phase. An administrator accepting a
+/// category suggestion writes to `Issue.categoryId` through the ordinary Phase 5
+/// service, which audits and records history exactly as a manual edit does -
+/// the AI never becomes the actor.
+model IssueAiInsight {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  /// Unique: one current insight per issue. Regenerating REPLACES the row's
+  /// content and bumps `generation`, rather than accumulating rows - history
+  /// lives in the audit trail and the usage log, which is where an
+  /// investigation would look anyway.
+  issueId        String @unique @db.Uuid
+
+  processingStatus AiProcessingStatus @default(NOT_PROCESSED)
+  reviewStatus     AiReviewStatus     @default(GENERATED)
+
+  /// The administrative summary. Null until a generation succeeds.
+  summary String? @db.VarChar(700)
+
+  /// An administrator's replacement text, when they edited rather than
+  /// approved. Kept in a SEPARATE COLUMN so the model's original wording is
+  /// never destroyed - "what did the AI actually say?" stays answerable after
+  /// somebody has corrected it.
+  editedSummary String? @db.VarChar(700)
+
+  /// Category the model proposed, and how sure it claimed to be.
+  ///
+  /// SetNull rather than Cascade: deactivating a category must not delete the
+  /// insight, it should just stop proposing it.
+  suggestedCategoryId String?   @db.Uuid
+  /// Raw provider confidence. Stored for threshold tuning; the UI shows a band.
+  categoryConfidence  Float?
+  /// One short sentence on why. Model output, so treated as untrusted text.
+  categoryReason      String?   @db.VarChar(400)
+  /// Whether a human acted on the suggestion. Null = not yet decided.
+  categoryAccepted    Boolean?
+  categoryDecidedAt   DateTime? @db.Timestamptz(6)
+
+  /// Provenance. Both recorded on every successful generation so a later prompt
+  /// or model change is traceable rather than silently rewriting the past.
+  model         String? @db.VarChar(120)
+  promptVersion String? @db.VarChar(60)
+  /// Increments on each regeneration, so "this is the third attempt" is visible.
+  generation    Int     @default(0)
+
+  /// STALENESS DETECTION. The value of `Issue.updatedAt` at generation time.
+  /// If the issue has moved on since, the summary may describe text that no
+  /// longer exists, and the API marks the insight STALE rather than presenting
+  /// it as current. Comparing timestamps is cheaper and more honest than
+  /// hashing the body, and it cannot produce a false "unchanged".
+  sourceUpdatedAt DateTime? @db.Timestamptz(6)
+
+  /// Processing telemetry.
+  startedAt     DateTime?      @db.Timestamptz(6)
+  completedAt   DateTime?      @db.Timestamptz(6)
+  failureKind   AiFailureKind?
+  /// Safe, human-readable reason. Never a provider stack trace or payload.
+  failureReason String?        @db.VarChar(300)
+  retryCount    Int            @default(0)
+
+  /// Review metadata. Survives a later transition to STALE on purpose.
+  reviewedAt       DateTime? @db.Timestamptz(6)
+  reviewedByUserId String?   @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue             Issue          @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  suggestedCategory IssueCategory? @relation("AiSuggestedCategory", fields: [suggestedCategoryId], references: [id], onDelete: SetNull)
+  reviewedBy        User?          @relation("AiInsightReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  topics            IssueAiTopic[]
+
+  /// Indexes follow the AI console's actual queries: the dashboard counts by
+  /// processing state, the review queue filters by review state, and the
+  /// backlog picker looks for unprocessed issues in one tenant.
+  @@index([organizationId, processingStatus])
+  @@index([organizationId, reviewStatus])
+  @@index([organizationId, createdAt])
+  @@map("issue_ai_insights")
+}
+
+/// One subject-matter topic the model extracted from an issue.
+///
+/// SUBJECT MATTER ONLY: "road damage", "school access". Never a disposition,
+/// never an attribute of the person who wrote it. `normalized` exists so
+/// "Road Damage", "road damage" and "road-damage" aggregate into one bucket on
+/// the dashboard instead of three.
+model IssueAiTopic {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  issueId        String @db.Uuid
+  insightId      String @db.Uuid
+
+  /// As the model wrote it, for display.
+  topic      String @db.VarChar(80)
+  /// Lower-cased, punctuation-stripped. What grouping and similarity use.
+  normalized String @db.VarChar(80)
+  confidence Float?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue        Issue          @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  insight      IssueAiInsight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+
+  /// A regeneration replaces an issue's topics wholesale, so the same normalized
+  /// topic can appear only once per issue.
+  @@unique([issueId, normalized])
+  @@index([organizationId, normalized])
+  @@index([insightId])
+  @@map("issue_ai_topics")
+}
+
+/// A recurring subject-matter theme across many issues in a period.
+///
+/// AN AGGREGATE ANALYTICAL OBJECT. A theme says "road infrastructure came up
+/// repeatedly between these two dates". It says nothing about any individual,
+/// and - stated explicitly because this is the table most likely to be misread
+/// - nothing about how any ward or locality intends to vote. `issueCount` is
+/// computed by the database over the whole period, never by the model.
+model IssueTheme {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+
+  name             String  @db.VarChar(120)
+  description      String? @db.VarChar(600)
+  /// The model's narrative. Untrusted text, rendered escaped, never as HTML.
+  generatedSummary String? @db.Text
+
+  /// BACKEND-COMPUTED. The model is shown this number; it never supplies it.
+  issueCount Int @default(0)
+
+  periodStart DateTime @db.Timestamptz(6)
+  periodEnd   DateTime @db.Timestamptz(6)
+
+  reviewStatus AiReviewStatus @default(GENERATED)
+
+  model         String? @db.VarChar(120)
+  promptVersion String? @db.VarChar(60)
+
+  reviewedAt       DateTime? @db.Timestamptz(6)
+  reviewedByUserId String?   @db.Uuid
+
+  generatedAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reviewedBy   User?                  @relation("AiThemeReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  memberships  IssueThemeMembership[]
+
+  @@index([organizationId, periodStart, periodEnd])
+  @@index([organizationId, generatedAt])
+  @@map("issue_themes")
+}
+
+/// Which issues a theme was drawn from.
+///
+/// A join, deliberately: the alternative - copying issue text onto the theme -
+/// would duplicate citizen content into a second place that then has to be kept
+/// in sync and separately protected.
+model IssueThemeMembership {
+  id      String @id @default(uuid()) @db.Uuid
+  themeId String @db.Uuid
+  issueId String @db.Uuid
+
+  confidence Float?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  theme IssueTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  issue Issue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@unique([themeId, issueId])
+  @@index([issueId])
+  @@map("issue_theme_memberships")
+}
+
+/// A period narrative for administrators.
+///
+/// THE EVIDENCE IS THE POINT. `evidence` holds the exact backend-computed
+/// statistics the model was given, stored alongside the prose it produced. The
+/// UI renders both, so a reader can check any claim against the figures rather
+/// than trusting the sentence. The model is instructed to use only these
+/// numbers, and `evidence` is what makes that instruction auditable after the
+/// fact instead of merely asserted.
+model AiExecutiveSummary {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+
+  periodStart DateTime @db.Timestamptz(6)
+  periodEnd   DateTime @db.Timestamptz(6)
+
+  /// Model output. Untrusted text; rendered escaped, never as HTML.
+  summary       String  @db.Text
+  /// An administrator's replacement, if they edited rather than approved.
+  editedSummary String? @db.Text
+
+  /// Short theme labels the model drew out, for the summary card.
+  keyThemes String[]
+
+  /// The structured statistics supplied to the model, exactly as supplied.
+  evidence Json
+
+  reviewStatus AiReviewStatus @default(GENERATED)
+
+  model         String? @db.VarChar(120)
+  promptVersion String? @db.VarChar(60)
+
+  generatedAt       DateTime  @default(now()) @db.Timestamptz(6)
+  generatedByUserId String?   @db.Uuid
+  reviewedAt        DateTime? @db.Timestamptz(6)
+  reviewedByUserId  String?   @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  generatedBy  User?        @relation("AiSummaryAuthor", fields: [generatedByUserId], references: [id], onDelete: SetNull)
+  reviewedBy   User?        @relation("AiSummaryReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, periodStart, periodEnd])
+  @@index([organizationId, generatedAt])
+  @@map("ai_executive_summaries")
+}
+
+/// One call to an AI provider: what it cost and whether it worked.
+///
+/// OPERATIONAL TELEMETRY, kept apart from the Phase 2 audit log on purpose and
+/// for the same reason QR scans are: this table grows with machine activity,
+/// and letting it into the security record would drown the human decisions the
+/// audit log exists to preserve. It can be aggregated and expired freely.
+///
+/// CONTAINS NO CITIZEN CONTENT. No prompt text, no issue description, no
+/// summary, and no contact details - only which operation ran, for which tenant,
+/// how big it was and what happened. Recording the prompt would put redacted
+/// citizen text into a second table with a different retention policy, which is
+/// exactly the accidental-copy problem the redaction layer exists to avoid.
+model AiUsageLog {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+
+  operation AiOperation
+  model     String      @db.VarChar(120)
+  /// Which provider served it: "openai", "mock". Not a URL, not a key.
+  provider  String      @db.VarChar(60)
+
+  success     Boolean
+  failureKind AiFailureKind?
+
+  /// Null when the provider does not report usage. Stored as reported, never
+  /// estimated from character counts - a guessed token count that later drives
+  /// a cost figure is a fabricated number with a decimal point on it.
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+
+  /// Estimated from configured per-million rates. Null when rates are not
+  /// configured, rather than zero: "not priced" and "free" are different facts.
+  estimatedCostUsd Decimal? @db.Decimal(12, 6)
+
+  durationMs Int
+
+  /// Correlates with the request that triggered it, and with the audit row.
+  correlationId String? @db.VarChar(64)
+  actorUserId   String? @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor        User?        @relation("AiUsageActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, operation, createdAt])
+  @@map("ai_usage_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8 - citizen communication
+// ---------------------------------------------------------------------------
+
+/// Lifecycle of a staff-authored message to a citizen.
+enum PublicUpdateStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("public_update_status")
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+
+  @@map("notification_channel")
+}
+
+enum NotificationEvent {
+  ISSUE_RECEIVED
+  ISSUE_STATUS_CHANGED
+  PUBLIC_UPDATE_PUBLISHED
+  ISSUE_RESOLVED
+  ISSUE_REOPENED
+
+  @@map("notification_event")
+}
+
+/// SKIPPED is deliberately distinct from FAILED: a skipped notification is one
+/// the system correctly chose not to send, and counting those as failures would
+/// make a healthy deployment look broken.
+enum NotificationStatus {
+  QUEUED
+  PROCESSING
+  SENT
+  DELIVERED
+  FAILED
+  SKIPPED
+
+  @@map("notification_status")
+}
+
+enum NotificationFailureKind {
+  PROVIDER_UNAVAILABLE
+  PROVIDER_REJECTED
+  TIMEOUT
+  INVALID_DESTINATION
+  NOT_CONFIGURED
+  RATE_LIMITED
+  UNKNOWN
+
+  @@map("notification_failure_kind")
+}
+
+enum FollowUpResponse {
+  RESOLVED
+  PARTIALLY_RESOLVED
+  NOT_RESOLVED
+
+  @@map("follow_up_response")
+}
+
+enum FollowUpStatus {
+  SUBMITTED
+  REVIEWED
+
+  @@map("follow_up_status")
+}
+
+enum FollowUpOutcome {
+  REOPENED
+  KEPT_CLOSED
+  ACKNOWLEDGED
+
+  @@map("follow_up_outcome")
+}
+
+/// A message written BY staff FOR the citizen who reported an issue.
+///
+/// A SEPARATE TABLE RATHER THAN A `visibility` FLAG ON `IssueHistory`, and the
+/// reasoning is the most important design decision in Phase 8.
+///
+/// `IssueHistory` is written from six different call sites in
+/// `issue.service.ts`, and its rows are machine-generated staff-oriented notes
+/// ("Assigned to Priya"). Adding a visibility column there would mean every one
+/// of those six paths - and every path added later - must get the default right
+/// forever, and a single miss publishes an internal action to a member of the
+/// public. Here there is no such failure mode: nothing exists in this table
+/// unless a person deliberately wrote it for a citizen to read.
+///
+/// The public TIMELINE is still derived from `IssueHistory`, because status
+/// transitions are safe to project - but only the status enum and the date are
+/// read, never `detail`.
+model IssuePublicUpdate {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  issueId        String @db.Uuid
+
+  /// PLAIN TEXT. Not HTML, not markdown, not sanitised rich text - there is no
+  /// rendering path that could execute anything, because there is no markup to
+  /// render. A public update is a short factual note, and the expressive range
+  /// given up here is worth the entire class of injection it forecloses.
+  body String @db.VarChar(2200)
+
+  /// DRAFT by default. Writing and publishing are two acts with two permissions.
+  status PublicUpdateStatus @default(DRAFT)
+
+  /// Set once, on first publish, and never rewritten. The date the citizen saw.
+  publishedAt DateTime? @db.Timestamptz(6)
+
+  /// A correction supersedes rather than rewrites. The original stays readable
+  /// in the admin console, because what a citizen was told at the time is
+  /// exactly what a later dispute turns on.
+  supersedesId String? @unique @db.Uuid
+
+  createdByUserId   String? @db.Uuid
+  publishedByUserId String? @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue        Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("PublicUpdateAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  publishedBy  User?        @relation("PublicUpdatePublisher", fields: [publishedByUserId], references: [id], onDelete: SetNull)
+
+  supersedes   IssuePublicUpdate? @relation("PublicUpdateCorrection", fields: [supersedesId], references: [id], onDelete: SetNull)
+  supersededBy IssuePublicUpdate? @relation("PublicUpdateCorrection")
+
+  notifications IssueNotification[]
+
+  /// The public page reads (issueId, status, publishedAt); the admin console
+  /// reads the tenant's recent updates.
+  @@index([issueId, status, publishedAt])
+  @@index([organizationId, status, createdAt])
+  @@map("issue_public_updates")
+}
+
+/// A citizen's standing consent to be told about their own issue.
+///
+/// ONE PER ISSUE PER CHANNEL, and per ISSUE rather than per person on purpose:
+/// there is no citizen identity in this platform, and building one to support a
+/// cross-issue preference would create exactly the person-level record the
+/// product refuses to keep. Consent is given for one problem and does not
+/// follow the citizen anywhere.
+///
+/// `destination` holds the address messages are sent to. It is the one column
+/// in this phase that stores contact data, it is never returned by any public
+/// query, and the admin console sees only a redacted form.
+model IssueSubscription {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  issueId        String @db.Uuid
+
+  channel NotificationChannel
+
+  /// The email address, supplied by the citizen for this purpose alone.
+  destination String @db.VarChar(320)
+
+  /// Consent is EVIDENCED, not assumed: the instant is recorded, so the basis
+  /// for holding the address is a fact rather than an inference from the row
+  /// existing. Same pattern as `Issue.consentAt` in Phase 5.
+  consentGivenAt DateTime @db.Timestamptz(6)
+
+  /// Withdrawal stops future sends. It does NOT delete the row or the issue -
+  /// see the retention note in the Phase 8 docs. `active` is what every send
+  /// path checks.
+  active         Boolean   @default(true)
+  unsubscribedAt DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue        Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  /// One subscription per channel per issue: re-subscribing updates the
+  /// existing row rather than accumulating duplicates that would each send.
+  @@unique([issueId, channel])
+  @@index([organizationId, active])
+  @@map("issue_subscriptions")
+}
+
+/// One outbound message, and what happened to it.
+///
+/// IDEMPOTENCY IS THE POINT OF `idempotencyKey`. A status change that is
+/// retried by a client, replayed by a queue worker, or repeated after a restart
+/// must not produce two emails - a citizen receiving the same message three
+/// times is the most visible possible failure of a system like this. The key is
+/// derived from the facts of the event (issue, event, channel, and the thing
+/// that changed) rather than from a timestamp, so a genuine repeat collides
+/// with the unique constraint and is skipped.
+///
+/// CONTAINS NO FULL CONTACT DETAIL. `recipientRedacted` holds a masked form for
+/// the admin console; the real destination lives on the subscription. An
+/// operations dashboard needs to know a message went to the right sort of place,
+/// not to reproduce somebody's address in a table many staff can read.
+model IssueNotification {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  issueId        String @db.Uuid
+
+  event   NotificationEvent
+  channel NotificationChannel
+
+  /// Masked, e.g. "r***@example.com". Never the full address.
+  recipientRedacted String @db.VarChar(120)
+
+  /// Which template rendered it, versioned, so wording is traceable later.
+  templateVersion String @db.VarChar(60)
+
+  status        NotificationStatus       @default(QUEUED)
+  failureKind   NotificationFailureKind?
+  /// Safe, human-readable. Never a provider stack trace or credential.
+  failureReason String?                  @db.VarChar(300)
+
+  attempts Int @default(0)
+
+  /// Derived from the event's facts. The unique constraint IS the idempotency
+  /// guarantee - it holds across process restarts, unlike an in-memory guard.
+  idempotencyKey String @unique @db.VarChar(200)
+
+  /// The update that triggered it, when the event was a publication.
+  publicUpdateId String? @db.Uuid
+
+  queuedAt    DateTime  @default(now()) @db.Timestamptz(6)
+  sentAt      DateTime? @db.Timestamptz(6)
+  deliveredAt DateTime? @db.Timestamptz(6)
+  failedAt    DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue        Issue              @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  publicUpdate IssuePublicUpdate? @relation(fields: [publicUpdateId], references: [id], onDelete: SetNull)
+
+  /// The communication centre filters by status and lists by recency; the
+  /// issue panel reads one issue's history.
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([issueId, createdAt])
+  @@map("issue_notifications")
+}
+
+/// What the citizen said when asked whether their problem was fixed.
+///
+/// RECORDING A STATEMENT, NOT TAKING AN ACTION. Nothing in this table changes
+/// the issue: `NOT_RESOLVED` raises a request for a human to look at, and the
+/// reopen itself happens through the ordinary Phase 5 status path, performed by
+/// a named staff member. A citizen saying "no" is important information; it is
+/// not an instruction the system executes.
+model IssueFollowUp {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  issueId        String @db.Uuid
+
+  response FollowUpResponse
+  /// Citizen free text. Stored and displayed as plain text, never as markup.
+  comment  String?          @db.VarChar(2200)
+
+  /// True when the response asks for the issue to be looked at again. Derived
+  /// at submission from the response, so the admin queue is a simple filter
+  /// rather than a join that has to re-derive intent.
+  reopenRequested Boolean @default(false)
+
+  status  FollowUpStatus   @default(SUBMITTED)
+  outcome FollowUpOutcome?
+
+  /// Staff note on the review decision. Internal - never shown to the citizen.
+  reviewNote       String?   @db.VarChar(1000)
+  reviewedAt       DateTime? @db.Timestamptz(6)
+  reviewedByUserId String?   @db.Uuid
+
+  submittedAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issue        Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  reviewedBy   User?        @relation("FollowUpReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  /// The reopen queue is "pending reopen requests in this tenant".
+  @@index([organizationId, status, reopenRequested])
+  @@index([issueId, submittedAt])
+  @@map("issue_follow_ups")
+}

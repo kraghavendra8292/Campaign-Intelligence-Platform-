@@ -1,0 +1,69 @@
+# ---------------------------------------------------------------------------
+# RK Campaign Intelligence Platform - OPTIONAL local development infrastructure.
+#
+# The platform's PostgreSQL is hosted on Neon; that is the default for all
+# development. This file exists only as an offline fallback - useful on a plane,
+# behind a restrictive network, or when you want a throwaway database that you
+# can reset without touching a shared Neon branch.
+#
+# If you are using Neon (the normal case) you do not need Docker at all: just
+# put your connection strings in apps/api/.env.
+#
+# To use the local database instead, start it and point DATABASE_URL at it (see
+# the commented line in apps/api/.env.example).
+#
+#   Start:   npm run db:up      (docker compose up -d postgres)
+#   Stop:    npm run db:down    (docker compose down)
+#   Logs:    npm run db:logs    (docker compose logs -f postgres)
+#   Reset:   npm run db:reset   (drops + recreates schema via Prisma)
+#
+# NOTE: this local container has no pooled/direct split, so DATABASE_URL alone
+# is enough - leave DATABASE_URL_UNPOOLED unset.
+# ---------------------------------------------------------------------------
+name: rk-campaign-platform
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: rk_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rk_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rk_local_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rk_campaign}
+      # Deterministic initialisation regardless of host locale.
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
+    ports:
+      # Host port 55432 avoids colliding with a natively installed PostgreSQL.
+      - '${POSTGRES_PORT:-55432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-rk_app} -d ${POSTGRES_DB:-rk_campaign}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # Placeholder only. No application code connects to Redis in Phase 1.
+  # Reserved for future caching / rate-limit stores / job queues (Phase 10).
+  redis:
+    image: redis:7-alpine
+    container_name: rk_redis
+    restart: unless-stopped
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '${REDIS_PORT:-56379}:6379'
+    profiles:
+      # Not started by default: `docker compose --profile optional up -d redis`
+      - optional
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    name: rk_postgres_data
+    driver: local

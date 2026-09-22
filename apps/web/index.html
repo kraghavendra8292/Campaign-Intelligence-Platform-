@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- Kannada-first: the default language of the public site. React keeps
+     this in step with the visitor's choice from SiteProvider. -->
+<html lang="kn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0F172A" />
+    <meta
+      name="description"
+      content="RK Campaign Intelligence Platform - public engagement and campaign management."
+    />
+    <title>RK Campaign Intelligence Platform</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Two scripts, one request.
+
+      Poppins carries the campaign's Latin identity but contains NO Kannada
+      glyphs, so every Kannada character was previously rendered by whatever the
+      operating system happened to substitute - Nirmala UI on Windows, something
+      else everywhere else. Noto Sans Kannada makes that choice deliberate and
+      identical on every device.
+
+      `display=swap` keeps text readable during the download instead of blanking
+      it, and both families are fetched in a single stylesheet so the second
+      script costs no extra round trip.
+    -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

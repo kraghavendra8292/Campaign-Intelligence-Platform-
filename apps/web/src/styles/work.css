@@ -1,0 +1,572 @@
+/*
+ * Phase 9 - verified work, evidence and transparency.
+ *
+ * THE ONE VISUAL RULE THAT MATTERS: the verification badge and the work-status
+ * badge must never be mistakable for each other at a glance on a phone. A
+ * COMPLETED work with no verification badge is a claim the campaign is making;
+ * one with a badge is a claim somebody checked. They carry different shapes,
+ * not just different colours, so the distinction survives both colour blindness
+ * and a low-contrast screen in sunlight.
+ */
+
+/* --------------------------------------------------------------------------
+ * Badges
+ * ------------------------------------------------------------------------ */
+
+.verify-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.45rem;
+  border: 1px solid var(--color-success, #1b7a4b);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-success, #1b7a4b) 10%, transparent);
+  color: var(--color-success, #1b7a4b);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.verify-badge--small {
+  font-size: 0.72rem;
+  padding: 0.12rem 0.5rem 0.12rem 0.35rem;
+}
+
+.verify-badge__mark {
+  font-weight: 700;
+}
+
+/* Square, not a pill: a different SHAPE from the verification badge, so the two
+   are distinguishable without relying on colour. */
+.work-status {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.work-status--completed {
+  background: color-mix(in srgb, var(--color-text, #222) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-text, #222) 25%, transparent);
+}
+
+.work-status--ongoing {
+  background: color-mix(in srgb, #b7791f 12%, transparent);
+  border-color: #b7791f;
+  color: #8a5a12;
+}
+
+/* Proposed gets the most cautious treatment - dashed, deliberately unfinished
+   looking - because a proposal skimmed quickly must never read as something
+   that was actually built. */
+.work-status--proposed {
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--color-text, #222) 45%, transparent);
+  color: color-mix(in srgb, var(--color-text, #222) 75%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+ * Work cards and detail
+ * ------------------------------------------------------------------------ */
+
+.work-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.work-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.work-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.work-card__summary,
+.work-card__area,
+.work-card__date {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #555);
+}
+
+.work-card__facts,
+.work-detail__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.work-card__facts dt,
+.work-detail__facts dt {
+  color: var(--color-text-muted, #555);
+}
+
+.work-card__facts dd,
+.work-detail__facts dd {
+  margin: 0;
+}
+
+.work-detail__header h1 {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.work-detail__summary {
+  font-size: 1.05rem;
+  color: var(--color-text-muted, #555);
+}
+
+.work-detail__timeline ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 2px solid color-mix(in srgb, var(--color-text, #222) 15%, transparent);
+}
+
+.work-detail__timeline li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0 0.5rem 1rem;
+}
+
+.work-detail__timeline-date {
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #555);
+}
+
+.work-detail__no-evidence {
+  font-size: 0.92rem;
+  color: var(--color-text-muted, #555);
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+ * Evidence
+ * ------------------------------------------------------------------------ */
+
+.evidence__intro {
+  color: var(--color-text-muted, #555);
+  font-size: 0.92rem;
+}
+
+.evidence__documents {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.evidence__document {
+  border: 1px solid color-mix(in srgb, var(--color-text, #222) 15%, transparent);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.evidence__type {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, #555);
+  font-weight: 600;
+}
+
+.evidence__title {
+  font-weight: 600;
+}
+
+.evidence__description {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.evidence__meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.75rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+
+.evidence__meta dt {
+  color: var(--color-text-muted, #555);
+}
+
+.evidence__meta dd {
+  margin: 0;
+}
+
+.evidence__link {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.evidence__sequence {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.evidence__sequence-group h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.evidence__images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.evidence__photo {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.evidence__photo img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-text, #222) 6%, transparent);
+}
+
+.evidence__photo figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.85rem;
+}
+
+.evidence__photo-meta {
+  color: var(--color-text-muted, #555);
+  font-size: 0.8rem;
+}
+
+/* --------------------------------------------------------------------------
+ * Transparency page
+ * ------------------------------------------------------------------------ */
+
+.transparency__counters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.transparency__counter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-text, #222) 15%, transparent);
+  border-radius: 8px;
+}
+
+/* The verified counter is emphasised, but ongoing and proposed sit at the same
+   size beside it. A page that showed only the flattering number would be a
+   leaflet with a database behind it. */
+.transparency__counter--verified {
+  border-color: var(--color-success, #1b7a4b);
+}
+
+.transparency__counter--ongoing {
+  border-color: #b7791f;
+}
+
+.transparency__counter--proposed {
+  border-style: dashed;
+}
+
+.transparency__counter-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.transparency__counter-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.transparency__counter-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #555);
+}
+
+.transparency__coverage {
+  margin-bottom: 2rem;
+}
+
+.transparency__coverage-figure {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0.25rem 0;
+}
+
+.transparency__coverage-note,
+.transparency__footnote {
+  color: var(--color-text-muted, #555);
+  font-size: 0.9rem;
+}
+
+.transparency__footnote {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-text, #222) 12%, transparent);
+}
+
+.transparency__bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.transparency__bars a {
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.3rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.transparency__bars a:hover .transparency__bar-label {
+  text-decoration: underline;
+}
+
+.transparency__bar-track {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text, #222) 8%, transparent);
+  overflow: hidden;
+}
+
+.transparency__bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary, #2b5fa8);
+}
+
+.transparency__bar-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.transparency__recent {
+  margin-top: 2rem;
+}
+
+/* --------------------------------------------------------------------------
+ * Admin verification console
+ * ------------------------------------------------------------------------ */
+
+.verify-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.verify-evidence {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.verify-evidence__item {
+  border: 1px solid color-mix(in srgb, var(--color-text, #222) 15%, transparent);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+
+.verify-evidence__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+/* Internal notes are visually marked as internal wherever they appear, so a
+   screenshot of this panel cannot be mistaken for something public. */
+.verify-evidence__note {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-left: 3px solid #b7791f;
+  background: color-mix(in srgb, #b7791f 8%, transparent);
+  font-size: 0.88rem;
+}
+
+.verify-evidence__note span {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: #8a5a12;
+}
+
+.verify-history ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 2px solid color-mix(in srgb, var(--color-text, #222) 15%, transparent);
+}
+
+.verify-history li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.4rem 0 0.4rem 1rem;
+  font-size: 0.9rem;
+}
+
+.verify-history__when {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #555);
+}
+
+.verify-history__reason {
+  font-size: 0.88rem;
+  font-style: italic;
+}
+
+.verify-decision {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.verify-decision label span {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-muted, #555);
+}
+
+.verify-decision textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-text, #222) 25%, transparent);
+  border-radius: 6px;
+  font: inherit;
+  resize: vertical;
+}
+
+.filter-bar__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.filter-bar__count {
+  font-size: 0.88rem;
+  color: var(--color-text-muted, #555);
+  margin: 0 0 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .transparency__bars a {
+    grid-template-columns: 1fr auto;
+  }
+
+  .transparency__bar-track {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Phase 10 - operations page
+ *
+ * The headline carries a coloured left edge as well as a badge, so the verdict
+ * survives a phone screen in daylight and does not depend on colour alone.
+ * ------------------------------------------------------------------------ */
+
+.system-headline {
+  border-left: 4px solid color-mix(in srgb, var(--color-text, #222) 25%, transparent);
+  padding: 0.75rem 0 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.system-headline h2 {
+  margin: 0.35rem 0 0.25rem;
+}
+
+.system-headline--healthy {
+  border-left-color: var(--color-success, #1b7a4b);
+}
+
+.system-headline--degraded {
+  border-left-color: #b7791f;
+}
+
+.system-headline--down {
+  border-left-color: var(--color-danger, #b02a37);
+}
+
+.system-components {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.system-component {
+  border: 1px solid color-mix(in srgb, var(--color-text, #222) 15%, transparent);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.system-component--healthy {
+  border-left-color: var(--color-success, #1b7a4b);
+}
+
+.system-component--degraded {
+  border-left-color: #b7791f;
+}
+
+.system-component--down {
+  border-left-color: var(--color-danger, #b02a37);
+}
+
+.system-component__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.system-component__detail {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #555);
+}

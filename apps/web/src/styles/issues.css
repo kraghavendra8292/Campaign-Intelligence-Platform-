@@ -1,0 +1,586 @@
+/**
+ * Citizen feedback form and the issue console.
+ *
+ * Two audiences in one file, and they are shaped very differently. The public
+ * form is mobile-first with generous touch targets, because it is used
+ * one-handed, outdoors, by somebody who has never seen it before. The console
+ * reuses the CMS and QR styles almost entirely; only the timeline, the notes
+ * and the detail layout are new.
+ *
+ * Every value resolves to a design token, so both re-theme with the product.
+ */
+
+/* --------------------------------------------------------------------------
+ * Public form
+ * ----------------------------------------------------------------------- */
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.feedback-form__error {
+  padding: var(--spacing-4);
+  background-color: var(--color-error-subtle);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+}
+
+.feedback-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface);
+  padding: var(--spacing-5);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.feedback-section__legend {
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.feedback-section__note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* --- Submission type -------------------------------------------------- */
+.feedback-types {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--spacing-3);
+}
+
+/**
+ * Each choice is a large card, not a radio in a list.
+ *
+ * The first decision a citizen makes should be tappable without aiming, on a
+ * phone, possibly one-handed. The native input stays in the DOM for keyboard
+ * and screen-reader users and is positioned off-screen rather than removed.
+ */
+.feedback-type {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-4);
+  min-height: 5.5rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  background-color: var(--color-surface);
+}
+
+.feedback-type input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.feedback-type--active {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
+}
+
+/* Keyboard focus must be visible even though the input itself is hidden. */
+.feedback-type:focus-within {
+  outline: 2px solid transparent;
+  box-shadow: var(--shadow-focus);
+}
+
+.feedback-type__label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.feedback-type__hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* --- Fields ------------------------------------------------------------ */
+.feedback-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.feedback-field__label {
+  font-weight: var(--font-weight-medium);
+}
+
+.feedback-field__hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.feedback-field__error {
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  font-weight: var(--font-weight-medium);
+}
+
+.feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--spacing-4);
+}
+
+.rk-textarea {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+
+.rk-textarea:focus-visible {
+  outline: 2px solid transparent;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.feedback-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  cursor: pointer;
+}
+
+.feedback-checkbox input {
+  /* Comfortably larger than the browser default: this is a consequential tick
+     on a touchscreen, and a missed tap means giving details by accident. */
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.feedback-checkbox__label {
+  display: block;
+  font-weight: var(--font-weight-medium);
+}
+
+.feedback-location {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.feedback-location__added {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-success);
+}
+
+.feedback-attachments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.feedback-attachment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-surface-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.feedback-attachment__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feedback-attachment__remove {
+  background: none;
+  border: 0;
+  color: var(--color-error);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.feedback-form__actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* On a phone the submit button spans the width - it is the only thing on the
+   screen the citizen came to press. */
+@media (max-width: 600px) {
+  .feedback-form__actions {
+    position: sticky;
+    bottom: var(--spacing-4);
+  }
+
+  .feedback-form__actions > * {
+    width: 100%;
+  }
+}
+
+/* --- Confirmation ------------------------------------------------------ */
+.feedback-done {
+  text-align: center;
+  padding: var(--spacing-10) var(--spacing-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.feedback-done__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-success);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-5);
+}
+
+.feedback-done__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.feedback-done__label {
+  margin-top: var(--spacing-6);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+}
+
+/**
+ * The reference number.
+ *
+ * The largest thing on the page, monospaced and letter-spaced, because the
+ * citizen is about to copy it onto paper or into a message and a misread
+ * character means they can never check on their report again.
+ */
+.feedback-done__reference {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wider);
+  margin-top: var(--spacing-2);
+  overflow-wrap: anywhere;
+}
+
+.feedback-done__save {
+  margin-top: var(--spacing-3);
+  color: var(--color-text-muted);
+}
+
+.feedback-done__note {
+  margin-top: var(--spacing-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.feedback-done__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-8);
+}
+
+/* --------------------------------------------------------------------------
+ * Public tracking
+ * ----------------------------------------------------------------------- */
+.track-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  align-items: flex-start;
+  max-width: 28rem;
+}
+
+.track-form input {
+  font-family: var(--font-family-mono);
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.track-form__footer {
+  margin-top: var(--spacing-8);
+  font-size: var(--font-size-sm);
+}
+
+.track-result {
+  margin-top: var(--spacing-6);
+  padding: var(--spacing-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.track-result--empty {
+  color: var(--color-text-muted);
+}
+
+.track-result__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.track-result__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--spacing-4);
+  margin: var(--spacing-5) 0;
+}
+
+.track-result__facts dt {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+}
+
+.track-result__facts dd {
+  margin: var(--spacing-1) 0 0;
+}
+
+.track-result__reference {
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-weight-semibold);
+}
+
+.track-result__status {
+  padding: var(--spacing-4);
+  background-color: var(--color-primary-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.track-result__privacy {
+  margin-top: var(--spacing-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+ * Admin console
+ * ----------------------------------------------------------------------- */
+.issue-type {
+  font-size: var(--font-size-sm);
+}
+
+.issue-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
+}
+
+.issue-pagination__count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.issue-pagination__controls {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+/**
+ * Detail layout: the submission on the left, the controls on the right.
+ *
+ * Collapses to one column below the wide breakpoint, with the controls landing
+ * BELOW the report - a triager reads what happened before deciding what to do
+ * about it, and on a phone the order on screen is the order of the task.
+ */
+.issue-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  gap: var(--spacing-4);
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .issue-detail {
+    grid-template-columns: 1fr;
+  }
+}
+
+.issue-detail__main,
+.issue-detail__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+.issue-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+}
+
+/**
+ * The citizen's own words.
+ *
+ * `pre-wrap` keeps the line breaks they typed, because a list of three problems
+ * becomes one run-on sentence otherwise. Rendered as TEXT - citizen-supplied
+ * content is never treated as markup anywhere in this platform.
+ */
+.issue-detail__description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-bottom: var(--spacing-5);
+  line-height: var(--line-height-relaxed);
+}
+
+.issue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+/* --- Attachments -------------------------------------------------------- */
+.issue-attachments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.issue-attachment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  background-color: var(--color-surface-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.issue-attachment__name {
+  flex: 1 1 10rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue-attachment__meta {
+  color: var(--color-text-muted);
+}
+
+/* --- Notes -------------------------------------------------------------- */
+.issue-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+  margin: var(--spacing-4) 0;
+}
+
+.issue-note-form .feedback-field {
+  width: 100%;
+}
+
+.issue-notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.issue-note {
+  padding: var(--spacing-4);
+  background-color: var(--color-surface-subtle);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.issue-note__body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.issue-note__meta {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* --- Timeline ----------------------------------------------------------- */
+.issue-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.issue-timeline__item {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) 1fr auto;
+  gap: var(--spacing-3);
+  align-items: baseline;
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.issue-timeline__item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.issue-timeline__when {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.issue-timeline__who {
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .issue-timeline__item {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-1);
+  }
+
+  .issue-timeline__who {
+    text-align: left;
+  }
+}

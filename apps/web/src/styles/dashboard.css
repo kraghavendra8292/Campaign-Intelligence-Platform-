@@ -1,0 +1,420 @@
+/**
+ * Campaign dashboard.
+ *
+ * Mobile-first and composed rather than shrunk: the phone layout is a single
+ * prioritised column - KPIs, then trend, then what needs attention - and the
+ * multi-column grid is added only where there is room for it.
+ *
+ * Every value resolves to a design token.
+ */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.dashboard__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.dashboard__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.dashboard__subtitle {
+  margin-top: var(--spacing-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  max-width: 62ch;
+}
+
+.dashboard__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.dashboard__period select {
+  min-height: var(--size-control-md);
+}
+
+.dashboard__stamp {
+  margin-top: calc(-1 * var(--spacing-3));
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ---------------------------------------------------------------- KPIs -- */
+.kpi-grid {
+  display: grid;
+  gap: var(--spacing-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.kpi-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+/* A figure that needs someone to act. Never colour alone - the label says so. */
+.kpi-card[data-tone='warning'] {
+  border-color: var(--color-warning);
+}
+
+.kpi-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.kpi-card__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary-hover);
+}
+
+.kpi-card__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  /* Long Kannada labels wrap rather than forcing the card wider. */
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.kpi-card__value {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  /* Digits keep their column while the value animates, so the card does not
+     jitter as it counts. */
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-card__delta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.kpi-card__delta[data-direction='up'] {
+  color: var(--color-success);
+}
+.kpi-card__delta[data-direction='down'] {
+  color: var(--color-error);
+}
+.kpi-card__delta[data-direction='flat'] {
+  color: var(--color-text-muted);
+}
+
+.kpi-card__delta-label,
+.kpi-card__caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+/* -------------------------------------------------------------- Widgets -- */
+.dashboard__grid {
+  display: grid;
+  gap: var(--spacing-4);
+  grid-template-columns: 1fr;
+}
+
+.dash-widget {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.dash-widget__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-2);
+}
+
+.dash-widget__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dash-widget__description {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.dash-widget__body {
+  padding: 0 var(--spacing-4) var(--spacing-4);
+  min-width: 0;
+}
+
+.dash-widget__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-control-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-hover);
+}
+
+.dash-widget__link:hover {
+  text-decoration: underline;
+}
+
+.dash-widget__empty {
+  padding: var(--spacing-5) 0;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Inline, so one failed aggregation costs one panel rather than the page. */
+.dash-widget__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-error-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.dash-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) 0;
+}
+
+/* ---------------------------------------------------------------- Lists -- */
+.dash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-list__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  min-height: var(--size-touch-target);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-md);
+  color: inherit;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.dash-list__row:hover {
+  background-color: var(--color-surface-subtle);
+}
+
+.dash-list__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.dash-list__ref {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.dash-list__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  overflow-wrap: break-word;
+}
+
+.dash-list__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.dash-list__ward {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ------------------------------------------------------------- Insights -- */
+.dash-insights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.dash-insights li {
+  padding-inline-start: var(--spacing-3);
+  /* Severity is shown as a border AND stated in the wording, never colour
+     alone. */
+  border-inline-start: 3px solid var(--color-border-strong);
+}
+
+.dash-insights li[data-severity='WARNING'] {
+  border-inline-start-color: var(--color-warning);
+}
+.dash-insights li[data-severity='CRITICAL'] {
+  border-inline-start-color: var(--color-error);
+}
+
+.dash-insights__headline {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dash-insights__detail {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-muted);
+}
+
+/* -------------------------------------------------------------- Content -- */
+.dash-content {
+  display: grid;
+  gap: var(--spacing-4);
+  grid-template-columns: 1fr;
+}
+
+.dash-content__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.dash-content__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dash-content__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dash-content__count {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-content__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  flex: 1;
+}
+
+.dash-content__list li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.dash-content__title {
+  font-size: var(--font-size-sm);
+  overflow-wrap: break-word;
+}
+
+.dash-content__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ----------------------------------------------------------- Responsive -- */
+@media (min-width: 640px) {
+  .dashboard__header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dash-content {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard__grid--split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .kpi-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card,
+  .dash-list__row {
+    transition-duration: 1ms;
+  }
+}

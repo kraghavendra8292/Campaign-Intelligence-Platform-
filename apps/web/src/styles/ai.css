@@ -1,0 +1,253 @@
+/**
+ * AI console and the issue-page intelligence panel.
+ *
+ * Reuses the CMS card, table and field styles almost entirely - only the
+ * AI-specific surfaces are new, matching how the QR and issue consoles were
+ * built. Every value resolves to a design token, so this re-themes with the
+ * rest of the product.
+ *
+ * ONE DELIBERATE VISUAL DECISION runs through this file: AI output is set apart
+ * from the record it describes. The panel carries a left border and a tinted
+ * ground, and the disclaimer sits above the text rather than below it. A
+ * summary must never look like the citizen's own words at a glance, because a
+ * fluent wrong summary is indistinguishable from a correct one by reading
+ * alone - the visual separation is doing work the prose cannot.
+ */
+
+/* --------------------------------------------------------------------------
+ * Disclaimer and panel framing
+ * ----------------------------------------------------------------------- */
+
+.ai-disclaimer {
+  margin: 0 0 var(--spacing-3);
+  padding: var(--spacing-3);
+  border-left: 3px solid var(--color-status-warning-border, var(--color-border-strong));
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.ai-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.ai-panel__empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+}
+
+.ai-panel__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.ai-panel__heading {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+/*
+ * The summary itself. Set apart from surrounding record text on purpose - see
+ * the note at the top of this file.
+ */
+.ai-panel__summary {
+  margin: 0;
+  padding: var(--spacing-4);
+  border-left: 3px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.ai-panel__stale {
+  margin: 0;
+  padding: var(--spacing-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.ai-panel__original {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.ai-panel__original summary {
+  cursor: pointer;
+}
+
+.ai-panel__original p {
+  margin: var(--spacing-2) 0 0;
+  padding: var(--spacing-3);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+}
+
+.ai-panel__suggestion,
+.ai-panel__topics,
+.ai-panel__similar,
+.ai-panel__provenance {
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.ai-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.ai-panel__edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.ai-panel__topic-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-panel__topic-list li {
+  padding: var(--spacing-1) var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface-muted);
+  font-size: var(--font-size-sm);
+}
+
+.ai-panel__similar-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-panel__similar-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  align-items: baseline;
+  font-size: var(--font-size-sm);
+}
+
+/* --------------------------------------------------------------------------
+ * Dashboard
+ * ----------------------------------------------------------------------- */
+
+.ai-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--spacing-4);
+  margin: 0 0 var(--spacing-3);
+}
+
+.ai-stats__item dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.ai-stats__item dd {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ai-topic-counts,
+.ai-failure-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-topic-counts li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ai-failure-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+.ai-review-list,
+.ai-theme-list,
+.ai-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-review-list__item,
+.ai-theme-list__item,
+.ai-summary-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding-bottom: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ai-review-list__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.ai-review-list__title {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.ai-review-list__summary,
+.ai-summary-list__text {
+  margin: 0;
+  padding: var(--spacing-3);
+  border-left: 3px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+}
+
+.ai-evidence {
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.ai-evidence .cms-table {
+  margin-top: var(--spacing-3);
+}

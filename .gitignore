@@ -1,0 +1,85 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Prisma generated client
+apps/api/src/generated/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.secrets/
+
+# Test / coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Caches
+.cache/
+.turbo/
+.eslintcache
+.vite/
+.vitest/
+node_modules/.cache/
+
+# React Native / Expo
+.expo/
+.expo-shared/
+*.jks
+*.keystore
+!debug.keystore
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/.expo/
+
+# Local database volumes / scratch
+.docker-data/
+.tmp/
+tmp/
+
+# Locally stored uploads (MEDIA_STORAGE_PATH).
+# Holds CMS media and citizen issue attachments - photographs of somebody's
+# street, sometimes of their home. These must never reach the repository.
+apps/api/var/
+var/media/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.recommended.json
+*.swp
+*.swo
+*~

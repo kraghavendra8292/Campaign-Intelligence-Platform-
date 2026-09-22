@@ -1,0 +1,393 @@
+/**
+ * The decision dashboard.
+ *
+ * Reuses the CMS card, table and field styles and the Phase 4 chart styles
+ * almost entirely; only the dashboard-specific layout is new. Every value
+ * resolves to a design token, so this re-themes with the rest of the product.
+ *
+ * RESPONSIVE STRATEGY, which is the main thing this file does:
+ *
+ *  - Sections stack in a single column by default and become a two-column grid
+ *    only above 60rem. Mobile-first, so a phone never pays for a desktop rule.
+ *  - Every table is wrapped in `.table-scroll`, which scrolls horizontally on
+ *    its own rather than forcing the page to. A dashboard whose body scrolls
+ *    sideways is unusable on a phone.
+ *  - The filter panel collapses to one column and its checkbox groups get a
+ *    capped height with their own scroll, so a tenant with sixty wards does not
+ *    produce a filter panel longer than the dashboard.
+ */
+
+.analytics-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.analytics-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.analytics-section__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+/*
+ * Single column by default; two columns only when there is room. `minmax(0, 1fr)`
+ * rather than `1fr`: a grid child's default `min-width: auto` lets a wide table
+ * push the column past the viewport, and the page then scrolls sideways.
+ */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-4);
+}
+
+@media (min-width: 60rem) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.analytics-freshness {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+ * Filters
+ * ----------------------------------------------------------------------- */
+
+.analytics-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.analytics-filters__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.analytics-filters__period,
+.analytics-filters__date {
+  min-width: 10rem;
+}
+
+.analytics-filters__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: var(--spacing-2);
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.analytics-filters__panel {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-4);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (min-width: 48rem) {
+  .analytics-filters__panel {
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  }
+}
+
+.analytics-filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/*
+ * Capped height with its own scroll. A tenant with sixty wards would otherwise
+ * produce a filter panel taller than the dashboard it filters.
+ */
+.analytics-filters__checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  max-height: 12rem;
+  overflow-y: auto;
+  padding-right: var(--spacing-2);
+}
+
+.analytics-filters__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+ * Export
+ * ----------------------------------------------------------------------- */
+
+.analytics-export {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+/* --------------------------------------------------------------------------
+ * Insight cards
+ * ----------------------------------------------------------------------- */
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-4);
+}
+
+@media (min-width: 48rem) {
+  .insight-grid {
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  }
+}
+
+.insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.insight-card--attention {
+  border-left-color: var(--color-status-warning-border, var(--color-border-strong));
+}
+
+.insight-card--info {
+  border-left-color: var(--color-border-strong);
+}
+
+.insight-card__headline {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.insight-card__detail {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/*
+ * The evidence row. Always rendered with the claim, never behind a disclosure:
+ * a one-line claim with a number in it is exactly the shape that gets
+ * screenshotted, and the supporting figures should travel with it.
+ */
+.insight-card__evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  margin: 0;
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.insight-card__evidence dt {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.insight-card__evidence dd {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* --------------------------------------------------------------------------
+ * Tables and areas
+ * ----------------------------------------------------------------------- */
+
+/*
+ * Horizontal scroll belongs to the TABLE, not the page. Without this a wide
+ * table makes the whole dashboard scroll sideways on a phone.
+ */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll .cms-table {
+  min-width: 34rem;
+}
+
+.area-table__row--active {
+  background: var(--color-surface-muted);
+}
+
+.area-table__density {
+  width: 8rem;
+}
+
+.area-bar {
+  display: block;
+  width: 100%;
+  height: 0.5rem;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+.area-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-border-strong);
+}
+
+.attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attention-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+/* A button that reads as a link, for in-table drill-downs. */
+.linklike {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-link, var(--color-text-primary));
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.area-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.area-detail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+.area-detail__name {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* --------------------------------------------------------------------------
+ * Themes
+ * ----------------------------------------------------------------------- */
+
+.theme-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.theme-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+/*
+ * Model-written prose, set apart from the counts beside it for the same reason
+ * the Phase 6 panel sets summaries apart: a fluent sentence and a computed
+ * number must not read as the same kind of statement.
+ */
+.theme-card__summary {
+  margin: 0;
+  padding: var(--spacing-3);
+  border-left: 3px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+/* --------------------------------------------------------------------------
+ * Footer note
+ * ----------------------------------------------------------------------- */
+
+.analytics-disclaimer {
+  margin: 0;
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+.change--up {
+  color: var(--color-status-warning-text, inherit);
+}
+
+.change--down {
+  color: var(--color-status-success-text, inherit);
+}

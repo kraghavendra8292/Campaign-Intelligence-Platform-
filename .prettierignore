@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+coverage
+.expo
+apps/api/src/generated
+package-lock.json
+*.md
+
+# Generated output: owned by its generator, not by Prettier.
+# Formatting it here would make `npm run tokens:check` fail on every run.
+packages/design-tokens/src/tokens.generated.css
+apps/api/prisma/migrations

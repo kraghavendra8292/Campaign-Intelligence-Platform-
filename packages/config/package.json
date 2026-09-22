@@ -1,0 +1,22 @@
+{
+  "name": "@rk/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared environment loading and validation helpers",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "zod": "^4.6.2"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  }
+}

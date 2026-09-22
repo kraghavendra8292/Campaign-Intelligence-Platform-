@@ -1,0 +1,56 @@
+{
+  "name": "rk-campaign-intelligence-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RK Campaign Intelligence Platform - multi-tenant campaign and public-engagement SaaS platform (Phase 1 foundation)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "postinstall": "npm run tokens:build",
+    "tokens:build": "npm run build -w @rk/design-tokens",
+    "tokens:check": "npm run check -w @rk/design-tokens",
+    "dev": "npm-run-all --parallel dev:api dev:web",
+    "dev:api": "npm run dev -w @rk/api",
+    "dev:web": "npm run dev -w @rk/web",
+    "dev:mobile": "npm run start -w @rk/mobile",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspaces --if-present",
+    "test:watch": "npm run test:watch -w @rk/api",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:generate": "npm run db:generate -w @rk/api",
+    "db:migrate": "npm run db:migrate -w @rk/api",
+    "db:migrate:deploy": "npm run db:migrate:deploy -w @rk/api",
+    "db:migrate:check": "npm run db:migrate:check -w @rk/api",
+    "db:seed": "npm run db:seed -w @rk/api",
+    "db:reset": "npm run db:reset -w @rk/api",
+    "db:studio": "npm run db:studio -w @rk/api",
+    "doctor": "node scripts/doctor.mjs",
+    "verify": "npm run tokens:check && npm run format:check && npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "npm-run-all2": "^9.0.3",
+    "prettier": "^3.9.6",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.70.0"
+  }
+}

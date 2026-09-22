@@ -1,0 +1,323 @@
+/**
+ * Citizen communication: the public tracking sections and the admin console.
+ *
+ * TWO AUDIENCES, shaped very differently - the same split the Phase 5 issue
+ * stylesheet makes. The public half is mobile-first with generous touch
+ * targets, because it is reached by scanning a poster and used one-handed,
+ * outdoors, by somebody who has never seen it before. The admin half reuses the
+ * CMS card and table styles almost entirely.
+ *
+ * Every value resolves to a design token, so both re-theme with the product.
+ */
+
+/* --------------------------------------------------------------------------
+ * Public - tracking page sections
+ * ----------------------------------------------------------------------- */
+
+.track-section {
+  margin-top: var(--spacing-7);
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.track-section__title {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.track-section__intro {
+  margin: 0 0 var(--spacing-4);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.track-empty {
+  margin: 0;
+  padding: var(--spacing-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+/*
+ * The progress list.
+ *
+ * Vertical at every width rather than horizontal-on-desktop: a vertical
+ * timeline reads identically on a phone and a laptop, and a citizen checking a
+ * pothole on the bus is the primary case. The connecting line is drawn with a
+ * border on the marker column so it needs no extra elements.
+ */
+.track-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.track-timeline__step {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  grid-template-areas: 'marker label' 'line date';
+  gap: 0 var(--spacing-3);
+  padding-bottom: var(--spacing-5);
+  position: relative;
+}
+
+.track-timeline__step:last-child {
+  padding-bottom: 0;
+}
+
+/* The connector, drawn between markers and stopped at the final step. */
+.track-timeline__step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 0.4rem;
+  top: 1.1rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.track-timeline__marker {
+  grid-area: marker;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.track-timeline__step--current .track-timeline__marker {
+  background: var(--color-border-strong);
+}
+
+.track-timeline__label {
+  grid-area: label;
+  font-weight: var(--font-weight-medium);
+}
+
+.track-timeline__step--current .track-timeline__label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.track-timeline__date {
+  grid-area: date;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Staff-authored updates. Set apart so they read as messages, not chrome. */
+.track-updates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.track-update {
+  padding: var(--spacing-4);
+  border-left: 3px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.track-update__date {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.track-update__body {
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+  /* Staff write these with line breaks; preserve them without allowing markup. */
+  white-space: pre-wrap;
+}
+
+.track-followed {
+  margin: 0 0 var(--spacing-4);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+/*
+ * The three follow-up answers.
+ *
+ * Buttons rather than a select, and full width when stacked: on a phone a
+ * dropdown is three taps and a scroll, and this is the one question the whole
+ * follow-up loop exists to ask. Minimum height keeps them comfortably tappable
+ * with a thumb.
+ */
+.track-answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+}
+
+@media (min-width: 30rem) {
+  .track-answers {
+    flex-direction: row;
+  }
+
+  .track-answer {
+    flex: 1;
+  }
+}
+
+.track-answer {
+  min-height: 3rem;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.track-answer--selected {
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  border-color: var(--color-text-primary);
+}
+
+/* --------------------------------------------------------------------------
+ * Admin - communication console
+ * ----------------------------------------------------------------------- */
+
+.comm-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.comm-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--spacing-4);
+  margin: 0 0 var(--spacing-4);
+}
+
+.comm-summary__item dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.comm-summary__item dd {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.comm-section {
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.comm-section__title {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.comm-compose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+}
+
+.comm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.comm-updates,
+.comm-followups,
+.comm-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: var(--spacing-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comm-update,
+.comm-followup,
+.comm-notification {
+  padding-bottom: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.comm-update__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+.comm-update__body {
+  margin: 0;
+  padding: var(--spacing-3);
+  border-left: 3px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+}
+
+/*
+ * The pre-publication warning.
+ *
+ * Deliberately loud. Publishing is the one irreversible act in this phase - an
+ * update can be withdrawn from the page but cannot be unread or unsent - and
+ * the confirmation should not look like every other secondary button.
+ */
+.comm-confirm {
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-status-warning-border, var(--color-border-strong));
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.comm-confirm p {
+  margin: 0 0 var(--spacing-2);
+  line-height: var(--line-height-relaxed);
+}
+
+.comm-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.comm-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-sm);
+}
+
+.comm-filters__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  cursor: pointer;
+}

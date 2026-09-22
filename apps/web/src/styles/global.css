@@ -1,0 +1,722 @@
+/**
+ * Application-level styles.
+ *
+ * Component styling belongs to @rk/ui. This file covers the reset, typography
+ * baseline and the page layout shells. Every value resolves to a design token.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/*
+ * The `hidden` attribute must win over component `display` rules.
+ *
+ * `hidden` hides an element only through the user-agent rule `[hidden] {
+ * display: none }`, and ANY author declaration beats a user-agent one no matter
+ * how weak its selector. So a plain `.thing { display: flex }` silently defeats
+ * `hidden`, and a component that toggles the attribute renders open forever -
+ * which is precisely how the mobile navigation shipped stuck open.
+ *
+ * `!important` is load-bearing here rather than decorative: it is the only way
+ * to outrank an author `display` declaration on the same element, and it is why
+ * every mainstream CSS reset carries this exact rule.
+ */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
+  background-color: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------------------
+ * Kannada typography
+ *
+ * Kannada is not Latin with different glyphs. It stacks: vowel signs ride above
+ * the line, ottaksharas hang below it, and a conjunct like "ದ್ದಿ" occupies far
+ * more vertical room than any Latin letter. Type set to Latin metrics crowds
+ * and clips it.
+ *
+ * These redefine the TOKENS rather than restyling components, so every rule in
+ * every stylesheet that already reads `var(--line-height-tight)` or
+ * `var(--letter-spacing-tight)` adapts the moment the language changes - one
+ * block instead of a Kannada variant of each component, and nothing to keep in
+ * sync later. `SiteContext` keeps `html[lang]` in step with the locale, so this
+ * switches with the language selector at runtime.
+ * ----------------------------------------------------------------------- */
+html[lang='kn'] {
+  /*
+   * Negative tracking is for Latin display type. On Kannada it pulls bases into
+   * their own vowel signs, which is the single most damaging thing that can be
+   * done to the script's legibility.
+   */
+  --letter-spacing-tight: 0;
+  /* Wide tracking loosens conjuncts into unrelated-looking pieces. */
+  --letter-spacing-wide: 0.01em;
+
+  /* Room for the marks above and the ottaksharas below. */
+  --line-height-tight: 1.35;
+  --line-height-snug: 1.45;
+  --line-height-normal: 1.7;
+  --line-height-relaxed: 1.85;
+
+  /*
+   * Kannada carries more detail per character than Latin, so the small end of
+   * the scale has to come up a step to stay legible - captions, badges and
+   * navigation labels in particular. Body copy is already comfortable at 16px.
+   */
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.9375rem;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Visible only when focused, so keyboard users can bypass the navigation. */
+.skip-link {
+  position: absolute;
+  left: var(--spacing-4);
+  top: calc(-1 * var(--spacing-16));
+  z-index: var(--z-index-toast);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  transition: top var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.skip-link:focus {
+  top: var(--spacing-4);
+}
+
+/* --------------------------------------------------------------------------
+ * Shared primitives
+ * ----------------------------------------------------------------------- */
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.section {
+  padding: var(--spacing-12) var(--spacing-4);
+}
+
+.section__inner {
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+}
+
+.section__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  margin-bottom: var(--spacing-6);
+}
+
+.centered {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.grid {
+  display: grid;
+  gap: var(--spacing-6);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .grid--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.prose {
+  color: var(--color-text-muted);
+  line-height: var(--line-height-relaxed);
+}
+
+/* --------------------------------------------------------------------------
+ * Brand
+ * ----------------------------------------------------------------------- */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-weight: var(--font-weight-semibold);
+}
+
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.brand--inverse {
+  color: var(--color-on-brand);
+}
+
+/* --------------------------------------------------------------------------
+ * Public shell
+ * ----------------------------------------------------------------------- */
+.public-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.public-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-4);
+}
+
+.public-nav {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.public-nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-touch-target);
+  padding: 0 var(--spacing-4);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.public-nav__link:hover {
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.public-nav__link--active {
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary-hover);
+}
+
+.public-main {
+  flex: 1;
+}
+
+.public-footer {
+  padding: var(--spacing-8) var(--spacing-4);
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+ * Hero
+ * ----------------------------------------------------------------------- */
+.hero {
+  padding: var(--spacing-16) var(--spacing-4);
+  background: linear-gradient(160deg, var(--color-brand) 0%, var(--color-brand-surface) 100%);
+  color: var(--color-on-brand);
+}
+
+.hero__inner {
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-5);
+}
+
+.hero__title {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  max-width: 20ch;
+}
+
+.hero__subtitle {
+  max-width: 62ch;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-border);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding: var(--spacing-24) var(--spacing-8);
+  }
+
+  .hero__title {
+    font-size: var(--font-size-5xl);
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Admin shell
+ * ----------------------------------------------------------------------- */
+.admin-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+}
+
+/*
+ * Below `lg` the sidebar is a drawer: a fixed overlay that is parked off the
+ * start edge until opened. Above it, the wrapper collapses to nothing and the
+ * panel inside becomes an ordinary grid column.
+ */
+.admin-sidebar {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-modal);
+  visibility: hidden;
+  transition: visibility 0s linear var(--motion-duration-normal);
+}
+
+.admin-sidebar[data-open='true'] {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.admin-sidebar__scrim {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-overlay);
+  opacity: 0;
+  transition: opacity var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.admin-sidebar[data-open='true'] .admin-sidebar__scrim {
+  opacity: 1;
+}
+
+/*
+ * The panel is the sidebar proper.
+ *
+ * A three-part column - header, scrolling nav, footer - inside a fixed height.
+ * `min-height: 0` on the nav is the load-bearing declaration: without it a
+ * flex child refuses to shrink below its content, which is how eighteen links
+ * previously overflowed a `height: 100vh` box and painted onto the page behind
+ * it, where a pale link colour meant for navy landed on a light background at
+ * roughly 1.4:1 and read as disabled.
+ */
+.admin-sidebar__panel {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(17rem, 84vw);
+  height: 100%;
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
+  transform: translateX(-100%);
+  transition: transform var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.admin-sidebar[data-open='true'] .admin-sidebar__panel {
+  transform: translateX(0);
+}
+
+.admin-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  flex-shrink: 0;
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-3);
+  border-bottom: 1px solid var(--color-brand-surface);
+}
+
+.admin-sidebar__close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--color-on-brand);
+  cursor: pointer;
+}
+
+.admin-sidebar__close:hover {
+  background-color: var(--color-brand-surface);
+}
+
+/* The only scrolling region in the sidebar. */
+.admin-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-3) var(--spacing-3) var(--spacing-4);
+}
+
+.admin-nav__group + .admin-nav__group {
+  margin-top: var(--spacing-4);
+}
+
+/*
+ * Group headings.
+ *
+ * Signposts read once, not labels competing with the links beneath them. Small
+ * and tracked out, so size and case carry the hierarchy and the eye still lands
+ * on the destinations.
+ */
+.admin-nav__group-title {
+  margin: 0 0 var(--spacing-1);
+  padding: 0 var(--spacing-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  /* The console's established signpost colour, kept from the previous sidebar.
+     8.3:1 on the navy panel. */
+  color: var(--color-accent);
+}
+
+.admin-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-height: var(--size-touch-target);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  /* 12:1 against the navy panel. Every item here is enabled, and none of them
+     may look otherwise. */
+  color: var(--color-border);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.admin-nav__label {
+  min-width: 0;
+}
+
+.admin-nav__link:hover {
+  background-color: var(--color-brand-surface);
+  color: var(--color-on-brand);
+}
+
+/*
+ * Active state: a filled pill plus a marker on the start edge.
+ *
+ * The bar carries the meaning without relying on the fill colour alone, which
+ * keeps "where am I" legible to a reader who cannot separate the green from
+ * the navy behind it.
+ */
+/*
+ * The fill is primary-HOVER, not primary.
+ *
+ * White on #16A34A is 3.30:1, which fails AA for a 14px label - the previous
+ * active item was the least readable row in the sidebar despite looking like
+ * the most prominent. #15803D carries the same brand green at 5.02:1.
+ */
+.admin-nav__link--active {
+  position: relative;
+  background-color: var(--color-primary-hover);
+  color: var(--color-on-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.admin-nav__link--active::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  width: 3px;
+  height: 1.25rem;
+  margin-top: -0.625rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-on-primary);
+}
+
+.admin-nav__link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.admin-sidebar__footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+  padding: var(--spacing-4);
+  border-top: 1px solid var(--color-brand-surface);
+}
+
+.admin-sidebar__note {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-border-strong);
+}
+
+.admin-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: var(--color-background);
+}
+
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-topbar__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.admin-topbar__menu {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.admin-topbar__menu:hover {
+  background-color: var(--color-surface-subtle);
+}
+
+.admin-topbar__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-main {
+  flex: 1;
+  padding: var(--spacing-5) var(--spacing-4);
+}
+
+@media (min-width: 768px) {
+  .admin-topbar {
+    padding: var(--spacing-4) var(--spacing-6);
+  }
+
+  .admin-topbar__title {
+    font-size: var(--font-size-xl);
+  }
+
+  .admin-main {
+    padding: var(--spacing-6);
+  }
+}
+
+/*
+ * From `lg` the sidebar stops being an overlay and becomes a column.
+ *
+ * The wrapper drops its fixed positioning entirely - it is no longer a layer
+ * over the page, so there is nothing left to intercept clicks or trap scroll,
+ * and the panel simply fills the grid track.
+ */
+@media (min-width: 1024px) {
+  .admin-layout {
+    grid-template-columns: 17rem 1fr;
+  }
+
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    inset-inline: auto;
+    z-index: var(--z-index-base);
+    height: 100vh;
+    visibility: visible;
+    transition: none;
+  }
+
+  .admin-sidebar__scrim {
+    display: none;
+  }
+
+  .admin-sidebar__panel {
+    position: static;
+    width: 100%;
+    transform: none;
+    transition: none;
+  }
+
+  .admin-topbar__menu {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar,
+  .admin-sidebar__scrim,
+  .admin-sidebar__panel,
+  .admin-nav__link,
+  .admin-topbar__menu {
+    transition-duration: 1ms;
+    transition-delay: 0s;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Content blocks
+ * ----------------------------------------------------------------------- */
+.checklist {
+  margin: 0;
+  padding-left: var(--spacing-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  color: var(--color-text);
+  line-height: var(--line-height-normal);
+}
+
+.checklist__item--muted {
+  color: var(--color-text-muted);
+}
+
+.health-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.health-row__text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.not-found__code {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------------
+ * Authentication
+ * ----------------------------------------------------------------------- */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-6) var(--spacing-4);
+  background: linear-gradient(160deg, var(--color-brand) 0%, var(--color-brand-surface) 100%);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.admin-topbar__account {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.admin-topbar__email {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

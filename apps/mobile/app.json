@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "RK Campaign",
+    "slug": "rk-campaign",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "rkcampaign",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0F172A",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rkcampaign.app"
+    },
+    "android": {
+      "package": "com.rkcampaign.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "phase": 2
+    },
+    "plugins": ["expo-secure-store"]
+  }
+}

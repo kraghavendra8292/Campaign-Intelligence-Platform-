@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to a branch cancels the run still in flight for that branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, type-check, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      # CI runs against a disposable PostgreSQL container, NOT the Neon project.
+      #
+      # Deliberate: it keeps database credentials out of CI entirely (so pull
+      # requests from forks work and no secret can leak through a workflow log),
+      # gives every run a pristine schema, and costs nothing. It still exercises
+      # the real Prisma migration and connectivity paths.
+      #
+      # Neon-specific behaviour (pooled vs direct endpoints, TLS) is verified by
+      # configuration validation and by `npm run doctor` against a real project.
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: rk_app
+          POSTGRES_PASSWORD: rk_ci_password
+          POSTGRES_DB: rk_campaign
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rk_app -d rk_campaign"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      # localhost, so no sslmode is required and there is no pooled/direct split.
+      DATABASE_URL: postgresql://rk_app:rk_ci_password@localhost:5432/rk_campaign?schema=public
+      LOG_LEVEL: silent
+      CORS_ORIGINS: http://localhost:5173
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify design tokens are up to date
+        run: npm run tokens:check
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply database migrations
+        run: npm run db:migrate:deploy
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # ----------------------------------------------------------------------
+      # Phase 10 gates
+      # ----------------------------------------------------------------------
+
+      # Two steps, because the useful gate and the useful report are not the
+      # same command.
+      #
+      # BLOCKING at critical. Zero critical advisories today, so this is a real
+      # gate that genuinely passes rather than one pinned open.
+      #
+      # It is NOT set to `high`, and that is a judgement worth stating: all four
+      # current high advisories are `prisma`, `@prisma/config`, `deepmerge-ts`
+      # and `mysql2` - the Prisma CLI's own dependency tree, which runs at build
+      # and migration time and never in the request path. (This platform speaks
+      # PostgreSQL; it opens no MySQL connection.) Gating on high would fail
+      # every build until an upstream CLI release, and a pipeline that is always
+      # red is one nobody reads - so the signal would be lost precisely when a
+      # genuine critical arrived.
+      - name: Audit dependencies (blocking)
+        run: npm audit --audit-level=critical
+
+      # NON-BLOCKING report, so the high and moderate set stays visible in every
+      # build log and is reviewed monthly rather than forgotten. If this step
+      # ever shows a high advisory on a RUNTIME dependency, it must be fixed and
+      # the gate above tightened. See docs/SECURITY.md for the standing
+      # assessment and docs/OPERATIONS.md for the monthly review.
+      - name: Audit dependencies (report only)
+        continue-on-error: true
+        run: npm audit --audit-level=moderate
+
+      # Proves the committed migrations describe the committed schema.
+      #
+      # Runs AFTER the migrate step above, and diffs the database those
+      # migrations just built against schema.prisma. An empty diff means the two
+      # agree. Catches the specific mistake of editing schema.prisma and shipping
+      # without the matching migration - which passes every other check here and
+      # then fails at deploy time against a real database.
+      - name: Verify migrations match the schema
+        run: npm run db:migrate:check
+
+      # A drifted lockfile means CI and production install different trees.
+      - name: Verify the lockfile is current
+        run: git diff --exit-code package-lock.json
+
+      # Deployment is manual for this platform - see docs/DEPLOYMENT.md. CI
+      # verifies; a human deploys.

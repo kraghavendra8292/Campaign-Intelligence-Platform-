@@ -1,0 +1,1711 @@
+/**
+ * Public candidate website.
+ *
+ * Every value resolves to a design token from @rk/design-tokens - there is no
+ * literal colour in this file. Re-theming the brand means editing tokens.ts,
+ * not this stylesheet.
+ *
+ * Mobile-first: the base rules describe the phone layout, and each media query
+ * only adds what a wider viewport allows.
+ */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.site {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.site-main {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+ * Header
+ *
+ * Mobile is the base case: a compact bar of brand + three controls, sized so
+ * it still breathes at 320px.
+ *
+ * The horizontal bar appears only at `2xl`. Ten Kannada labels - one of them
+ * "ಅಭಿಪ್ರಾಯ ಹಂಚಿಕೊಳ್ಳಿ" - need roughly 1390px beside the brand and the header
+ * controls, so anything narrower put them straight through the language
+ * selector. Everything below that width gets the drawer, which reads better
+ * than a bar that either collides or shrinks Kannada to an unreadable size.
+ * ----------------------------------------------------------------------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-height: 3.5rem;
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+}
+
+.site-brand__mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+/*
+ * The wordmark is withheld on the narrowest phones.
+ *
+ * At 320-419px the three header controls plus the mark leave roughly 60px for
+ * it, which renders as "Demo Campaig..." - a truncated name reads as breakage,
+ * whereas the mark alone reads as deliberate. The link keeps its aria-label,
+ * so the accessible name is the full organisation name at every width.
+ */
+.site-brand__name {
+  display: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-shrink: 0;
+}
+
+/* Square control sized to the touch-target minimum, for icon-only actions. */
+.site-icon-button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.site-icon-button:hover {
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.site-icon-button:active {
+  background-color: var(--color-border);
+}
+
+.site-locale select {
+  max-width: 6rem;
+  /*
+   * Matches the 44px search and menu buttons beside it: a consistent header
+   * row, a real touch target, and enough height that "ಕನ್ನಡ" is not clipped by
+   * a control sized for Latin.
+   */
+  min-height: var(--size-control-md);
+  line-height: var(--line-height-snug);
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  /* Truncates the selected label rather than widening the header; the open
+     list still shows each language in full. */
+  text-overflow: ellipsis;
+}
+
+.site-nav {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.site-nav--desktop {
+  display: none;
+  /* Last-resort guard: if a translation ever outgrows even this breakpoint the
+     bar gives way rather than overrunning the controls to its right. */
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+.site-nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-control-md);
+  padding: 0 var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.site-nav__link:hover {
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.site-nav__link--active {
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary-hover);
+}
+
+/* --------------------------------------------------------------------------
+ * Mobile navigation drawer
+ *
+ * Closed is the resting state, and it is expressed as a transform rather than
+ * with `display`, so opening and closing can both animate. `visibility` is what
+ * takes the closed panel out of the pointer and focus order; its transition is
+ * DELAYED by the panel duration so the slide-out finishes before the drawer
+ * disappears, and snaps back to 0s on open so it is interactive immediately.
+ * ----------------------------------------------------------------------- */
+.site-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-modal);
+  /* The closed panel is parked off the right edge; clip it so it can never
+     lengthen the page sideways. */
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear var(--motion-duration-normal);
+}
+
+.site-drawer[data-open='true'] {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.site-drawer__scrim {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-overlay);
+  opacity: 0;
+  transition: opacity var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.site-drawer[data-open='true'] .site-drawer__scrim {
+  opacity: 1;
+}
+
+.site-drawer__panel {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(20rem, 86vw);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  /* Scrolling to the end of the menu must not then scroll the page behind it. */
+  overscroll-behavior: contain;
+  transform: translateX(100%);
+  transition: transform var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.site-drawer[data-open='true'] .site-drawer__panel {
+  transform: translateX(0);
+}
+
+.site-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-height: 3.5rem;
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-drawer__title {
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.site-drawer__close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.site-drawer__close:hover {
+  background-color: var(--color-surface-subtle);
+}
+
+.site-drawer__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-3) var(--spacing-6);
+}
+
+.site-drawer__link {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-touch-target);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  /* Long Kannada labels wrap instead of forcing the drawer to scroll sideways. */
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.site-drawer__link:hover {
+  background-color: var(--color-surface-subtle);
+}
+
+.site-drawer__link--active {
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary-hover);
+  font-weight: var(--font-weight-semibold);
+}
+
+.site-drawer__divider {
+  display: block;
+  height: 1px;
+  margin: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-border);
+}
+
+/* The wordmark fits once the viewport is wider than the smallest phones. */
+@media (min-width: 420px) {
+  .site-brand__name {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) {
+  .site-header__inner {
+    padding-inline: var(--spacing-6);
+  }
+
+  .site-locale select {
+    max-width: none;
+  }
+}
+
+@media (min-width: 1536px) {
+  /*
+   * The bar is allowed past the 1200px content column.
+   *
+   * Reading measure is what caps body copy at 1200px; a row of navigation has
+   * no measure to protect, and holding it to the text column is what made the
+   * items collide in the first place.
+   */
+  .site-header__inner {
+    max-width: 90rem;
+  }
+
+  .site-nav--desktop {
+    display: flex;
+  }
+
+  /* The drawer and its trigger have no role once the bar is present. */
+  .site-nav__toggle,
+  .site-drawer {
+    display: none;
+  }
+}
+
+/*
+ * Motion is an enhancement, never the mechanism.
+ *
+ * Everything still opens, closes and stays reachable with transitions off -
+ * only the travel between states is removed.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .site-icon-button,
+  .site-nav__link,
+  .site-drawer,
+  .site-drawer__scrim,
+  .site-drawer__panel,
+  .site-drawer__close,
+  .site-drawer__link {
+    transition-duration: 1ms;
+    transition-delay: 0s;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Homepage cover slideshow
+ *
+ * Layering is entirely LOCAL. The section creates its own stacking context, so
+ * the values below order the photograph, the scrim, the overlay and the
+ * controls against each other and nothing else. The sticky header and the
+ * navigation drawer keep their global tokens and always win, which is why the
+ * drawer covers the hero rather than fighting it.
+ * ----------------------------------------------------------------------- */
+.hero-carousel {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--color-brand);
+}
+
+.hero-carousel__viewport {
+  position: relative;
+  /*
+   * A fixed height, not an aspect ratio.
+   *
+   * The photographs arrive from the CMS at whatever proportions the campaign
+   * uploaded, so the FRAME has to be the constant - otherwise every slide
+   * resizes the hero and the page jumps as the slideshow runs.
+   *
+   * `dvh` keeps it honest on phones, where the browser chrome moves.
+   */
+  height: clamp(20rem, 62dvh, 26rem);
+  overflow: hidden;
+  /* Vertical panning stays with the browser; the horizontal axis is ours. */
+  touch-action: pan-y;
+}
+
+.hero-carousel__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  /*
+   * Fade with a whisper of scale. The scale is what stops a cross-fade reading
+   * as a glitch - it gives the eye a direction - and at 1.5% it is felt more
+   * than seen.
+   */
+  transform: scale(1.015);
+  transition:
+    opacity var(--motion-duration-slow) var(--motion-easing-standard),
+    transform var(--motion-duration-slow) var(--motion-easing-standard);
+}
+
+.hero-carousel__slide[data-active='true'] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.hero-carousel__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Landscapes and group shots: the subject is in the middle. */
+  object-position: center;
+}
+
+/*
+ * Portraits are anchored to the top of the frame.
+ *
+ * A wide hero has to discard most of a tall photograph's height, and taking it
+ * off the bottom is what keeps the head in shot. `buildHeroSlides` decides
+ * which photographs need this from their real dimensions.
+ */
+.hero-carousel__image[data-focus='top'] {
+  object-position: center top;
+}
+
+/*
+ * A scrim only where the words are.
+ *
+ * Washing the whole photograph would dim the campaign's own imagery to make
+ * text legible over it; this is a one-sided gradient that is opaque behind the
+ * headline and fully clear over the rest of the picture.
+ */
+.hero-carousel__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--spacing-6) var(--spacing-4) var(--spacing-12);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-brand) 88%, transparent) 0%,
+    color-mix(in srgb, var(--color-brand) 62%, transparent) 38%,
+    color-mix(in srgb, var(--color-brand) 12%, transparent) 72%,
+    transparent 100%
+  );
+  color: var(--color-on-brand);
+}
+
+.hero-carousel__overlay .hero__content {
+  width: 100%;
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+}
+
+.hero-carousel__overlay .hero__subtitle {
+  color: var(--color-border);
+}
+
+/* --- Controls ----------------------------------------------------------- */
+.hero-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  margin-top: calc(var(--size-touch-target) / -2);
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--color-on-brand) 28%, transparent);
+  border-radius: var(--radius-full);
+  background-color: color-mix(in srgb, var(--color-brand) 42%, transparent);
+  color: var(--color-on-brand);
+  cursor: pointer;
+  /* Present but not competing with the photograph until it is wanted. */
+  opacity: 0.75;
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-easing-standard),
+    background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.hero-carousel__arrow:hover,
+.hero-carousel__arrow:focus-visible {
+  opacity: 1;
+  background-color: color-mix(in srgb, var(--color-brand) 68%, transparent);
+}
+
+.hero-carousel__arrow--prev {
+  inset-inline-start: var(--spacing-3);
+}
+
+.hero-carousel__arrow--next {
+  inset-inline-end: var(--spacing-3);
+}
+
+.hero-carousel__controls {
+  position: absolute;
+  inset-inline: 0;
+  bottom: var(--spacing-4);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+}
+
+.hero-carousel__dots {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+/*
+ * The dot is the mark; the button around it is the target.
+ *
+ * The visible indicator is 8px because a bigger one would be a decoration
+ * rather than a hint, but the control is a full touch target - the padding is
+ * transparent, so it is reachable without being seen.
+ */
+.hero-carousel__dot {
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.hero-carousel__dot::before {
+  content: '';
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 auto;
+  border-radius: var(--radius-full);
+  background-color: color-mix(in srgb, var(--color-on-brand) 45%, transparent);
+  transition:
+    width var(--motion-duration-normal) var(--motion-easing-standard),
+    background-color var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.hero-carousel__dot[data-active='true']::before {
+  /* The active slide reads as a bar, legible at a glance and without colour. */
+  width: 1.5rem;
+  background-color: var(--color-on-brand);
+}
+
+.hero-carousel__play {
+  display: grid;
+  place-items: center;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background-color: transparent;
+  color: var(--color-on-brand);
+  opacity: 0.75;
+  cursor: pointer;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.hero-carousel__play:hover,
+.hero-carousel__play:focus-visible {
+  opacity: 1;
+}
+
+/* --- Responsive --------------------------------------------------------- */
+@media (min-width: 768px) {
+  .hero-carousel__viewport {
+    height: clamp(26rem, 58vh, 34rem);
+  }
+
+  .hero-carousel__overlay {
+    padding: var(--spacing-8) var(--spacing-6) var(--spacing-16);
+    /*
+     * Wider viewports get a horizontal gradient instead of a vertical one: the
+     * text sits in a column at the start edge, so the photograph only needs
+     * darkening on that side and stays fully visible on the other.
+     */
+    background: linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-brand) 86%, transparent) 0%,
+      color-mix(in srgb, var(--color-brand) 62%, transparent) 42%,
+      color-mix(in srgb, var(--color-brand) 8%, transparent) 78%,
+      transparent 100%
+    );
+  }
+
+  .hero-carousel__overlay .hero__content {
+    max-width: calc(var(--size-content-max-width) * 0.62);
+    margin-inline: 0;
+    padding-inline-start: max(var(--spacing-6), calc((100vw - var(--size-content-max-width)) / 2));
+  }
+
+  .hero-carousel__arrow--prev {
+    inset-inline-start: var(--spacing-5);
+  }
+
+  .hero-carousel__arrow--next {
+    inset-inline-end: var(--spacing-5);
+  }
+
+  .hero-carousel__controls {
+    justify-content: flex-end;
+    inset-inline-end: var(--spacing-5);
+    inset-inline-start: auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-carousel__viewport {
+    height: clamp(30rem, 62vh, 40rem);
+  }
+}
+
+/*
+ * Reduced motion: the slideshow still advances, it just stops moving.
+ *
+ * The change is instant rather than animated, which keeps the content
+ * available - and the pause control is always there for anyone who would
+ * rather it stopped altogether.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .hero-carousel__slide {
+    transition-duration: 1ms;
+    transform: none;
+  }
+
+  .hero-carousel__slide[data-active='true'] {
+    transform: none;
+  }
+
+  .hero-carousel__dot::before,
+  .hero-carousel__arrow,
+  .hero-carousel__play {
+    transition-duration: 1ms;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Hero
+ * ----------------------------------------------------------------------- */
+.hero {
+  background: linear-gradient(160deg, var(--color-brand) 0%, var(--color-brand-surface) 100%);
+  color: var(--color-on-brand);
+  padding: var(--spacing-12) var(--spacing-4);
+}
+
+.hero__inner {
+  display: grid;
+  gap: var(--spacing-8);
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+}
+
+.hero__eyebrow {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: var(--spacing-3);
+}
+
+.hero__title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  max-width: 18ch;
+}
+
+.hero__subtitle {
+  margin-top: var(--spacing-4);
+  max-width: 58ch;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-border);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
+}
+
+.hero__portrait .site-image {
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.hero--compact {
+  padding: var(--spacing-10) var(--spacing-4);
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding: var(--spacing-16) var(--spacing-6);
+  }
+
+  .hero__title {
+    font-size: var(--font-size-4xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero__inner {
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: center;
+    gap: var(--spacing-12);
+  }
+
+  .hero {
+    padding: var(--spacing-24) var(--spacing-8);
+  }
+
+  .hero__title {
+    font-size: var(--font-size-5xl);
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Quick actions
+ * ----------------------------------------------------------------------- */
+.quick-actions {
+  padding: var(--spacing-6) var(--spacing-4);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.quick-actions__inner {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-3);
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+}
+
+.quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  /* Tall enough for an icon above two lines of Kannada without the card
+     growing when only some labels wrap. */
+  min-height: 7rem;
+  padding: var(--spacing-4) var(--spacing-3);
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+a.quick-action:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.quick-action__icon {
+  font-size: var(--font-size-2xl);
+  line-height: 1;
+}
+
+.quick-action__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  /*
+   * Kannada labels are longer than their English counterparts - "Development
+   * Projects" is one line, "ಅಭಿವೃದ್ಧಿ ಯೋಜನೆಗಳು" is two - so the label is set
+   * up to WRAP well rather than to be shrunk until it fits.
+   *
+   * `balance` splits a two-line label evenly instead of leaving one word
+   * stranded underneath, which is what keeps a row of cards looking composed
+   * when only some of the labels wrap. `break-word` is the safety net for a
+   * compound long enough to outgrow a half-width card on a 320px screen.
+   */
+  line-height: var(--line-height-snug);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+/* Future features are visibly present but plainly inert. */
+.quick-action--future {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background-color: var(--color-surface-subtle);
+}
+
+.quick-action__badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .quick-actions__inner {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .quick-actions__inner {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Sections
+ * ----------------------------------------------------------------------- */
+.section {
+  padding: var(--spacing-10) var(--spacing-4);
+}
+
+.section--tinted {
+  background-color: var(--color-surface-subtle);
+}
+
+.section__inner {
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+}
+
+.section__inner--narrow {
+  max-width: 46rem;
+}
+
+.section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.section-header__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.section-header__subtitle {
+  margin-top: var(--spacing-2);
+  color: var(--color-text-muted);
+  max-width: 62ch;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: var(--spacing-16) var(--spacing-6);
+  }
+
+  .section-header__title {
+    font-size: var(--font-size-3xl);
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Cards
+ * ----------------------------------------------------------------------- */
+.card-grid {
+  display: grid;
+  gap: var(--spacing-5);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .card-grid--2,
+  .card-grid--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.content-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition:
+    box-shadow var(--motion-duration-normal) var(--motion-easing-standard),
+    transform var(--motion-duration-normal) var(--motion-easing-standard),
+    border-color var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.content-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+  border-color: var(--color-border-strong);
+}
+
+/* One link covering the card: a single tab stop, one announcement. */
+.content-card__link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: inherit;
+}
+
+.content-card__link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.content-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-5);
+  flex: 1;
+}
+
+.content-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.content-card__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.content-card__excerpt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  /* Keeps every card in a row the same height regardless of copy length. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.content-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  margin: 0;
+  font-size: var(--font-size-xs);
+}
+
+.content-card__meta dt {
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.content-card__meta dd {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.content-card__date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.content-card__location {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.content-card__action {
+  margin-top: auto;
+  padding-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.content-card--event .content-card__link {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.event-card__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 5rem;
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary-hover);
+}
+
+.event-card__day {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+.event-card__month {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.priority-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  height: 100%;
+}
+
+.priority-card__icon {
+  font-size: var(--font-size-3xl);
+  line-height: 1;
+}
+
+.priority-card__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.priority-card__description {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+/* --------------------------------------------------------------------------
+ * Images
+ * ----------------------------------------------------------------------- */
+.site-image {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--color-surface-subtle);
+}
+
+/* The ratio is on the wrapper, so the box exists before the image loads. */
+.site-image--16-9 {
+  aspect-ratio: 16 / 9;
+}
+.site-image--4-3 {
+  aspect-ratio: 4 / 3;
+}
+.site-image--3-2 {
+  aspect-ratio: 3 / 2;
+}
+.site-image--1-1 {
+  aspect-ratio: 1 / 1;
+}
+
+.site-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.site-image--placeholder {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--color-surface-subtle) 0%, var(--color-border) 100%);
+}
+
+.site-image__placeholder-mark {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border-strong);
+}
+
+/* --------------------------------------------------------------------------
+ * Filters and pagination
+ * ----------------------------------------------------------------------- */
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.filter-bar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.filter-chip {
+  min-height: var(--size-control-sm);
+  padding: 0 var(--spacing-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.filter-chip--active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.filter-bar__search,
+.search-form {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+}
+
+.search-form {
+  margin-bottom: var(--spacing-6);
+}
+
+.load-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-8);
+}
+
+.load-more__count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .filter-bar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * States
+ * ----------------------------------------------------------------------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-16) var(--spacing-4);
+  text-align: center;
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-xl);
+}
+
+.empty-state__title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.empty-state__hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+ * Detail pages
+ * ----------------------------------------------------------------------- */
+.breadcrumb {
+  margin-bottom: var(--spacing-5);
+  font-size: var(--font-size-sm);
+}
+
+.breadcrumb a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.detail__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.detail__title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.detail__lead {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-muted);
+}
+
+.detail__date,
+.detail__byline {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.detail__cover {
+  border-radius: var(--radius-xl);
+}
+
+.detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail__section h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.detail__actions {
+  padding-top: var(--spacing-4);
+}
+
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--spacing-5);
+  margin: 0;
+  padding: var(--spacing-5);
+  background-color: var(--color-surface-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.fact__label {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-1);
+}
+
+.fact__value {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+/* Absent data is styled as absent, never as a value. */
+.fact__absent {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+  font-style: italic;
+}
+
+.before-after {
+  display: grid;
+  gap: var(--spacing-4);
+  grid-template-columns: 1fr;
+}
+
+.before-after figure,
+.photo-grid figure {
+  margin: 0;
+}
+
+.before-after figcaption,
+.photo-grid figcaption {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.before-after .site-image,
+.photo-grid .site-image {
+  border-radius: var(--radius-lg);
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--spacing-4);
+}
+
+@media (min-width: 640px) {
+  .before-after {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.timeline__item {
+  padding-left: var(--spacing-5);
+  border-left: 2px solid var(--color-primary-subtle);
+}
+
+.timeline__date {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+}
+
+.timeline__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--spacing-1);
+}
+
+.evidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.evidence-item {
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.evidence-item__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.evidence-item__source {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.evidence-item__link {
+  display: inline-block;
+  margin-top: var(--spacing-2);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tag {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+/* --------------------------------------------------------------------------
+ * Rich text (sanitised CMS HTML)
+ * ----------------------------------------------------------------------- */
+.rich-text {
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text);
+}
+
+.rich-text > * + * {
+  margin-top: var(--spacing-4);
+}
+
+.rich-text h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--spacing-6);
+}
+
+.rich-text h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--spacing-5);
+}
+
+.rich-text ul,
+.rich-text ol {
+  padding-left: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.rich-text a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.rich-text img {
+  border-radius: var(--radius-lg);
+}
+
+.rich-text blockquote {
+  margin: 0;
+  padding-left: var(--spacing-5);
+  border-left: 3px solid var(--color-primary);
+  color: var(--color-text-muted);
+}
+
+.rich-text table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rich-text th,
+.rich-text td {
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+
+/* --------------------------------------------------------------------------
+ * Profile, gallery, contact
+ * ----------------------------------------------------------------------- */
+.profile-header {
+  display: grid;
+  gap: var(--spacing-6);
+}
+
+.profile-header__photo {
+  border-radius: var(--radius-2xl);
+  max-width: 16rem;
+}
+
+.profile-header__designation {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--spacing-2);
+}
+
+.social-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-4) 0 0;
+}
+
+.social-list a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+}
+
+@media (min-width: 640px) {
+  .profile-header {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+}
+
+.album + .album {
+  margin-top: var(--spacing-10);
+}
+
+.album__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-2);
+}
+
+.album__description {
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-4);
+}
+
+.video-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.video-card__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+}
+
+.video-card__frame iframe,
+.map-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-card__body {
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.video-card__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.map-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.contact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.contact a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+}
+
+.search-results h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-4);
+}
+
+.search-results__count {
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+ * Footer
+ * ----------------------------------------------------------------------- */
+.site-footer {
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
+  margin-top: auto;
+}
+
+.site-footer__inner {
+  display: grid;
+  gap: var(--spacing-8);
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-12) var(--spacing-4);
+}
+
+.site-footer__name {
+  margin-top: var(--spacing-3);
+  font-weight: var(--font-weight-semibold);
+}
+
+.site-footer__note {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-border-strong);
+}
+
+.site-footer__heading {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-accent);
+  margin-bottom: var(--spacing-3);
+}
+
+.site-footer__links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.site-footer__links a {
+  color: var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.site-footer__links a:hover {
+  color: var(--color-on-brand);
+  text-decoration: underline;
+}
+
+.site-footer__bottom {
+  border-top: 1px solid var(--color-brand-surface);
+  padding: var(--spacing-5) var(--spacing-4);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-border-strong);
+}
+
+@media (min-width: 768px) {
+  .site-footer__inner {
+    grid-template-columns: 2fr 1fr 1fr;
+    padding: var(--spacing-16) var(--spacing-6);
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Reduced motion
+ * ----------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .content-card,
+  .quick-action {
+    transition: none;
+  }
+
+  .content-card:hover,
+  a.quick-action:hover {
+    transform: none;
+  }
+}

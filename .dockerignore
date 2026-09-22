@@ -1,0 +1,31 @@
+# Keeps build context small and, more importantly, keeps secrets and local state
+# out of the image. `.env` is listed first because it is the one that matters:
+# a committed .dockerignore is the last thing standing between a developer's
+# local credentials and a published image layer.
+.env
+.env.*
+!.env.example
+
+node_modules
+**/node_modules
+**/dist
+**/build
+**/.turbo
+**/coverage
+**/.vite
+
+.git
+.github
+docs
+**/*.md
+!README.md
+
+# Generated Prisma client: regenerated inside the image for the target platform.
+apps/api/src/generated
+
+# Local database volume and anything else Docker Compose leaves behind.
+.docker
+docker-compose.yml
+
+**/*.log
+**/.DS_Store

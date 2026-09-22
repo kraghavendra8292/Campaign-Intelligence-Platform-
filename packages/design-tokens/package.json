@@ -1,0 +1,23 @@
+{
+  "name": "@rk/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Single source of truth for the RK visual system (colours, type, spacing, elevation)",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.generated.css"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsx scripts/build-css.mjs build",
+    "check": "tsx scripts/build-css.mjs check",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.13",
+    "vitest": "^4.1.11"
+  }
+}
