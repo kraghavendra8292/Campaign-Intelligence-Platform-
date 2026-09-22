@@ -198,13 +198,26 @@
 /* --------------------------------------------------------------------------
  * Mobile navigation drawer
  *
- * Closed is the resting state, and it is expressed as a transform rather than
- * with `display`, so opening and closing can both animate. `visibility` is what
- * takes the closed panel out of the pointer and focus order; its transition is
- * DELAYED by the panel duration so the slide-out finishes before the drawer
- * disappears, and snaps back to 0s on open so it is interactive immediately.
+ * Closed is the resting state, expressed as a GPU transform rather than
+ * `display`, so open and close both animate. `visibility` is delayed by the
+ * panel duration on close so the slide finishes before the layer disappears,
+ * and snaps to 0s on open so the panel is interactive immediately.
+ *
+ * Enter uses `data-entered` (set one frame after `data-open`) so the browser
+ * paints the off-screen starting point before interpolating to rest. Without
+ * that frame, flipping visibility and transform together often skips the slide.
+ *
+ * Durations and easing are local to the drawer: a sheet needs a longer, more
+ * decelerated travel than a button hover, and the global `--motion-duration-
+ * normal` (200ms) reads as a snap on a full-height panel.
  * ----------------------------------------------------------------------- */
 .site-drawer {
+  --drawer-duration: 380ms;
+  --drawer-scrim-duration: 280ms;
+  /* Emphasized decelerate - settles like a native sheet, not a linear slide. */
+  --drawer-ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --drawer-ease-in: cubic-bezier(0.4, 0, 0.68, 0.06);
+
   position: fixed;
   inset: 0;
   z-index: var(--z-index-modal);
@@ -212,11 +225,13 @@
      lengthen the page sideways. */
   overflow: hidden;
   visibility: hidden;
-  transition: visibility 0s linear var(--motion-duration-normal);
+  pointer-events: none;
+  transition: visibility 0s linear var(--drawer-duration);
 }
 
 .site-drawer[data-open='true'] {
   visibility: visible;
+  pointer-events: auto;
   transition-delay: 0s;
 }
 
@@ -225,10 +240,12 @@
   inset: 0;
   background-color: var(--color-overlay);
   opacity: 0;
-  transition: opacity var(--motion-duration-normal) var(--motion-easing-standard);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  transition: opacity var(--drawer-scrim-duration) var(--drawer-ease-out);
 }
 
-.site-drawer[data-open='true'] .site-drawer__scrim {
+.site-drawer[data-open='true'][data-entered='true'] .site-drawer__scrim {
   opacity: 1;
 }
 
@@ -239,17 +256,36 @@
   display: flex;
   flex-direction: column;
   width: min(20rem, 86vw);
+  padding-bottom: env(safe-area-inset-bottom, 0);
   background-color: var(--color-surface);
+  border-start-start-radius: var(--radius-lg);
+  border-end-start-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   overflow-y: auto;
   /* Scrolling to the end of the menu must not then scroll the page behind it. */
   overscroll-behavior: contain;
-  transform: translateX(100%);
-  transition: transform var(--motion-duration-normal) var(--motion-easing-standard);
+  /* translate3d promotes a compositor layer so the slide stays smooth. */
+  transform: translate3d(100%, 0, 0);
+  transition: transform var(--drawer-duration) var(--drawer-ease-in);
+  will-change: transform;
 }
 
-.site-drawer[data-open='true'] .site-drawer__panel {
-  transform: translateX(0);
+.site-drawer[data-open='true'][data-entered='true'] .site-drawer__panel {
+  transform: translate3d(0, 0, 0);
+  transition-timing-function: var(--drawer-ease-out);
+}
+
+/* Modern browsers: even without the React enter frame, open still slides. */
+@supports (transition-behavior: allow-discrete) {
+  @starting-style {
+    .site-drawer[data-open='true'][data-entered='true'] .site-drawer__panel {
+      transform: translate3d(100%, 0, 0);
+    }
+
+    .site-drawer[data-open='true'][data-entered='true'] .site-drawer__scrim {
+      opacity: 0;
+    }
+  }
 }
 
 .site-drawer__header {
@@ -259,7 +295,13 @@
   gap: var(--spacing-3);
   min-height: 3.5rem;
   padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-4);
+  padding-top: max(var(--spacing-2), env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  /* Keep the title bar pinned while the long Kannada menu scrolls. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .site-drawer__title {
@@ -283,11 +325,17 @@
   background-color: transparent;
   color: var(--color-text);
   cursor: pointer;
-  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .site-drawer__close:hover {
   background-color: var(--color-surface-subtle);
+}
+
+.site-drawer__close:active {
+  transform: scale(0.94);
 }
 
 .site-drawer__nav {
@@ -308,11 +356,18 @@
   /* Long Kannada labels wrap instead of forcing the drawer to scroll sideways. */
   line-height: var(--line-height-normal);
   color: var(--color-text);
-  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .site-drawer__link:hover {
   background-color: var(--color-surface-subtle);
+}
+
+.site-drawer__link:active {
+  transform: scale(0.98);
 }
 
 .site-drawer__link--active {
@@ -384,6 +439,10 @@
   .site-drawer__link {
     transition-duration: 1ms;
     transition-delay: 0s;
+  }
+
+  .site-drawer__panel {
+    will-change: auto;
   }
 }
 

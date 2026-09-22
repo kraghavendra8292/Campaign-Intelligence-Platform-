@@ -8,16 +8,36 @@
  *
  * Migrations deliberately use the DIRECT connection - see
  * `src/config/databaseUrl.ts` for why a pooled endpoint breaks Prisma Migrate.
+ *
+ * `prisma generate` never opens a database connection. Hosts that only need the
+ * generated client for a compile step (monorepo `npm run build`, Cloudflare
+ * Pages, Docker) may not have DATABASE_URL set — those runs get a local
+ * placeholder so generate still succeeds. migrate/seed/studio still require a
+ * real URL and fail loudly when it is missing.
  */
 import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
-import { requireDirectDatabaseUrl } from './src/config/databaseUrl';
+import {
+  requireDirectDatabaseUrl,
+  resolveDirectDatabaseUrl,
+} from './src/config/databaseUrl';
+
+/** Used only when `prisma generate` runs without DATABASE_URL. Never connected to. */
+const GENERATE_PLACEHOLDER_URL =
+  'postgresql://127.0.0.1:5432/prisma_generate_placeholder';
+
+function resolveCliDatabaseUrl(): string {
+  const url = resolveDirectDatabaseUrl();
+  if (url) return url;
+  if (process.argv.includes('generate')) return GENERATE_PLACEHOLDER_URL;
+  return requireDirectDatabaseUrl();
+}
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
 
   datasource: {
-    url: requireDirectDatabaseUrl(),
+    url: resolveCliDatabaseUrl(),
   },
 
   migrations: {

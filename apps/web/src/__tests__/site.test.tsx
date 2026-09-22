@@ -307,6 +307,7 @@ describe('public site - navigation', () => {
 
     expect(toggle()).toHaveAttribute('aria-expanded', 'false');
     expect(drawer()).toHaveAttribute('data-open', 'false');
+    expect(drawer()).toHaveAttribute('data-entered', 'false');
 
     // Hidden from the accessibility tree means hidden in practice: a role
     // query is exactly what a screen reader would and would not find.
@@ -322,6 +323,8 @@ describe('public site - navigation', () => {
 
     expect(toggle()).toHaveAttribute('aria-expanded', 'true');
     expect(panel).toHaveAttribute('data-open', 'true');
+    // Enter lags one frame so the slide has a painted starting point.
+    await waitFor(() => expect(panel).toHaveAttribute('data-entered', 'true'));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     // The keyboard must land inside what just opened, not stay behind it.

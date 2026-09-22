@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Icon } from '@rk/ui';
 import { useSite } from '../../features/site/SiteContext';
@@ -17,6 +17,11 @@ import { PRIMARY_NAV_ITEMS, SECONDARY_NAV_ITEMS, type SiteNavItem } from '../../
  * menu stuck open; a transform cannot be silently defeated the same way, and it
  * animates. While closed the panel is `inert` and `aria-hidden`, so it is
  * unreachable by pointer, keyboard and screen reader even mid-transition.
+ *
+ * `data-entered` is a one-frame lag behind `open` on the way in. Opening flips
+ * `visibility` and `transform` in the same commit, and browsers then skip the
+ * slide because they never painted the off-screen starting point. The lag
+ * forces that paint, so the panel glides instead of popping.
  */
 
 /** Everything the browser can focus, in DOM order. */
@@ -35,6 +40,34 @@ export function MobileNavDrawer({ id, open, onClose, siteName, toggleRef }: Mobi
   const { t } = useSite();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [entered, setEntered] = useState(false);
+
+  // Paint the closed transform once, then enter on the next frame.
+  useEffect(() => {
+    if (!open) {
+      setEntered(false);
+      return;
+    }
+
+    if (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setEntered(true);
+      return;
+    }
+
+    let outer = 0;
+    let inner = 0;
+    outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setEntered(true));
+    });
+
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [open]);
 
   // Focus management and the key bindings that only apply while open.
   useEffect(() => {
@@ -97,7 +130,13 @@ export function MobileNavDrawer({ id, open, onClose, siteName, toggleRef }: Mobi
   }, [open]);
 
   return (
-    <div className="site-drawer" data-open={open} aria-hidden={!open} inert={!open || undefined}>
+    <div
+      className="site-drawer"
+      data-open={open}
+      data-entered={entered}
+      aria-hidden={!open}
+      inert={!open || undefined}
+    >
       {/*
         Decorative: closing by clicking away is a convenience for pointer users
         that Escape and the close button already provide accessibly, so this
