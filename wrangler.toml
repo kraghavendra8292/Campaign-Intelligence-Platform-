@@ -11,7 +11,7 @@
 #
 # Or use `npm run build:pages` to compile only the web app.
 
-name = "rk-campaign-intelligence-platform"
+name = "campaign-intelligence-platform"
 compatibility_date = "2026-09-22"
 
 [assets]
