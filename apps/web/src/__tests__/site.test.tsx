@@ -131,12 +131,13 @@ describe('public site - tenant and locale', () => {
     expect(publicCalls.length).toBeGreaterThan(0);
 
     for (const call of publicCalls) {
-      // `organizationSlug` is null in jsdom (no ?org, no subdomain, no env
-      // default) - what matters is that the field is always sent, so the API
-      // resolves the tenant rather than a page guessing.
+      // Bare hosts (jsdom / workers.dev) fall through to VITE_DEFAULT_SITE_SLUG
+      // so the API always receives a concrete tenant, never a null guess.
       expect(call.variables).toHaveProperty('input');
-      expect(call.variables.input).toMatchObject({ locale: 'en' });
-      expect(call.variables.input).toHaveProperty('organizationSlug');
+      expect(call.variables.input).toMatchObject({
+        locale: 'en',
+        organizationSlug: 'demo-campaign',
+      });
     }
   });
 

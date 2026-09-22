@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import { type Locale } from '@rk/types';
 import { translate, type StringKey } from '../../i18n/strings';
 import { env } from '../../config/env';
@@ -20,9 +21,9 @@ import { readStoredLocale, writeStoredLocale } from '../../i18n/locale';
  * The browser decides which site to *ask* for; the server decides what that
  * site may show. Resolution order mirrors the API:
  *
- *   1. `?org=<slug>` query parameter  - development and previews
- *   2. subdomain of the current host  - `<slug>.example.com`
- *   3. `VITE_DEFAULT_SITE_SLUG`       - single-tenant deployments
+ *   1. `?org=<slug>` query parameter  - development, previews, QR redirects
+ *   2. subdomain of the current host  - `<slug>.example.com` (not platform hosts)
+ *   3. `VITE_DEFAULT_SITE_SLUG`       - single-tenant / workers.dev deployments
  *
  * Whatever this produces is only a *request*: the API independently validates
  * the slug and returns nothing but that tenant's published content, so a user
@@ -39,13 +40,33 @@ interface SiteState {
 
 const SiteContext = createContext<SiteState | null>(null);
 
-/** Reads a tenant slug from the subdomain, if the host has one. */
-function slugFromHost(hostname: string): string | null {
-  const labels = hostname.split('.');
+/**
+ * Hosts where the first DNS label is the *product* (or platform), never a
+ * campaign slug. Treating `campaign-intelligence-platform.….workers.dev` as
+ * org `campaign-intelligence-platform` made the bare URL fail after refresh.
+ */
+function isPlatformHostname(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.workers.dev') ||
+    hostname.endsWith('.pages.dev') ||
+    hostname.endsWith('.vercel.app') ||
+    hostname.endsWith('.netlify.app') ||
+    hostname.endsWith('.onrender.com')
+  );
+}
+
+/** Reads a tenant slug from the subdomain, if the host has a real campaign one. */
+export function slugFromHost(hostname: string): string | null {
+  const host = hostname.split(':')[0]?.toLowerCase() ?? '';
+  if (!host || isPlatformHostname(host)) return null;
+
+  const labels = host.split('.');
   if (labels.length < 3) return null;
 
-  const candidate = labels[0]?.toLowerCase();
-  if (!candidate || candidate === 'www') return null;
+  const candidate = labels[0];
+  if (!candidate || candidate === 'www' || candidate === 'api') return null;
 
   return /^[a-z0-9][a-z0-9-]{0,62}$/.test(candidate) ? candidate : null;
 }
@@ -57,8 +78,7 @@ export function resolveSiteSlug(search: string, hostname: string): string | null
   const fromHost = slugFromHost(hostname);
   if (fromHost) return fromHost;
 
-  const configured = import.meta.env.VITE_DEFAULT_SITE_SLUG;
-  return typeof configured === 'string' && configured.length > 0 ? configured : null;
+  return env.VITE_DEFAULT_SITE_SLUG;
 }
 
 export function SiteProvider({ children }: { children: ReactNode }) {
@@ -70,6 +90,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() =>
     readStoredLocale(env.VITE_DEFAULT_LOCALE),
   );
+
+  const location = useLocation();
 
   /*
    * Keeps `html[lang]` in step with the active language.
@@ -86,9 +108,10 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = locale;
   }, [locale]);
 
+  // Re-resolve when `?org=` changes (QR landing → in-app nav → hard refresh).
   const organizationSlug = useMemo(
-    () => resolveSiteSlug(window.location.search, window.location.hostname),
-    [],
+    () => resolveSiteSlug(location.search, window.location.hostname),
+    [location.search],
   );
 
   const setLocale = useCallback((next: Locale) => {

@@ -29,6 +29,17 @@ export const webEnvSchema = z.object({
    * different audience can change it per deployment.
    */
   VITE_DEFAULT_LOCALE: z.enum(LOCALES).default('kn'),
+  /**
+   * Tenant shown when the URL has no `?org=` and the host is not a per-campaign
+   * subdomain. Required on single-host deploys (localhost, Cloudflare
+   * `*.workers.dev`) where the first DNS label is the product name, not an org.
+   */
+  VITE_DEFAULT_SITE_SLUG: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9][a-z0-9-]{0,62}$/)
+    .default('demo-campaign'),
 });
 
 export type WebEnv = z.infer<typeof webEnvSchema>;
@@ -41,6 +52,7 @@ export const env: WebEnv = parseEnv('@rk/web', webEnvSchema, {
   VITE_API_URL: import.meta.env.VITE_API_URL,
   VITE_APP_NAME: import.meta.env.VITE_APP_NAME,
   VITE_DEFAULT_LOCALE: import.meta.env.VITE_DEFAULT_LOCALE,
+  VITE_DEFAULT_SITE_SLUG: import.meta.env.VITE_DEFAULT_SITE_SLUG,
 });
 
 /** Trailing slashes are stripped so URL joins stay predictable. */

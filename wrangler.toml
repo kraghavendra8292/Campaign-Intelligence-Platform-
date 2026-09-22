@@ -7,6 +7,11 @@
 # Required Worker environment (Cloudflare dashboard → Settings → Variables):
 #   API_ORIGIN = https://<your-render-api-host>   (no trailing slash)
 #
+# Web build (Vite) — bake into the client bundle at `npm run build -w @rk/web`:
+#   VITE_API_URL            = https://<your-render-api-host>
+#   VITE_DEFAULT_SITE_SLUG  = demo-campaign
+#   (defaults to demo-campaign if unset; required so bare workers.dev works)
+#
 # Required API environment (Render):
 #   QR_SCAN_BASE_URL = https://campaign-intelligence-platform.youragency.workers.dev
 #   PUBLIC_SITE_URL  = https://campaign-intelligence-platform.youragency.workers.dev

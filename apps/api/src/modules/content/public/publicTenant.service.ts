@@ -46,14 +46,31 @@ const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
 /**
  * Derives a candidate slug from a Host header.
  *
- * Supports `<slug>.rkcampaign.app` style subdomains. A fully custom domain
- * needs a domain-to-tenant mapping table, which is deliberately out of Phase 3
- * scope - this is the single place that mapping would be added.
+ * Supports `<slug>.rkcampaign.app` style subdomains. Platform hosts
+ * (`*.workers.dev`, localhost, …) are ignored so the first DNS label is never
+ * mistaken for a campaign slug.
+ *
+ * A fully custom domain needs a domain-to-tenant mapping table, which is
+ * deliberately out of Phase 3 scope - this is the single place that mapping
+ * would be added.
  */
 export function slugFromHost(host: string | undefined): string | null {
   if (!host) return null;
 
   const hostname = host.split(':')[0]?.toLowerCase() ?? '';
+  if (
+    !hostname ||
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.workers.dev') ||
+    hostname.endsWith('.pages.dev') ||
+    hostname.endsWith('.vercel.app') ||
+    hostname.endsWith('.netlify.app') ||
+    hostname.endsWith('.onrender.com')
+  ) {
+    return null;
+  }
+
   const labels = hostname.split('.');
 
   // Needs at least <sub>.<domain>.<tld>; bare domains and localhost do not
