@@ -19,7 +19,7 @@ cannot verify on its own is marked **must verify** rather than ticked.
 - [ ] Neon project created; pooled **and** direct connection strings recorded
 - [ ] **BLOCKER** Neon retention window confirmed and written into
       [DEPLOYMENT.md §7](./DEPLOYMENT.md) — currently unverified
-- [ ] **BLOCKER** Durable object storage configured for evidence and images.
+- [ ] **BLOCKER** Durable object storage configured for evidence and images (`MEDIA_STORAGE_DRIVER=s3` + Neon Object Storage `MEDIA_S3_*` on the API host).
       The default filesystem store does not survive a redeploy and is not
       backed up
 - [ ] Static host or CDN serving `apps/web/dist/`

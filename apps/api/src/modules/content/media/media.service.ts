@@ -69,6 +69,7 @@ export const mediaService = {
       organizationId,
       filename: input.originalName,
       content: input.buffer,
+      contentType: validated.mimeType,
     });
 
     const asset = await prisma.mediaAsset.create({

@@ -192,13 +192,17 @@ Never restore directly over production before verifying on a branch.
 ### Uploaded files
 
 Evidence documents and images are **not in the database**. They live behind the
-storage abstraction (`apps/api/src/modules/content/media/storage.ts`), which
-writes to the local filesystem by default.
+storage abstraction (`apps/api/src/modules/content/media/storage.ts`).
 
-> **A database restore does not restore files, and a filesystem-backed store on
-> a container host does not survive a redeploy.** For any real deployment,
-> configure durable object storage with its own versioning and backup before
-> accepting evidence uploads. **NOT CONFIGURED.**
+Set `MEDIA_STORAGE_DRIVER=s3` and the `MEDIA_S3_*` variables to use **Neon
+Object Storage** (S3-compatible, path-style). Local disk (`MEDIA_STORAGE_DRIVER=local`)
+is for development only — it does not survive a Render redeploy.
+
+> **A database restore does not restore files.** Neon Object Storage branches
+> with the database when using Neon’s storage product; still keep credentials
+> and bucket config in the host’s secret store (Render env vars). Production
+> refuses to boot without `MEDIA_STORAGE_DRIVER=s3` and a complete `MEDIA_S3_*`
+> set.
 
 ---
 

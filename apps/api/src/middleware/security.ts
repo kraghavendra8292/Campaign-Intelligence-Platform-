@@ -30,7 +30,10 @@ export function securityHeaders(env: ApiEnv): RequestHandler {
     hsts: env.isProduction ? { maxAge: 31_536_000, includeSubDomains: true } : false,
     // Hides the fact this is Express.
     hidePoweredBy: true,
-    crossOriginResourcePolicy: { policy: 'same-site' },
+    // Public site and API are often different registrable domains (e.g.
+    // *.workers.dev → *.onrender.com). `same-site` would block <img src> for
+    // /media/:id; `cross-origin` allows embedding while CSP still locks the API.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   });
 }
 

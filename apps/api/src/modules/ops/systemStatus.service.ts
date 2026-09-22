@@ -169,8 +169,11 @@ async function probeStorage(): Promise<SystemComponent> {
     const storage = getMediaStorage();
     // A read of an object that will not exist. The question is whether the
     // backend ANSWERS, not whether the key is there - a missing object is a
-    // successful round trip and proves the store is reachable.
-    await storage.createReadStream('__status_probe__/does-not-exist');
+    // successful round trip and proves the store is reachable. Key shape must
+    // match what adapters accept (org UUID / object UUID).
+    await storage.createReadStream(
+      '00000000-0000-4000-8000-000000000000/00000000-0000-4000-8000-000000000001',
+    );
     return {
       key: 'storage',
       label: 'File storage',

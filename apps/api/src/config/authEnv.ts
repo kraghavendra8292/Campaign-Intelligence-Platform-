@@ -78,12 +78,31 @@ export const authEnvSchema = {
 /**
  * Phase 3 content configuration.
  *
- * The storage path is the ONLY place the local-disk media adapter learns where
- * to write. Swapping to S3 replaces the adapter, not this contract.
+ * `MEDIA_STORAGE_DRIVER` selects the adapter. Local disk is for development;
+ * `s3` targets Neon Object Storage (or any S3-compatible host). The
+ * `storageKey` contract is identical either way.
  */
 export const contentEnvSchema = {
-  /** Directory for uploaded media. Git-ignored; not suitable for production. */
+  /**
+   * Where uploaded bytes live.
+   * - `local` — disk under MEDIA_STORAGE_PATH (ephemeral on Render; OK for local)
+   * - `s3` — Neon Object Storage / S3-compatible (required in production)
+   */
+  MEDIA_STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+
+  /** Directory for local-disk media. Git-ignored; not suitable for production. */
   MEDIA_STORAGE_PATH: z.string().min(1).default('var/media'),
+
+  /** S3 bucket name (e.g. Neon Object Storage bucket `media`). */
+  MEDIA_S3_BUCKET: z.string().min(1).optional(),
+  /** S3 region (Neon: `us-east-2` for aws-us-east-2 projects). */
+  MEDIA_S3_REGION: z.string().min(1).optional(),
+  /** S3 API endpoint (Neon branch storage URL from `get_storage` / console). */
+  MEDIA_S3_ENDPOINT: z.string().url().optional(),
+  /** S3 access key (Neon credential `token_id`). */
+  MEDIA_S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  /** S3 secret key (Neon credential `s3_secret_access_key`). */
+  MEDIA_S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
 
   /**
    * Base URL used to build absolute canonical and Open Graph URLs for public

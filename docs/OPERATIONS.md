@@ -170,7 +170,8 @@ restore over production first.
 
 **Uploaded files are not in the database.** A database restore does not bring
 back evidence documents or images, and a filesystem-backed store on a container
-host does not survive a redeploy. Durable object storage is **not configured**.
+host does not survive a redeploy. Use `MEDIA_STORAGE_DRIVER=s3` with Neon
+Object Storage (`MEDIA_S3_*`) so uploads survive redeploys.
 
 ---
 

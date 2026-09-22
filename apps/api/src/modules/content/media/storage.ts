@@ -4,18 +4,18 @@ import { mkdir, rm, writeFile, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import type { Readable } from 'node:stream';
 import { getEnv } from '../../../config/env';
+import { S3CompatibleStorage } from './s3Storage';
 
 /**
  * Object storage abstraction.
  *
- * The interface exists so business logic never learns where bytes live. Phase 3
- * ships a local-disk adapter because no object store is provisioned yet; an
- * S3-compatible adapter implements the same four methods and nothing else
- * changes. The seam is the `storageKey` string - opaque to every caller.
+ * The interface exists so business logic never learns where bytes live. Local
+ * disk is for development; Neon Object Storage (S3-compatible) is the
+ * production path. Callers only ever see an opaque `storageKey`.
  *
  * PRODUCTION REQUIREMENT: local disk does not survive a container restart and
- * is not shared between instances. An S3-compatible adapter is required before
- * running more than one API replica or deploying to ephemeral infrastructure.
+ * is not shared between instances. Set MEDIA_STORAGE_DRIVER=s3 with Neon
+ * Object Storage (or any S3-compatible host) before deploying.
  */
 export interface StoredObject {
   readonly storageKey: string;
@@ -25,7 +25,12 @@ export interface StoredObject {
 
 export interface MediaStorage {
   /** Persists bytes and returns the key needed to read them back. */
-  put(input: { organizationId: string; filename: string; content: Buffer }): Promise<StoredObject>;
+  put(input: {
+    organizationId: string;
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }): Promise<StoredObject>;
   /** Opens a stream for serving. Returns null when the object is gone. */
   createReadStream(storageKey: string): Promise<Readable | null>;
   /** Removes an object. Missing objects are not an error. */
@@ -67,7 +72,9 @@ export class LocalDiskStorage implements MediaStorage {
     organizationId: string;
     filename: string;
     content: Buffer;
+    contentType?: string;
   }): Promise<StoredObject> {
+    void input.contentType;
     const storageKey = buildStorageKey(input.organizationId, input.filename);
     const target = this.resolveKey(storageKey);
 
@@ -133,7 +140,29 @@ export class LocalDiskStorage implements MediaStorage {
 let storage: MediaStorage | null = null;
 
 export function getMediaStorage(): MediaStorage {
-  storage ??= new LocalDiskStorage(getEnv().MEDIA_STORAGE_PATH);
+  if (storage) return storage;
+
+  const env = getEnv();
+  if (env.MEDIA_STORAGE_DRIVER === 's3') {
+    const bucket = env.MEDIA_S3_BUCKET;
+    const region = env.MEDIA_S3_REGION;
+    const endpoint = env.MEDIA_S3_ENDPOINT;
+    const accessKeyId = env.MEDIA_S3_ACCESS_KEY_ID;
+    const secretAccessKey = env.MEDIA_S3_SECRET_ACCESS_KEY;
+    if (!bucket || !region || !endpoint || !accessKeyId || !secretAccessKey) {
+      throw new Error('MEDIA_STORAGE_DRIVER=s3 but one or more MEDIA_S3_* variables are missing.');
+    }
+    storage = new S3CompatibleStorage({
+      bucket,
+      region,
+      endpoint,
+      accessKeyId,
+      secretAccessKey,
+    });
+  } else {
+    storage = new LocalDiskStorage(env.MEDIA_STORAGE_PATH);
+  }
+
   return storage;
 }
 

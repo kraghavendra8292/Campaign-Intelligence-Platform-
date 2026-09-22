@@ -143,6 +143,7 @@ export function createIssueAttachmentRouter(env: ApiEnv): Router {
           organizationId: tenant.organizationId,
           filename: file.originalname,
           content: file.buffer,
+          contentType: validated.mimeType,
         });
 
         const claimToken = randomBytes(24).toString('base64url');

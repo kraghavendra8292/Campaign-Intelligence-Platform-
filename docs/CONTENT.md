@@ -137,7 +137,9 @@ multipart through GraphQL needs a protocol extension while `FormData` is native.
 - Stored under a generated UUID key; the client's filename is kept only as a
   display label and never used as a path.
 - Storage sits behind a `MediaStorage` interface. `LocalDiskStorage` is the
-  development implementation; object storage slots in without touching callers.
+  development implementation; `S3CompatibleStorage` (Neon Object Storage /
+  any S3-compatible host) is selected with `MEDIA_STORAGE_DRIVER=s3`. Callers
+  only ever see an opaque `storageKey`.
 
 Media is **not** localised. One library of files serves both languages.
 

@@ -211,8 +211,51 @@ function assertProductionHardening(parsed: z.infer<typeof apiEnvSchema>): void {
     );
   }
 
+  if (parsed.MEDIA_STORAGE_DRIVER !== 's3') {
+    problems.push(
+      'MEDIA_STORAGE_DRIVER must be "s3" in production: local disk is ephemeral ' +
+        'on container hosts and hero/CMS images disappear after every redeploy.',
+    );
+  } else {
+    for (const [name, value] of [
+      ['MEDIA_S3_BUCKET', parsed.MEDIA_S3_BUCKET],
+      ['MEDIA_S3_REGION', parsed.MEDIA_S3_REGION],
+      ['MEDIA_S3_ENDPOINT', parsed.MEDIA_S3_ENDPOINT],
+      ['MEDIA_S3_ACCESS_KEY_ID', parsed.MEDIA_S3_ACCESS_KEY_ID],
+      ['MEDIA_S3_SECRET_ACCESS_KEY', parsed.MEDIA_S3_SECRET_ACCESS_KEY],
+    ] as const) {
+      if (!value) {
+        problems.push(`${name} is required when MEDIA_STORAGE_DRIVER=s3.`);
+      }
+    }
+  }
+
   if (problems.length > 0) {
     throw new EnvValidationError('@rk/api (production hardening)', problems);
+  }
+}
+
+/**
+ * Cross-field check for S3 media config outside production (dev/test may use
+ * local disk). When the driver is s3, every credential field must be present
+ * so a half-configured deployment fails at boot instead of on first upload.
+ */
+function assertS3MediaConfig(parsed: z.infer<typeof apiEnvSchema>): void {
+  if (parsed.MEDIA_STORAGE_DRIVER !== 's3') return;
+
+  const problems: string[] = [];
+  for (const [name, value] of [
+    ['MEDIA_S3_BUCKET', parsed.MEDIA_S3_BUCKET],
+    ['MEDIA_S3_REGION', parsed.MEDIA_S3_REGION],
+    ['MEDIA_S3_ENDPOINT', parsed.MEDIA_S3_ENDPOINT],
+    ['MEDIA_S3_ACCESS_KEY_ID', parsed.MEDIA_S3_ACCESS_KEY_ID],
+    ['MEDIA_S3_SECRET_ACCESS_KEY', parsed.MEDIA_S3_SECRET_ACCESS_KEY],
+  ] as const) {
+    if (!value) problems.push(`${name} is required when MEDIA_STORAGE_DRIVER=s3.`);
+  }
+
+  if (problems.length > 0) {
+    throw new EnvValidationError('@rk/api (media storage)', problems);
   }
 }
 
@@ -258,6 +301,8 @@ function build(source: Record<string, string | undefined>): ApiEnv {
   const withDefaults = applyPublicUrlDefaults(source);
   const parsed = parseEnv('@rk/api', apiEnvSchema, withDefaults);
   const isProduction = parsed.NODE_ENV === 'production';
+
+  assertS3MediaConfig(parsed);
 
   if (isProduction) {
     assertProductionHardening({
