@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Button } from '@rk/ui';
 import type { SiteFeedbackReaction } from '@rk/types';
 import { useAdminQuery } from '../../../features/admin/adminApi';
@@ -144,11 +143,8 @@ export function SiteFeedbackPage() {
       <CmsPageHeader
         title="Homepage opinions"
         description="See how many people responded Great, Ok, or Worst — for this campaign and across every campaign you can access."
-        actions={
-          <Link to="/admin">
-            <Button variant="secondary">Back to dashboard</Button>
-          </Link>
-        }
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
 
       <QrBoundary state={state} refetch={refetch}>

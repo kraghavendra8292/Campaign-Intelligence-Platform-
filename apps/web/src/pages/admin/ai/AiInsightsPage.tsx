@@ -50,6 +50,8 @@ export function AiInsightsPage() {
       <CmsPageHeader
         title="AI insights"
         description="AI-assisted summaries, topics and themes drawn from citizen submissions. Everything here is reviewed by a person before it is used."
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
 
       <CmsBoundary state={overview.state} refetch={overview.refetch}>

@@ -70,6 +70,8 @@ export function QrCodeDetailPage() {
               <CmsPageHeader
                 title={code.name}
                 description={code.description ?? undefined}
+                backTo={`/admin/qr-campaigns/${campaignId}`}
+                backLabel="Back to campaign"
                 actions={
                   <>
                     <IfPermitted permission="QR_ANALYTICS_READ">

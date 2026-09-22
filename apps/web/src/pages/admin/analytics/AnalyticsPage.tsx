@@ -81,6 +81,8 @@ export function AnalyticsPage() {
       <CmsPageHeader
         title="Campaign intelligence"
         description="Aggregate view of what citizens are reporting, where, and how quickly it is being resolved."
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
 
       <AnalyticsFilterPanel

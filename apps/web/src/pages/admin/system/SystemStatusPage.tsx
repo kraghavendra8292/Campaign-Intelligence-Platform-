@@ -94,6 +94,8 @@ export function SystemStatusPage() {
       <CmsPageHeader
         title="System"
         description="What this deployment is doing right now. Every value here is measured, not configured."
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
 
       <QrBoundary state={status.state} refetch={status.refetch}>

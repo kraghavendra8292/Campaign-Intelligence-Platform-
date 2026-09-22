@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { Button, Icon } from '@rk/ui';
+import { useParams } from 'react-router-dom';
+import { Icon } from '@rk/ui';
 import { graphqlRequest } from '../../../features/auth/authClient';
 import { useAdminQuery } from '../../../features/admin/adminApi';
 import {
@@ -14,7 +14,6 @@ import { CmsPageHeader, ToastRegion, useToasts } from '../../../components/cms/C
 import {
   DateRangePicker,
   DEFAULT_RANGE,
-  FilterBar,
   QrBoundary,
   type RangeSelection,
 } from '../../../components/qr/QrShell';
@@ -135,55 +134,65 @@ function AnalyticsScreen({
   }
 
   return (
-    <div className="cms-page">
+    <div className="cms-page list-page">
       <CmsPageHeader
         title={title}
         description={description}
-        actions={
-          <Link to={backTo}>
-            <Button variant="secondary">{backLabel}</Button>
-          </Link>
-        }
+        backTo={backTo}
+        backLabel={backLabel}
       />
 
-      <FilterBar>
-        <DateRangePicker value={range} onChange={setRange} />
-        <label className="analytics-metric-filter">
-          <span className="visually-hidden">More metrics</span>
-          <select
-            className="rk-select__control"
-            value={focusMetric}
-            onChange={(event) => setFocusMetric(event.target.value as AnalyticsFocusMetric)}
-            aria-label="More metrics"
+      <div className="list-toolbar">
+        <div className="list-toolbar__left">
+          <DateRangePicker value={range} onChange={setRange} />
+          <label className="list-toolbar__select">
+            <span className="visually-hidden">More metrics</span>
+            <select
+              className="list-toolbar__select-control"
+              value={focusMetric}
+              onChange={(event) => setFocusMetric(event.target.value as AnalyticsFocusMetric)}
+              aria-label="More metrics"
+            >
+              {ANALYTICS_FOCUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <Icon name="chevronDown" size={0.9} className="list-toolbar__select-icon" />
+          </label>
+          <label className="cms-checkbox">
+            <input
+              type="checkbox"
+              checked={excludeAutomated}
+              onChange={(event) => setExcludeAutomated(event.target.checked)}
+            />
+            <span>Exclude automated traffic</span>
+          </label>
+          <button
+            type="button"
+            className={`cms-icon-btn${isRefreshing ? ' cms-icon-btn--busy' : ''}`}
+            aria-label="Refresh data"
+            title="Refresh"
+            disabled={isRefreshing}
+            onClick={refetch}
           >
-            {ANALYTICS_FOCUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="cms-checkbox">
-          <input
-            type="checkbox"
-            checked={excludeAutomated}
-            onChange={(event) => setExcludeAutomated(event.target.checked)}
-          />
-          <span>Exclude automated traffic</span>
-        </label>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={refetch}
-          disabled={isRefreshing}
-          leadingIcon={
-            <Icon name="refresh" className={isRefreshing ? 'analytics-refresh--spin' : undefined} />
-          }
-          aria-label="Refresh data"
-        >
-          Refresh
-        </Button>
-      </FilterBar>
+            <Icon name="refresh" size={1.05} />
+          </button>
+        </div>
+        <div className="list-toolbar__right">
+          <button
+            type="button"
+            className={`cms-icon-btn cms-icon-btn--square${isRefreshing ? ' cms-icon-btn--busy' : ''}`}
+            aria-label="Refresh list"
+            title="Refresh"
+            disabled={isRefreshing}
+            onClick={refetch}
+          >
+            <Icon name="refresh" size={1.15} />
+          </button>
+        </div>
+      </div>
 
       {/* Soft refresh: keep the last good payload on screen while refetching so
           the KPI cards do not flash to a full-page spinner. First load and
@@ -271,7 +280,7 @@ export function QrOverviewAnalyticsPage() {
       title="QR analytics"
       description="Aggregate scan activity across every QR campaign in this organisation."
       backTo="/admin/qr-campaigns"
-      backLabel="All campaigns"
+      backLabel="Back to campaigns"
       showComparison
     />
   );

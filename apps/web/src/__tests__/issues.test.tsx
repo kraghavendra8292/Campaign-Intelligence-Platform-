@@ -498,7 +498,6 @@ describe('admin issue inbox', () => {
     });
 
     await userEvent.type(screen.getByRole('searchbox', { name: /search submissions/i }), 'drain');
-    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
     await waitFor(() => {
       expect(mock.variablesFor('Issues')).toMatchObject({ filter: { search: 'drain' } });
     });

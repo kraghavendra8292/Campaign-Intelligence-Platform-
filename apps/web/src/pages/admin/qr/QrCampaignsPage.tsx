@@ -163,6 +163,8 @@ export function QrCampaignsPage() {
       <CmsPageHeader
         title="QR campaigns"
         description="Measurable outreach channels. Each campaign holds the QR codes printed for it."
+        backTo="/admin"
+        backLabel="Back to dashboard"
         actions={
           <IfPermitted permission="QR_CAMPAIGN_CREATE">
             <Link to="/admin/qr-campaigns/new">

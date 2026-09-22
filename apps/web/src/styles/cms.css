@@ -19,6 +19,28 @@
   gap: var(--spacing-4);
 }
 
+.cms-page-header__lead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.cms-page-header__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  align-self: flex-start;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.cms-page-header__back:hover {
+  color: var(--color-primary);
+}
+
 .cms-page-header__title {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);

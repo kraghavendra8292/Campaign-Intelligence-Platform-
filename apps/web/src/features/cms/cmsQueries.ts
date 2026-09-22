@@ -56,6 +56,8 @@ export const CMS_PROJECT = /* GraphQL */ `
       category
       area
       locationName
+      latitude
+      longitude
       startDate
       completionDate
       projectStatus
@@ -63,12 +65,22 @@ export const CMS_PROJECT = /* GraphQL */ `
       costCurrency
       beneficiaryCount
       featured
+      displayOrder
       status
       publishedAt
       metaTitle
       metaDescription
       coverImage {
         ...CmsImage
+      }
+      media {
+        id
+        role
+        caption
+        sortOrder
+        image {
+          ...CmsImage
+        }
       }
     }
   }
@@ -90,6 +102,26 @@ export const UPDATE_PROJECT = /* GraphQL */ `
       id
       slug
       status
+    }
+  }
+`;
+
+export const SET_PROJECT_MEDIA = /* GraphQL */ `
+  mutation SetProjectMedia($id: ID!, $media: [ProjectMediaInput!]!) {
+    setProjectMedia(id: $id, media: $media) {
+      id
+      media {
+        id
+        role
+        caption
+        sortOrder
+        image {
+          id
+          altText
+          width
+          height
+        }
+      }
     }
   }
 `;

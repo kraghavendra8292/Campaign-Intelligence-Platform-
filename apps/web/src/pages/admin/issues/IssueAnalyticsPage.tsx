@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@rk/ui';
 import { useAdminQuery } from '../../../features/admin/adminApi';
 import {
   ISSUE_ANALYTICS_QUERY,
@@ -58,11 +56,8 @@ export function IssueAnalyticsPage() {
       <CmsPageHeader
         title="Submission analytics"
         description="Aggregate view of what citizens are sending in, and how much is outstanding."
-        actions={
-          <Link to="/admin/issues">
-            <Button variant="secondary">Back to inbox</Button>
-          </Link>
-        }
+        backTo="/admin/issues"
+        backLabel="Back to inbox"
       />
 
       <FilterBar>

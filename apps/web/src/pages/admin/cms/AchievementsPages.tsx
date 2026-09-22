@@ -1,7 +1,15 @@
-import { useCallback, useMemo, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { CONTENT_CATEGORIES, VERIFICATION_STATUSES } from '@rk/types';
-import { Button } from '@rk/ui';
+import { CONTENT_CATEGORIES, CONTENT_STATUSES, VERIFICATION_STATUSES } from '@rk/types';
+import { Button, Icon } from '@rk/ui';
 import {
   useCmsMutation,
   useCmsQuery,
@@ -22,11 +30,18 @@ import {
   CmsCard,
   CmsPageHeader,
   ConfirmDialog,
-  DataTable,
   IfPermitted,
   ToastRegion,
   useToasts,
 } from '../../../components/cms/CmsShell';
+import {
+  ListKpiCard,
+  ListKpiGrid,
+  ListSelectFilter,
+  ListTableCard,
+  ListToolbar,
+  LIST_SEARCH_DEBOUNCE_MS,
+} from '../../../components/cms/ListPro';
 import {
   CheckboxField,
   FormActions,
@@ -38,8 +53,10 @@ import {
 } from '../../../components/cms/fields';
 import { RichTextEditor } from '../../../components/cms/RichTextEditor';
 import { MediaPicker } from '../../../components/cms/MediaPicker';
-import { PublishControls, StatusFilter, StatusPill } from './shared';
+import { StatusPill } from './shared';
 import { formatDate } from '../../../lib/format';
+import { useAdminI18n } from '../../../features/admin/AdminI18nContext';
+import type { AdminStringKey } from '../../../i18n/adminStrings';
 
 /**
  * Achievement CMS screens.
@@ -48,6 +65,8 @@ import { formatDate } from '../../../lib/format';
  * Verification is a claim that staff checked the evidence, so the control is
  * separate, needs ACHIEVEMENT_VERIFY, and the form says plainly that editing a
  * verified achievement sends it back for re-checking.
+ *
+ * List uses the console list-pro pattern (KPI cards, toolbar, icon actions).
  */
 
 interface AchievementRow {
@@ -63,18 +82,46 @@ interface AchievementRow {
   updatedAt: string;
 }
 
+type ColumnKey = 'status' | 'verification' | 'date' | 'area';
+
+const COLUMN_OPTIONS: Array<{ key: ColumnKey; label: string }> = [
+  { key: 'status', label: 'Status' },
+  { key: 'verification', label: 'Verification' },
+  { key: 'date', label: 'Date' },
+  { key: 'area', label: 'Area' },
+];
+
+const DEFAULT_COLUMNS: Record<ColumnKey, boolean> = {
+  status: true,
+  verification: true,
+  date: true,
+  area: false,
+};
+
+function statusLabel(value: string, t: (key: AdminStringKey) => string): string {
+  const key = `status.${value}` as AdminStringKey;
+  const translated = t(key);
+  return translated === key ? value.replace(/_/g, ' ').toLowerCase() : translated;
+}
+
 export function CmsAchievementsPage() {
   const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  const [draftSearch, setDraftSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState(DEFAULT_COLUMNS);
   const [pendingDelete, setPendingDelete] = useState<AchievementRow | null>(null);
   const { toasts, success, failure } = useToasts();
   const { locale } = useCmsLocale();
+  const { t } = useAdminI18n();
 
   const variables = useMemo(
-    () => ({ first: 50, status: status || null, locale }),
-    [status, locale],
+    () => ({ first: 50, status: status || null, search: search || null, locale }),
+    [status, search, locale],
   );
+
   const { state, refetch } = useCmsQuery<{
-    cmsAchievements: { nodes: AchievementRow[] };
+    cmsAchievements: { nodes: AchievementRow[]; totalCount: number };
   }>(CMS_ACHIEVEMENTS, variables);
 
   const transition = useCmsMutation<unknown, { id: string; action: string }>(
@@ -82,6 +129,17 @@ export function CmsAchievementsPage() {
   );
   const verify = useCmsMutation<unknown, { id: string; verification: string }>(VERIFY_ACHIEVEMENT);
   const remove = useCmsMutation<unknown, { id: string }>(DELETE_ACHIEVEMENT);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearch(draftSearch.trim());
+    }, LIST_SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(handle);
+  }, [draftSearch]);
+
+  useEffect(() => {
+    if (state.status !== 'loading') setRefreshing(false);
+  }, [state.status]);
 
   const runTransition = useCallback(
     async (id: string, action: string) => {
@@ -96,12 +154,53 @@ export function CmsAchievementsPage() {
     [transition, refetch, success, failure],
   );
 
+  const runVerify = useCallback(
+    async (id: string) => {
+      const result = await verify.run({ id, verification: 'VERIFIED' });
+      if (result) {
+        success('Marked as verified.');
+        refetch();
+      } else {
+        failure(verify.state.error ?? 'Could not verify.');
+      }
+    },
+    [verify, refetch, success, failure],
+  );
+
+  const hasFilters = Boolean(status || search);
+  const filtersBusy = state.status === 'loading';
+
+  const clearFilters = useCallback(() => {
+    setStatus('');
+    setSearch('');
+    setDraftSearch('');
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch();
+  }, [refetch]);
+
+  const summary =
+    state.status === 'success'
+      ? {
+          total: state.data.cmsAchievements.totalCount,
+          published: state.data.cmsAchievements.nodes.filter((row) => row.status === 'PUBLISHED')
+            .length,
+          featured: state.data.cmsAchievements.nodes.filter((row) => row.featured).length,
+          verified: state.data.cmsAchievements.nodes.filter((row) => row.verification === 'VERIFIED')
+            .length,
+        }
+      : null;
+
   return (
-    <div className="cms-page">
+    <div className="cms-page list-page">
       <CmsPageHeader
         title="Achievements"
         description="Completed work and outcomes. Verification is separate from publishing."
         localized
+        backTo="/admin"
+        backLabel="Back to dashboard"
         actions={
           <IfPermitted permission="ACHIEVEMENT_CREATE">
             <Link to="/admin/content/achievements/new">
@@ -111,103 +210,159 @@ export function CmsAchievementsPage() {
         }
       />
 
-      <div className="cms-filters">
-        <StatusFilter value={status} onChange={setStatus} />
-      </div>
+      {summary && state.status === 'success' && state.data.cmsAchievements.nodes.length > 0 ? (
+        <ListKpiGrid label="Achievements summary">
+          <ListKpiCard
+            label="Total achievements"
+            value={summary.total.toLocaleString()}
+            hint={hasFilters ? 'Matching current filters' : 'In this editing language'}
+          />
+          <ListKpiCard
+            label="Published"
+            value={summary.published.toLocaleString()}
+            hint={`${summary.featured.toLocaleString()} featured in this view`}
+          />
+          <ListKpiCard
+            label="Verified"
+            value={summary.verified.toLocaleString()}
+            hint="Evidence checked in this view"
+          />
+        </ListKpiGrid>
+      ) : null}
+
+      <ListToolbar
+        search={draftSearch}
+        onSearchChange={(value) => {
+          setDraftSearch(value);
+          if (!value) setSearch('');
+        }}
+        searchLabel="Search achievements"
+        filter={
+          <ListSelectFilter
+            label={t('filter.byStatus')}
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+          >
+            <option value="">{t('filter.allStatuses')}</option>
+            {CONTENT_STATUSES.map((value) => (
+              <option key={value} value={value}>
+                {statusLabel(value, t)}
+              </option>
+            ))}
+          </ListSelectFilter>
+        }
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
+        busy={filtersBusy}
+        hasFilters={hasFilters}
+        onClear={clearFilters}
+      />
 
       <CmsBoundary
         state={state}
         refetch={refetch}
         isEmpty={(data) => data.cmsAchievements.nodes.length === 0}
-        emptyMessage="No achievements yet."
+        emptyMessage={
+          hasFilters ? 'No achievements match these filters.' : 'No achievements yet.'
+        }
+        emptyAction={
+          hasFilters ? (
+            <Button type="button" variant="secondary" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          ) : (
+            <IfPermitted permission="ACHIEVEMENT_CREATE">
+              <Link to="/admin/content/achievements/new">
+                <Button variant="primary">Create the first achievement</Button>
+              </Link>
+            </IfPermitted>
+          )
+        }
       >
         {(data) => (
-          <DataTable
-            caption="Achievements"
-            rows={data.cmsAchievements.nodes}
-            columns={[
-              {
-                key: 'title',
-                header: 'Title',
-                render: (row) => (
-                  <Link className="cms-table__link" to={`/admin/content/achievements/${row.id}`}>
-                    {row.title}
-                  </Link>
-                ),
-              },
-              {
-                key: 'status',
-                header: 'Status',
-                render: (row) => <StatusPill value={row.status} />,
-              },
-              {
-                key: 'verification',
-                header: 'Verification',
-                render: (row) => <StatusPill value={row.verification} />,
-              },
-              {
-                key: 'date',
-                header: 'Date',
-                secondary: true,
-                render: (row) => formatDate(row.achievedOn) ?? '—',
-              },
-            ]}
-            actions={(row) => (
-              <div className="cms-row-actions">
-                <IfPermitted permission="ACHIEVEMENT_VERIFY">
-                  {row.verification !== 'VERIFIED' ? (
-                    <button
-                      type="button"
-                      className="cms-row-actions__link"
-                      disabled={verify.state.submitting}
-                      onClick={async () => {
-                        const result = await verify.run({
-                          id: row.id,
-                          verification: 'VERIFIED',
-                        });
-                        if (result) {
-                          success('Marked as verified.');
-                          refetch();
-                        } else {
-                          failure(verify.state.error ?? 'Could not verify.');
-                        }
-                      }}
-                    >
-                      Mark verified
-                    </button>
+          <ListTableCard
+            title="Achievements"
+            count={data.cmsAchievements.totalCount}
+            columns
+            columnOptions={COLUMN_OPTIONS}
+            visibleColumns={visibleColumns}
+            onToggleColumn={(key) =>
+              setVisibleColumns((current) => ({
+                ...current,
+                [key]: !current[key as ColumnKey],
+              }))
+            }
+          >
+            <table className="list-table">
+              <caption className="visually-hidden">Achievements</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="list-table__actions-col">
+                    <span className="visually-hidden">Actions</span>
+                  </th>
+                  <th scope="col">Title</th>
+                  {visibleColumns.status ? <th scope="col">Status</th> : null}
+                  {visibleColumns.verification ? <th scope="col">Verification</th> : null}
+                  {visibleColumns.date ? (
+                    <th scope="col" className="list-table__secondary">
+                      Date
+                    </th>
                   ) : null}
-                </IfPermitted>
-
-                <PublishControls
-                  status={row.status}
-                  publishPermission="ACHIEVEMENT_PUBLISH"
-                  onTransition={(action) => void runTransition(row.id, action)}
-                  busy={transition.state.submitting}
-                />
-
-                {row.status === 'PUBLISHED' ? (
-                  <a
-                    className="cms-row-actions__link"
-                    href={`/achievements/${row.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View
-                  </a>
-                ) : null}
-
-                <IfPermitted permission="ACHIEVEMENT_DELETE">
-                  <button
-                    type="button"
-                    className="cms-row-actions__danger"
-                    onClick={() => setPendingDelete(row)}
-                  >
-                    Delete
-                  </button>
-                </IfPermitted>
-              </div>
-            )}
-          />
+                  {visibleColumns.area ? (
+                    <th scope="col" className="list-table__secondary">
+                      Area
+                    </th>
+                  ) : null}
+                </tr>
+              </thead>
+              <tbody>
+                {data.cmsAchievements.nodes.map((row) => (
+                  <tr key={row.id}>
+                    <td className="list-table__actions-col">
+                      <AchievementRowActions
+                        row={row}
+                        busy={transition.state.submitting || verify.state.submitting}
+                        onTransition={runTransition}
+                        onVerify={runVerify}
+                        onDelete={() => setPendingDelete(row)}
+                      />
+                    </td>
+                    <td>
+                      <div className="cms-table__primary-cell">
+                        <Link
+                          className="cms-table__link"
+                          to={`/admin/content/achievements/${row.id}`}
+                        >
+                          {row.title}
+                        </Link>
+                        {row.featured ? (
+                          <span className="cms-table__subtle">Featured</span>
+                        ) : null}
+                      </div>
+                    </td>
+                    {visibleColumns.status ? (
+                      <td>
+                        <StatusPill value={row.status} />
+                      </td>
+                    ) : null}
+                    {visibleColumns.verification ? (
+                      <td>
+                        <StatusPill value={row.verification} />
+                      </td>
+                    ) : null}
+                    {visibleColumns.date ? (
+                      <td className="list-table__secondary">
+                        {formatDate(row.achievedOn) ?? '—'}
+                      </td>
+                    ) : null}
+                    {visibleColumns.area ? (
+                      <td className="list-table__secondary">{row.area ?? '—'}</td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ListTableCard>
         )}
       </CmsBoundary>
 
@@ -232,6 +387,187 @@ export function CmsAchievementsPage() {
 
       <ToastRegion toasts={toasts} />
     </div>
+  );
+}
+
+function AchievementRowActions({
+  row,
+  busy,
+  onTransition,
+  onVerify,
+  onDelete,
+}: {
+  row: AchievementRow;
+  busy: boolean;
+  onTransition: (id: string, action: string) => void;
+  onVerify: (id: string) => void;
+  onDelete: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const { t } = useAdminI18n();
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && menuRef.current && !menuRef.current.contains(target)) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="list-row-actions" ref={menuRef}>
+      <IfPermitted permission="ACHIEVEMENT_UPDATE">
+        <Link
+          className="list-action-btn list-action-btn--edit"
+          to={`/admin/content/achievements/${row.id}`}
+          aria-label={`Edit ${row.title}`}
+          title="Edit"
+        >
+          <Icon name="pencil" size={1} />
+        </Link>
+      </IfPermitted>
+
+      {row.status === 'PUBLISHED' ? (
+        <a
+          className="list-action-btn list-action-btn--view"
+          href={`/achievements/${row.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`View ${row.title}`}
+          title="View"
+        >
+          <Icon name="eye" size={1} />
+        </a>
+      ) : null}
+
+      <IfPermitted permission="ACHIEVEMENT_PUBLISH">
+        {row.status !== 'PUBLISHED' && row.status !== 'ARCHIVED' ? (
+          <button
+            type="button"
+            className="list-action-btn list-action-btn--activate"
+            aria-label="Publish"
+            title="Publish"
+            disabled={busy}
+            onClick={() => onTransition(row.id, 'PUBLISH')}
+          >
+            <Icon name="play" size={1} />
+          </button>
+        ) : null}
+        {row.status === 'PUBLISHED' ? (
+          <button
+            type="button"
+            className="list-action-btn list-action-btn--pause"
+            aria-label="Unpublish"
+            title="Unpublish"
+            disabled={busy}
+            onClick={() => onTransition(row.id, 'UNPUBLISH')}
+          >
+            <Icon name="pause" size={1} />
+          </button>
+        ) : null}
+      </IfPermitted>
+
+      <IfPermitted permission="ACHIEVEMENT_DELETE">
+        <button
+          type="button"
+          className="list-action-btn list-action-btn--danger"
+          aria-label="Delete"
+          title="Delete"
+          onClick={onDelete}
+        >
+          <Icon name="trash" size={1} />
+        </button>
+      </IfPermitted>
+
+      <div className={`cms-actions-menu${open ? ' cms-actions-menu--open' : ''}`}>
+        <button
+          type="button"
+          className="list-action-btn list-action-btn--more"
+          aria-label={`More actions for ${row.title}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          title="More"
+          onClick={() => setOpen((value) => !value)}
+        >
+          <Icon name="moreVertical" size={1.05} />
+        </button>
+        {open ? (
+          <div className="cms-actions-menu__panel" role="menu">
+            {row.status === 'DRAFT' ? (
+              <MenuButton
+                disabled={busy}
+                onClick={() => {
+                  setOpen(false);
+                  onTransition(row.id, 'SUBMIT_FOR_REVIEW');
+                }}
+              >
+                {t('action.submitForReview')}
+              </MenuButton>
+            ) : null}
+            <IfPermitted permission="ACHIEVEMENT_VERIFY">
+              {row.verification !== 'VERIFIED' ? (
+                <MenuButton
+                  disabled={busy}
+                  onClick={() => {
+                    setOpen(false);
+                    onVerify(row.id);
+                  }}
+                >
+                  Mark verified
+                </MenuButton>
+              ) : null}
+            </IfPermitted>
+            <IfPermitted permission="ACHIEVEMENT_PUBLISH">
+              {row.status !== 'ARCHIVED' ? (
+                <MenuButton
+                  disabled={busy}
+                  onClick={() => {
+                    setOpen(false);
+                    onTransition(row.id, 'ARCHIVE');
+                  }}
+                >
+                  {t('action.archive')}
+                </MenuButton>
+              ) : null}
+            </IfPermitted>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function MenuButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      className="cms-actions-menu__item"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -298,7 +634,12 @@ export function CmsAchievementFormPage() {
 
   return (
     <div className="cms-page">
-      <CmsPageHeader title={isNew ? 'New achievement' : 'Edit achievement'} localized={isNew} />
+      <CmsPageHeader
+        title={isNew ? 'New achievement' : 'Edit achievement'}
+        localized={isNew}
+        backTo="/admin/content/achievements"
+        backLabel="Back to achievements"
+      />
 
       <form
         className="cms-form"

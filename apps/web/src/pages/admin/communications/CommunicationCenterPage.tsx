@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button } from '@rk/ui';
+import { Badge, Button, Icon } from '@rk/ui';
 import { useAdminMutation, useAdminQuery } from '../../../features/admin/adminApi';
 import {
   COMMUNICATION_FOLLOW_UPS_QUERY,
@@ -13,6 +13,7 @@ import {
   type NotificationStatus,
 } from '../../../features/communication/communicationQueries';
 import { CmsPageHeader, IfPermitted } from '../../../components/cms/CmsShell';
+import { ListTableCard } from '../../../components/cms/ListPro';
 import { QrBoundary, StatCard, StatGrid } from '../../../components/qr/QrShell';
 import { ChartCard } from '../../../components/analytics/charts';
 import { formatDateTime } from '../../../lib/format';
@@ -62,6 +63,7 @@ const RESPONSE_LABELS: Record<string, string> = {
 export function CommunicationCenterPage() {
   const [statuses, setStatuses] = useState<NotificationStatus[]>([]);
   const [pendingOnly, setPendingOnly] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const variables = useMemo(
     () => ({ filter: { statuses: statuses.length > 0 ? statuses : null, first: 25 } }),
@@ -80,6 +82,18 @@ export function CommunicationCenterPage() {
     RETRY_NOTIFICATION,
   );
 
+  useEffect(() => {
+    if (overview.state.status !== 'loading' && followUps.state.status !== 'loading') {
+      setRefreshing(false);
+    }
+  }, [overview.state.status, followUps.state.status]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    overview.refetch();
+    followUps.refetch();
+  }, [overview, followUps]);
+
   const onRetry = useCallback(
     async (notificationId: string) => {
       await retry.run({ notificationId });
@@ -95,11 +109,29 @@ export function CommunicationCenterPage() {
   };
 
   return (
-    <div className="cms-page comm-page">
+    <div className="cms-page list-page comm-page">
       <CmsPageHeader
         title="Communication"
         description="What the campaign has told citizens about their submissions, and what reached them."
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
+
+      <div className="list-toolbar">
+        <div className="list-toolbar__left" />
+        <div className="list-toolbar__right">
+          <button
+            type="button"
+            className={`cms-icon-btn cms-icon-btn--square${refreshing ? ' cms-icon-btn--busy' : ''}`}
+            aria-label="Refresh"
+            title="Refresh"
+            disabled={overview.state.status === 'loading'}
+            onClick={handleRefresh}
+          >
+            <Icon name="refresh" size={1.15} />
+          </button>
+        </div>
+      </div>
 
       <QrBoundary state={overview.state} refetch={overview.refetch}>
         {(data) => {
@@ -154,11 +186,9 @@ export function CommunicationCenterPage() {
                 {formatDateTime(summary.generatedAt)}.
               </p>
 
-              <ChartCard
-                title="Recent messages"
-                description="Newest first. Recipient addresses are masked."
-                action={
-                  <div className="comm-filters">
+              <div className="list-toolbar">
+                <div className="list-toolbar__left">
+                  <div className="comm-filters" role="group" aria-label="Filter by status">
                     {STATUS_OPTIONS.map((status) => (
                       <label key={status} className="comm-filters__item">
                         <input
@@ -170,75 +200,83 @@ export function CommunicationCenterPage() {
                       </label>
                     ))}
                   </div>
-                }
+                </div>
+              </div>
+
+              <ListTableCard
+                title="Recent messages"
+                count={data.communicationNotifications.nodes.length}
+                countLabel="messages"
               >
                 {data.communicationNotifications.nodes.length === 0 ? (
                   <p className="chart-empty">No messages match these filters.</p>
                 ) : (
-                  <div className="table-scroll">
-                    <table className="cms-table">
-                      <thead>
-                        <tr>
-                          <th scope="col">Submission</th>
-                          <th scope="col">Event</th>
-                          <th scope="col">Channel</th>
-                          <th scope="col">Recipient</th>
-                          <th scope="col">Status</th>
-                          <th scope="col">When</th>
-                          <th scope="col" />
+                  <table className="list-table">
+                    <caption className="visually-hidden">Recent messages</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Submission</th>
+                        <th scope="col">Event</th>
+                        <th scope="col">Channel</th>
+                        <th scope="col">Recipient</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">When</th>
+                        <th scope="col" className="list-table__actions-col">
+                          <span className="visually-hidden">Actions</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.communicationNotifications.nodes.map((row) => (
+                        <tr key={row.id}>
+                          <td>
+                            {row.issue ? (
+                              <Link to={`/admin/issues/${row.issue.id}`}>
+                                {row.issue.referenceNumber}
+                              </Link>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td>{row.event.replace(/_/g, ' ').toLowerCase()}</td>
+                          <td>{row.channel.toLowerCase()}</td>
+                          <td>{row.recipientRedacted}</td>
+                          <td>
+                            <Badge tone={STATUS_TONE[row.status]}>
+                              {row.status.toLowerCase()}
+                            </Badge>
+                            {row.failureReason ? (
+                              <span className="cms-muted"> {row.failureReason}</span>
+                            ) : null}
+                          </td>
+                          <td>{formatDateTime(row.createdAt)}</td>
+                          <td className="list-table__actions-col">
+                            {row.status === 'FAILED' && row.attempts < 3 ? (
+                              <IfPermitted permission="COMMUNICATION_SEND">
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={retry.state.submitting}
+                                  onClick={() => void onRetry(row.id)}
+                                >
+                                  Retry
+                                </Button>
+                              </IfPermitted>
+                            ) : null}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {data.communicationNotifications.nodes.map((row) => (
-                          <tr key={row.id}>
-                            <td>
-                              {row.issue ? (
-                                <Link to={`/admin/issues/${row.issue.id}`}>
-                                  {row.issue.referenceNumber}
-                                </Link>
-                              ) : (
-                                '—'
-                              )}
-                            </td>
-                            <td>{row.event.replace(/_/g, ' ').toLowerCase()}</td>
-                            <td>{row.channel.toLowerCase()}</td>
-                            <td>{row.recipientRedacted}</td>
-                            <td>
-                              <Badge tone={STATUS_TONE[row.status]}>
-                                {row.status.toLowerCase()}
-                              </Badge>
-                              {row.failureReason ? (
-                                <span className="cms-muted"> {row.failureReason}</span>
-                              ) : null}
-                            </td>
-                            <td>{formatDateTime(row.createdAt)}</td>
-                            <td>
-                              {row.status === 'FAILED' && row.attempts < 3 ? (
-                                <IfPermitted permission="COMMUNICATION_SEND">
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    disabled={retry.state.submitting}
-                                    onClick={() => void onRetry(row.id)}
-                                  >
-                                    Retry
-                                  </Button>
-                                </IfPermitted>
-                              ) : null}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
+              </ListTableCard>
 
-                {retry.state.error ? (
-                  <p className="cms-error" role="alert">
-                    {retry.state.error}
-                  </p>
-                ) : null}
-              </ChartCard>
+              {retry.state.error ? (
+                <p className="cms-error" role="alert">
+                  {retry.state.error}
+                </p>
+              ) : null}
             </>
           );
         }}

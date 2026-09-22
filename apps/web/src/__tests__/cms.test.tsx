@@ -68,7 +68,10 @@ function projectRow(overrides: Record<string, unknown> = {}) {
 }
 
 /** The cover-image picker queries the media library on every form screen. */
-const MEDIA = { CmsMedia: { cmsMedia: { nodes: [], totalCount: 0 } } };
+const MEDIA = {
+  CmsMedia: { cmsMedia: { nodes: [], totalCount: 0 } },
+  SetProjectMedia: { setProjectMedia: { id: 'prj-saved', media: [] } },
+};
 
 function projectList(nodes: unknown[]) {
   return { cmsProjects: { nodes, totalCount: nodes.length } };
@@ -186,7 +189,6 @@ describe('CMS project list', () => {
 
     await screen.findByRole('link', { name: 'Sample Road Project' });
     await userEvent.type(screen.getByRole('searchbox', { name: /search projects/i }), 'road');
-    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
 
     await waitFor(() => {
       expect(mock.variablesFor('CmsProjects')).toMatchObject({ search: 'road' });
@@ -207,7 +209,10 @@ describe('CMS publishing controls', () => {
     expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
     // Handing work over for approval is ordinary editorial work, so it stays.
-    expect(screen.getByRole('button', { name: 'Submit for review' })).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'More actions for Sample Road Project' }),
+    );
+    expect(screen.getByRole('menuitem', { name: 'Submit for review' })).toBeInTheDocument();
   });
 
   it('offers Publish to a user who holds the publish permission', async () => {
@@ -309,6 +314,7 @@ describe('CMS project form', () => {
           coverImage: null,
           metaTitle: null,
           metaDescription: null,
+          media: [],
         },
       },
     });

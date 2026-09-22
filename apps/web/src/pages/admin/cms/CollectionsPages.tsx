@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { CONTENT_CATEGORIES } from '@rk/types';
-import { Button } from '@rk/ui';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { CONTENT_CATEGORIES, type Permission } from '@rk/types';
+import { Button, Icon } from '@rk/ui';
 import { apiBaseUrl } from '../../../config/env';
 import { useCmsMutation, useCmsQuery } from '../../../features/cms/useCms';
 import { useCmsLocale } from '../../../features/cms/CmsLocaleContext';
@@ -28,14 +28,20 @@ import {
   CmsCard,
   CmsPageHeader,
   ConfirmDialog,
-  DataTable,
   IfPermitted,
   ToastRegion,
   useToasts,
 } from '../../../components/cms/CmsShell';
+import {
+  ListKpiCard,
+  ListKpiGrid,
+  ListTableCard,
+  ListToolbar,
+} from '../../../components/cms/ListPro';
 import { FormError, SelectField, TextAreaField, TextField } from '../../../components/cms/fields';
 import { MediaPicker } from '../../../components/cms/MediaPicker';
-import { PublishControls, StatusPill } from './shared';
+import { useAdminI18n } from '../../../features/admin/AdminI18nContext';
+import { StatusPill } from './shared';
 import { formatDate } from '../../../lib/format';
 
 /**
@@ -69,9 +75,15 @@ interface PriorityRow {
   status: string;
 }
 
+function matchesSearch(haystack: string, query: string) {
+  if (!query.trim()) return true;
+  return haystack.toLowerCase().includes(query.trim().toLowerCase());
+}
+
 export function CmsPrioritiesPage() {
   const { toasts, success, failure } = useToasts();
   const [pendingDelete, setPendingDelete] = useState<PriorityRow | null>(null);
+  const [search, setSearch] = useState('');
   // A single form serves both adding and editing: `editingId` decides which
   // mutation runs, so there is one set of inputs to keep correct.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -116,13 +128,37 @@ export function CmsPrioritiesPage() {
     }
   };
 
+  const allRows = state.status === 'success' ? state.data.cmsPriorities : [];
+  const filteredRows = allRows.filter((row) =>
+    matchesSearch(`${row.title} ${row.category} ${row.status}`, search),
+  );
+  const publishedCount = allRows.filter((row) => row.status === 'PUBLISHED').length;
+  const refreshing = state.status === 'loading';
+
   return (
-    <div className="cms-page">
+    <div className="cms-page list-page">
       <CmsPageHeader
         title="Priorities"
         description="Priority areas shown on the vision page and the homepage."
         localized
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
+
+      {state.status === 'success' && allRows.length > 0 ? (
+        <ListKpiGrid label="Priorities summary">
+          <ListKpiCard
+            label="Total priorities"
+            value={allRows.length.toLocaleString()}
+            hint="In this editing language"
+          />
+          <ListKpiCard
+            label="Published"
+            value={publishedCount.toLocaleString()}
+            hint="Visible on the public site"
+          />
+        </ListKpiGrid>
+      ) : null}
 
       <IfPermitted permission="PRIORITY_CREATE">
         <CmsCard title={editingId ? 'Edit priority' : 'Add a priority'}>
@@ -204,99 +240,91 @@ export function CmsPrioritiesPage() {
         </CmsCard>
       </IfPermitted>
 
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchLabel="Search priorities"
+        searchPlaceholder="Search priorities"
+        onRefresh={() => void refetch()}
+        refreshing={refreshing}
+        busy={refreshing}
+        hasFilters={Boolean(search.trim())}
+        onClear={() => setSearch('')}
+      />
+
       <CmsBoundary
         state={state}
         refetch={refetch}
         isEmpty={(data) => data.cmsPriorities.length === 0}
         emptyMessage="No priorities yet."
       >
-        {(data) => (
-          <DataTable
-            caption="Priorities"
-            rows={data.cmsPriorities}
-            columns={[
-              { key: 'title', header: 'Title', render: (row) => row.title },
-              {
-                key: 'status',
-                header: 'Status',
-                render: (row) => <StatusPill value={row.status} />,
-              },
-              {
-                key: 'order',
-                header: 'Order',
-                secondary: true,
-                render: (row) => String(row.displayOrder),
-              },
-            ]}
-            actions={(row) => {
-              const index = data.cmsPriorities.findIndex((item) => item.id === row.id);
+        {() => (
+          <ListTableCard title="Priorities" count={filteredRows.length} countLabel="rows">
+            <table className="list-table">
+              <caption className="visually-hidden">Priorities</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="list-table__actions-col">
+                    <span className="visually-hidden">Actions</span>
+                  </th>
+                  <th scope="col">Title</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="list-table__secondary">
+                    Order
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>No priorities match this search.</td>
+                  </tr>
+                ) : (
+                  filteredRows.map((row) => {
+                    const index = allRows.findIndex((item) => item.id === row.id);
 
-              return (
-                <div className="cms-row-actions">
-                  <IfPermitted permission="PRIORITY_UPDATE">
-                    <button
-                      type="button"
-                      className="cms-row-actions__link"
-                      onClick={() => {
-                        setEditingId(row.id);
-                        setDraft({
-                          title: row.title,
-                          description: row.description ?? '',
-                          iconKey: row.iconKey ?? 'road',
-                          category: row.category,
-                        });
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="cms-row-actions__link"
-                      aria-label={`Move ${row.title} up`}
-                      disabled={index === 0}
-                      onClick={() => void move(data.cmsPriorities, index, -1)}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="cms-row-actions__link"
-                      aria-label={`Move ${row.title} down`}
-                      disabled={index === data.cmsPriorities.length - 1}
-                      onClick={() => void move(data.cmsPriorities, index, 1)}
-                    >
-                      ↓
-                    </button>
-                  </IfPermitted>
-
-                  <PublishControls
-                    status={row.status}
-                    publishPermission="PRIORITY_PUBLISH"
-                    busy={transition.state.submitting}
-                    onTransition={async (action) => {
-                      const result = await transition.run({ id: row.id, action });
-                      if (result) {
-                        success('Updated.');
-                        refetch();
-                      } else {
-                        failure(transition.state.error ?? 'Could not update.');
-                      }
-                    }}
-                  />
-
-                  <IfPermitted permission="PRIORITY_DELETE">
-                    <button
-                      type="button"
-                      className="cms-row-actions__danger"
-                      onClick={() => setPendingDelete(row)}
-                    >
-                      Delete
-                    </button>
-                  </IfPermitted>
-                </div>
-              );
-            }}
-          />
+                    return (
+                      <tr key={row.id}>
+                        <td className="list-table__actions-col">
+                          <PriorityRowActions
+                            row={row}
+                            index={index}
+                            total={allRows.length}
+                            busy={transition.state.submitting || reorder.state.submitting}
+                            onEdit={() => {
+                              setEditingId(row.id);
+                              setDraft({
+                                title: row.title,
+                                description: row.description ?? '',
+                                iconKey: row.iconKey ?? 'road',
+                                category: row.category,
+                              });
+                            }}
+                            onMove={(direction) => void move(allRows, index, direction)}
+                            onTransition={async (action) => {
+                              const result = await transition.run({ id: row.id, action });
+                              if (result) {
+                                success('Updated.');
+                                refetch();
+                              } else {
+                                failure(transition.state.error ?? 'Could not update.');
+                              }
+                            }}
+                            onDelete={() => setPendingDelete(row)}
+                          />
+                        </td>
+                        <td>{row.title}</td>
+                        <td>
+                          <StatusPill value={row.status} />
+                        </td>
+                        <td className="list-table__secondary">{row.displayOrder}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </ListTableCard>
         )}
       </CmsBoundary>
 
@@ -324,6 +352,81 @@ export function CmsPrioritiesPage() {
   );
 }
 
+function PriorityRowActions({
+  row,
+  index,
+  total,
+  busy,
+  onEdit,
+  onMove,
+  onTransition,
+  onDelete,
+}: {
+  row: PriorityRow;
+  index: number;
+  total: number;
+  busy: boolean;
+  onEdit: () => void;
+  onMove: (direction: -1 | 1) => void;
+  onTransition: (action: string) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="list-row-actions">
+      <IfPermitted permission="PRIORITY_UPDATE">
+        <button
+          type="button"
+          className="list-action-btn list-action-btn--edit"
+          aria-label={`Edit ${row.title}`}
+          title="Edit"
+          onClick={onEdit}
+        >
+          <Icon name="pencil" size={1} />
+        </button>
+        <button
+          type="button"
+          className="list-action-btn"
+          aria-label={`Move ${row.title} up`}
+          title="Move up"
+          disabled={busy || index === 0}
+          onClick={() => onMove(-1)}
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          className="list-action-btn"
+          aria-label={`Move ${row.title} down`}
+          title="Move down"
+          disabled={busy || index === total - 1}
+          onClick={() => onMove(1)}
+        >
+          ↓
+        </button>
+      </IfPermitted>
+
+      <PublishIconActions
+        status={row.status}
+        publishPermission="PRIORITY_PUBLISH"
+        busy={busy}
+        onTransition={onTransition}
+      />
+
+      <IfPermitted permission="PRIORITY_DELETE">
+        <button
+          type="button"
+          className="list-action-btn list-action-btn--danger"
+          aria-label={`Delete ${row.title}`}
+          title="Delete"
+          onClick={onDelete}
+        >
+          <Icon name="trash" size={1} />
+        </button>
+      </IfPermitted>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Gallery: albums and videos
 // ---------------------------------------------------------------------------
@@ -347,6 +450,7 @@ interface VideoRow {
 
 export function CmsGalleryPage() {
   const { toasts, success, failure } = useToasts();
+  const [search, setSearch] = useState('');
   const [albumTitle, setAlbumTitle] = useState('');
   const [video, setVideo] = useState({ title: '', videoUrl: '', platform: 'YOUTUBE' });
 
@@ -361,13 +465,48 @@ export function CmsGalleryPage() {
   const deleteAlbum = useCmsMutation<unknown, { id: string }>(DELETE_ALBUM);
   const deleteVideo = useCmsMutation<unknown, { id: string }>(DELETE_VIDEO);
 
+  const allAlbums = albums.state.status === 'success' ? albums.state.data.cmsAlbums : [];
+  const allVideos = videos.state.status === 'success' ? videos.state.data.cmsVideos : [];
+  const filteredAlbums = allAlbums.filter((row) =>
+    matchesSearch(`${row.title} ${row.status}`, search),
+  );
+  const filteredVideos = allVideos.filter((row) =>
+    matchesSearch(`${row.title} ${row.platform} ${row.status}`, search),
+  );
+  const photoCount = allAlbums.reduce((sum, row) => sum + row.items.length, 0);
+  const refreshing = albums.state.status === 'loading' || videos.state.status === 'loading';
+
+  const refreshAll = () => {
+    void albums.refetch();
+    void videos.refetch();
+  };
+
   return (
-    <div className="cms-page">
+    <div className="cms-page list-page">
       <CmsPageHeader
         title="Gallery"
         description="Photo albums and video links shown on the public gallery."
         localized
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
+
+      {(allAlbums.length > 0 || allVideos.length > 0) &&
+      albums.state.status === 'success' &&
+      videos.state.status === 'success' ? (
+        <ListKpiGrid label="Gallery summary">
+          <ListKpiCard
+            label="Total albums"
+            value={allAlbums.length.toLocaleString()}
+            hint={`${photoCount.toLocaleString()} photos across albums`}
+          />
+          <ListKpiCard
+            label="Total videos"
+            value={allVideos.length.toLocaleString()}
+            hint="YouTube and Vimeo links"
+          />
+        </ListKpiGrid>
+      ) : null}
 
       <IfPermitted permission="GALLERY_CREATE">
         <CmsCard title="Add a photo album">
@@ -402,66 +541,96 @@ export function CmsGalleryPage() {
         </CmsCard>
       </IfPermitted>
 
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchLabel="Search gallery"
+        searchPlaceholder="Search albums and videos"
+        onRefresh={refreshAll}
+        refreshing={refreshing}
+        busy={refreshing}
+        hasFilters={Boolean(search.trim())}
+        onClear={() => setSearch('')}
+      />
+
       <CmsBoundary
         state={albums.state}
         refetch={albums.refetch}
         isEmpty={(data) => data.cmsAlbums.length === 0}
         emptyMessage="No albums yet."
       >
-        {(data) => (
-          <DataTable
-            caption="Photo albums"
-            rows={data.cmsAlbums}
-            columns={[
-              { key: 'title', header: 'Album', render: (row) => row.title },
-              {
-                key: 'status',
-                header: 'Status',
-                render: (row) => <StatusPill value={row.status} />,
-              },
-              {
-                key: 'photos',
-                header: 'Photos',
-                secondary: true,
-                render: (row) => String(row.items.length),
-              },
-            ]}
-            actions={(row) => (
-              <div className="cms-row-actions">
-                <PublishControls
-                  status={row.status}
-                  publishPermission="GALLERY_PUBLISH"
-                  busy={transitionAlbum.state.submitting}
-                  onTransition={async (action) => {
-                    const result = await transitionAlbum.run({ id: row.id, action });
-                    if (result) {
-                      success('Updated.');
-                      albums.refetch();
-                    } else {
-                      failure(transitionAlbum.state.error ?? 'Could not update.');
-                    }
-                  }}
-                />
-                <IfPermitted permission="GALLERY_DELETE">
-                  <button
-                    type="button"
-                    className="cms-row-actions__danger"
-                    onClick={async () => {
-                      const result = await deleteAlbum.run({ id: row.id });
-                      if (result) {
-                        success('Album deleted.');
-                        albums.refetch();
-                      } else {
-                        failure(deleteAlbum.state.error ?? 'Could not delete.');
-                      }
-                    }}
-                  >
-                    Delete
-                  </button>
-                </IfPermitted>
-              </div>
-            )}
-          />
+        {() => (
+          <ListTableCard title="Photo albums" count={filteredAlbums.length} countLabel="albums">
+            <table className="list-table">
+              <caption className="visually-hidden">Photo albums</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="list-table__actions-col">
+                    <span className="visually-hidden">Actions</span>
+                  </th>
+                  <th scope="col">Album</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="list-table__secondary">
+                    Photos
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAlbums.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>No albums match this search.</td>
+                  </tr>
+                ) : (
+                  filteredAlbums.map((row) => (
+                    <tr key={row.id}>
+                      <td className="list-table__actions-col">
+                        <div className="list-row-actions">
+                          <PublishIconActions
+                            status={row.status}
+                            publishPermission="GALLERY_PUBLISH"
+                            busy={transitionAlbum.state.submitting}
+                            onTransition={async (action) => {
+                              const result = await transitionAlbum.run({ id: row.id, action });
+                              if (result) {
+                                success('Updated.');
+                                albums.refetch();
+                              } else {
+                                failure(transitionAlbum.state.error ?? 'Could not update.');
+                              }
+                            }}
+                          />
+                          <IfPermitted permission="GALLERY_DELETE">
+                            <button
+                              type="button"
+                              className="list-action-btn list-action-btn--danger"
+                              aria-label={`Delete ${row.title}`}
+                              title="Delete"
+                              onClick={async () => {
+                                const result = await deleteAlbum.run({ id: row.id });
+                                if (result) {
+                                  success('Album deleted.');
+                                  albums.refetch();
+                                } else {
+                                  failure(deleteAlbum.state.error ?? 'Could not delete.');
+                                }
+                              }}
+                            >
+                              <Icon name="trash" size={1} />
+                            </button>
+                          </IfPermitted>
+                        </div>
+                      </td>
+                      <td>{row.title}</td>
+                      <td>
+                        <StatusPill value={row.status} />
+                      </td>
+                      <td className="list-table__secondary">{row.items.length}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </ListTableCard>
         )}
       </CmsBoundary>
 
@@ -523,60 +692,78 @@ export function CmsGalleryPage() {
         isEmpty={(data) => data.cmsVideos.length === 0}
         emptyMessage="No videos yet."
       >
-        {(data) => (
-          <DataTable
-            caption="Videos"
-            rows={data.cmsVideos}
-            columns={[
-              { key: 'title', header: 'Title', render: (row) => row.title },
-              {
-                key: 'status',
-                header: 'Status',
-                render: (row) => <StatusPill value={row.status} />,
-              },
-              {
-                key: 'platform',
-                header: 'Platform',
-                secondary: true,
-                render: (row) => row.platform,
-              },
-            ]}
-            actions={(row) => (
-              <div className="cms-row-actions">
-                <PublishControls
-                  status={row.status}
-                  publishPermission="GALLERY_PUBLISH"
-                  busy={transitionVideo.state.submitting}
-                  onTransition={async (action) => {
-                    const result = await transitionVideo.run({ id: row.id, action });
-                    if (result) {
-                      success('Updated.');
-                      videos.refetch();
-                    } else {
-                      failure(transitionVideo.state.error ?? 'Could not update.');
-                    }
-                  }}
-                />
-                <IfPermitted permission="GALLERY_DELETE">
-                  <button
-                    type="button"
-                    className="cms-row-actions__danger"
-                    onClick={async () => {
-                      const result = await deleteVideo.run({ id: row.id });
-                      if (result) {
-                        success('Video removed.');
-                        videos.refetch();
-                      } else {
-                        failure(deleteVideo.state.error ?? 'Could not remove.');
-                      }
-                    }}
-                  >
-                    Delete
-                  </button>
-                </IfPermitted>
-              </div>
-            )}
-          />
+        {() => (
+          <ListTableCard title="Videos" count={filteredVideos.length} countLabel="videos">
+            <table className="list-table">
+              <caption className="visually-hidden">Videos</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="list-table__actions-col">
+                    <span className="visually-hidden">Actions</span>
+                  </th>
+                  <th scope="col">Title</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="list-table__secondary">
+                    Platform
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredVideos.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>No videos match this search.</td>
+                  </tr>
+                ) : (
+                  filteredVideos.map((row) => (
+                    <tr key={row.id}>
+                      <td className="list-table__actions-col">
+                        <div className="list-row-actions">
+                          <PublishIconActions
+                            status={row.status}
+                            publishPermission="GALLERY_PUBLISH"
+                            busy={transitionVideo.state.submitting}
+                            onTransition={async (action) => {
+                              const result = await transitionVideo.run({ id: row.id, action });
+                              if (result) {
+                                success('Updated.');
+                                videos.refetch();
+                              } else {
+                                failure(transitionVideo.state.error ?? 'Could not update.');
+                              }
+                            }}
+                          />
+                          <IfPermitted permission="GALLERY_DELETE">
+                            <button
+                              type="button"
+                              className="list-action-btn list-action-btn--danger"
+                              aria-label={`Delete ${row.title}`}
+                              title="Delete"
+                              onClick={async () => {
+                                const result = await deleteVideo.run({ id: row.id });
+                                if (result) {
+                                  success('Video removed.');
+                                  videos.refetch();
+                                } else {
+                                  failure(deleteVideo.state.error ?? 'Could not remove.');
+                                }
+                              }}
+                            >
+                              <Icon name="trash" size={1} />
+                            </button>
+                          </IfPermitted>
+                        </div>
+                      </td>
+                      <td>{row.title}</td>
+                      <td>
+                        <StatusPill value={row.status} />
+                      </td>
+                      <td className="list-table__secondary">{row.platform}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </ListTableCard>
         )}
       </CmsBoundary>
 
@@ -601,6 +788,7 @@ interface MediaRow {
 
 export function CmsMediaPage() {
   const { toasts, success, failure } = useToasts();
+  const [search, setSearch] = useState('');
   const [pendingDelete, setPendingDelete] = useState<MediaRow | null>(null);
   const [editing, setEditing] = useState<{ id: string; altText: string } | null>(null);
 
@@ -612,87 +800,49 @@ export function CmsMediaPage() {
   const update = useCmsMutation<unknown, { id: string; altText: string }>(UPDATE_MEDIA);
   const remove = useCmsMutation<unknown, { id: string }>(DELETE_MEDIA);
 
+  const allRows = state.status === 'success' ? state.data.cmsMedia.nodes : [];
+  const totalCount = state.status === 'success' ? state.data.cmsMedia.totalCount : 0;
+  const filteredRows = allRows.filter((row) =>
+    matchesSearch(`${row.originalName} ${row.altText ?? ''} ${row.kind}`, search),
+  );
+  const imageCount = allRows.filter((row) => row.kind === 'IMAGE').length;
+  const missingAltCount = allRows.filter(
+    (row) => row.kind === 'IMAGE' && !row.altText?.trim(),
+  ).length;
+  const refreshing = state.status === 'loading';
+
   return (
-    <div className="cms-page">
+    <div className="cms-page list-page">
       <CmsPageHeader
         title="Media library"
         description="Images and documents used across the site. Uploads are validated by content, not by file name."
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
+
+      {state.status === 'success' && allRows.length > 0 ? (
+        <ListKpiGrid label="Media summary">
+          <ListKpiCard
+            label="Total media assets"
+            value={totalCount.toLocaleString()}
+            hint="In the media library"
+          />
+          <ListKpiCard
+            label="Images"
+            value={imageCount.toLocaleString()}
+            hint={
+              missingAltCount > 0
+                ? `${missingAltCount.toLocaleString()} missing alt text`
+                : 'All images have alt text'
+            }
+          />
+        </ListKpiGrid>
+      ) : null}
 
       <CmsCard title="Upload">
         {/* Reuses the picker purely as an uploader; selection is discarded. */}
         <MediaPicker label="Add a file" selectedId={null} onSelect={() => refetch()} />
       </CmsCard>
-
-      <CmsBoundary
-        state={state}
-        refetch={refetch}
-        isEmpty={(data) => data.cmsMedia.nodes.length === 0}
-        emptyMessage="Nothing in the library yet."
-      >
-        {(data) => (
-          <DataTable
-            caption="Media"
-            rows={data.cmsMedia.nodes}
-            columns={[
-              {
-                key: 'preview',
-                header: 'File',
-                render: (row) =>
-                  row.kind === 'IMAGE' ? (
-                    <img
-                      className="cms-media-thumb"
-                      src={`${apiBaseUrl}/media/${row.id}`}
-                      alt={row.altText ?? ''}
-                    />
-                  ) : (
-                    <span>{row.originalName}</span>
-                  ),
-              },
-              { key: 'name', header: 'Name', render: (row) => row.originalName },
-              {
-                key: 'alt',
-                header: 'Alt text',
-                render: (row) => row.altText ?? <span className="cms-media-missing">Missing</span>,
-              },
-              {
-                key: 'size',
-                header: 'Size',
-                secondary: true,
-                render: (row) => `${Math.round(row.sizeBytes / 1024)} KB`,
-              },
-              {
-                key: 'created',
-                header: 'Added',
-                secondary: true,
-                render: (row) => formatDate(row.createdAt) ?? '—',
-              },
-            ]}
-            actions={(row) => (
-              <div className="cms-row-actions">
-                <IfPermitted permission="MEDIA_UPDATE">
-                  <button
-                    type="button"
-                    className="cms-row-actions__link"
-                    onClick={() => setEditing({ id: row.id, altText: row.altText ?? '' })}
-                  >
-                    Edit alt text
-                  </button>
-                </IfPermitted>
-                <IfPermitted permission="MEDIA_DELETE">
-                  <button
-                    type="button"
-                    className="cms-row-actions__danger"
-                    onClick={() => setPendingDelete(row)}
-                  >
-                    Delete
-                  </button>
-                </IfPermitted>
-              </div>
-            )}
-          />
-        )}
-      </CmsBoundary>
 
       {editing ? (
         <CmsCard title="Edit alt text">
@@ -728,6 +878,108 @@ export function CmsMediaPage() {
         </CmsCard>
       ) : null}
 
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchLabel="Search media"
+        searchPlaceholder="Search media"
+        onRefresh={() => void refetch()}
+        refreshing={refreshing}
+        busy={refreshing}
+        hasFilters={Boolean(search.trim())}
+        onClear={() => setSearch('')}
+      />
+
+      <CmsBoundary
+        state={state}
+        refetch={refetch}
+        isEmpty={(data) => data.cmsMedia.nodes.length === 0}
+        emptyMessage="Nothing in the library yet."
+      >
+        {() => (
+          <ListTableCard title="Media" count={filteredRows.length} countLabel="files">
+            <table className="list-table">
+              <caption className="visually-hidden">Media</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="list-table__actions-col">
+                    <span className="visually-hidden">Actions</span>
+                  </th>
+                  <th scope="col">File</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Alt text</th>
+                  <th scope="col" className="list-table__secondary">
+                    Size
+                  </th>
+                  <th scope="col" className="list-table__secondary">
+                    Added
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>No files match this search.</td>
+                  </tr>
+                ) : (
+                  filteredRows.map((row) => (
+                    <tr key={row.id}>
+                      <td className="list-table__actions-col">
+                        <div className="list-row-actions">
+                          <IfPermitted permission="MEDIA_UPDATE">
+                            <button
+                              type="button"
+                              className="list-action-btn list-action-btn--edit"
+                              aria-label={`Edit alt text for ${row.originalName}`}
+                              title="Edit alt text"
+                              onClick={() => setEditing({ id: row.id, altText: row.altText ?? '' })}
+                            >
+                              <Icon name="pencil" size={1} />
+                            </button>
+                          </IfPermitted>
+                          <IfPermitted permission="MEDIA_DELETE">
+                            <button
+                              type="button"
+                              className="list-action-btn list-action-btn--danger"
+                              aria-label={`Delete ${row.originalName}`}
+                              title="Delete"
+                              onClick={() => setPendingDelete(row)}
+                            >
+                              <Icon name="trash" size={1} />
+                            </button>
+                          </IfPermitted>
+                        </div>
+                      </td>
+                      <td>
+                        {row.kind === 'IMAGE' ? (
+                          <img
+                            className="cms-media-thumb"
+                            src={`${apiBaseUrl}/media/${row.id}`}
+                            alt={row.altText ?? ''}
+                          />
+                        ) : (
+                          <span>{row.originalName}</span>
+                        )}
+                      </td>
+                      <td>{row.originalName}</td>
+                      <td>
+                        {row.altText ?? <span className="cms-media-missing">Missing</span>}
+                      </td>
+                      <td className="list-table__secondary">
+                        {`${Math.round(row.sizeBytes / 1024)} KB`}
+                      </td>
+                      <td className="list-table__secondary">
+                        {formatDate(row.createdAt) ?? '—'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </ListTableCard>
+        )}
+      </CmsBoundary>
+
       <ConfirmDialog
         open={pendingDelete !== null}
         title="Delete this file?"
@@ -749,5 +1001,133 @@ export function CmsMediaPage() {
 
       <ToastRegion toasts={toasts} />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared publish / archive icon actions (list-pro)
+// ---------------------------------------------------------------------------
+
+function PublishIconActions({
+  status,
+  publishPermission,
+  onTransition,
+  busy,
+}: {
+  status: string;
+  publishPermission: Permission;
+  onTransition: (action: string) => void;
+  busy?: boolean;
+}) {
+  const { t } = useAdminI18n();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && menuRef.current && !menuRef.current.contains(target)) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <IfPermitted permission={publishPermission}>
+        {status !== 'PUBLISHED' && status !== 'ARCHIVED' ? (
+          <button
+            type="button"
+            className="list-action-btn list-action-btn--activate"
+            aria-label="Publish"
+            title="Publish"
+            disabled={busy ?? false}
+            onClick={() => onTransition('PUBLISH')}
+          >
+            <Icon name="play" size={1} />
+          </button>
+        ) : null}
+        {status === 'PUBLISHED' ? (
+          <button
+            type="button"
+            className="list-action-btn list-action-btn--pause"
+            aria-label="Unpublish"
+            title="Unpublish"
+            disabled={busy ?? false}
+            onClick={() => onTransition('UNPUBLISH')}
+          >
+            <Icon name="pause" size={1} />
+          </button>
+        ) : null}
+      </IfPermitted>
+
+      <div className={`cms-actions-menu${open ? ' cms-actions-menu--open' : ''}`} ref={menuRef}>
+        <button
+          type="button"
+          className="list-action-btn list-action-btn--more"
+          aria-label="More actions"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          title="More"
+          onClick={() => setOpen((value) => !value)}
+        >
+          <Icon name="moreVertical" size={1.05} />
+        </button>
+        {open ? (
+          <div className="cms-actions-menu__panel" role="menu">
+            {status === 'DRAFT' ? (
+              <MenuButton
+                disabled={busy ?? false}
+                onClick={() => {
+                  setOpen(false);
+                  onTransition('SUBMIT_FOR_REVIEW');
+                }}
+              >
+                {t('action.submitForReview')}
+              </MenuButton>
+            ) : null}
+            <IfPermitted permission={publishPermission}>
+              {status !== 'ARCHIVED' ? (
+                <MenuButton
+                  disabled={busy ?? false}
+                  onClick={() => {
+                    setOpen(false);
+                    onTransition('ARCHIVE');
+                  }}
+                >
+                  {t('action.archive')}
+                </MenuButton>
+              ) : null}
+            </IfPermitted>
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
+function MenuButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button type="button" role="menuitem" disabled={disabled} onClick={onClick}>
+      {children}
+    </button>
   );
 }

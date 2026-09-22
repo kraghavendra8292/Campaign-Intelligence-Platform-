@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, MODERATION_STATUSES, SUBMISSION_TYPES } from '@rk/types';
-import { Button } from '@rk/ui';
+import { Button, Icon } from '@rk/ui';
 import { useAdminQuery } from '../../../features/admin/adminApi';
 import {
   ISSUES_QUERY,
@@ -12,6 +12,12 @@ import {
   type IssueRow,
 } from '../../../features/issues/issueQueries';
 import { CmsPageHeader, DataTable, ToastRegion, useToasts } from '../../../components/cms/CmsShell';
+import {
+  LIST_SEARCH_DEBOUNCE_MS,
+  ListSelectFilter,
+  ListTableCard,
+  ListToolbar,
+} from '../../../components/cms/ListPro';
 import {
   FilterBar,
   QrBoundary,
@@ -95,6 +101,7 @@ export function IssuesPage() {
   const [filters, setFilters] = useState<Filters>(initial);
   const [draftSearch, setDraftSearch] = useState(initial.search);
   const [offset, setOffset] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const { toasts } = useToasts();
 
   useEffect(() => {
@@ -104,7 +111,26 @@ export function IssuesPage() {
     setOffset(0);
   }, [searchParams]);
 
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const next = draftSearch.trim();
+      setFilters((current) => {
+        if (current.search === next) return current;
+        return { ...current, search: next };
+      });
+      setOffset(0);
+    }, LIST_SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(handle);
+  }, [draftSearch]);
+
   const clearQrFilter = useCallback(() => {
+    setFilters(NO_FILTERS);
+    setDraftSearch('');
+    setOffset(0);
+    navigate('/admin/issues', { replace: true });
+  }, [navigate]);
+
+  const clearFilters = useCallback(() => {
     setFilters(NO_FILTERS);
     setDraftSearch('');
     setOffset(0);
@@ -136,6 +162,10 @@ export function IssuesPage() {
     issues: { nodes: IssueRow[]; totalCount: number; hasMore: boolean };
   }>(ISSUES_QUERY, variables);
 
+  useEffect(() => {
+    if (state.status !== 'loading') setRefreshing(false);
+  }, [state.status]);
+
   // Headline figures come from their own query so a slow aggregate never delays
   // the table, and so the numbers describe the whole inbox rather than the page.
   const analytics = useAdminQuery<{ issueAnalytics: IssueAnalyticsData }>(ISSUE_ANALYTICS_QUERY, {
@@ -154,12 +184,31 @@ export function IssuesPage() {
     setOffset(0);
   }, []);
 
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch();
+  }, [refetch]);
+
   const summary = analytics.state.status === 'success' ? analytics.state.data.issueAnalytics : null;
   const categoryOptions =
     categories.state.status === 'success' ? categories.state.data.issueCategories : [];
 
+  const hasFilters = Boolean(
+    filters.status ||
+      filters.priority ||
+      filters.type ||
+      filters.categoryId ||
+      filters.source ||
+      filters.moderationStatus ||
+      filters.ward ||
+      filters.unassignedOnly ||
+      filters.search ||
+      filters.campaignId ||
+      filters.qrCodeId,
+  );
+
   return (
-    <div className="cms-page">
+    <div className="cms-page list-page">
       <CmsPageHeader
         title="Issues & feedback"
         description={
@@ -169,6 +218,8 @@ export function IssuesPage() {
               ? 'Citizen issues attributed to a QR code.'
               : 'What citizens have sent in, and how the team is handling it.'
         }
+        backTo="/admin"
+        backLabel="Back to dashboard"
         actions={
           <Link to="/admin/issues/analytics">
             <Button variant="secondary">Analytics</Button>
@@ -214,117 +265,94 @@ export function IssuesPage() {
         </StatGrid>
       ) : null}
 
-      <FilterBar>
-        <label className="cms-filters__status">
-          <span className="visually-hidden">Filter by status</span>
-          <select
-            className="rk-select__control"
-            value={filters.status}
-            onChange={(event) => update({ status: event.target.value })}
-          >
-            <option value="">All statuses</option>
-            {ISSUE_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {STATUS_LABELS[status]}
-              </option>
-            ))}
-          </select>
-        </label>
+      <ListToolbar
+        search={draftSearch}
+        onSearchChange={setDraftSearch}
+        searchLabel="Search submissions"
+        searchPlaceholder="Reference or title"
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
+        busy={state.status === 'loading'}
+        hasFilters={hasFilters}
+        onClear={clearFilters}
+        filter={
+          <>
+            <ListSelectFilter
+              label="Filter by status"
+              value={filters.status}
+              onChange={(event) => update({ status: event.target.value })}
+            >
+              <option value="">All statuses</option>
+              {ISSUE_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {STATUS_LABELS[status]}
+                </option>
+              ))}
+            </ListSelectFilter>
 
-        <label className="cms-filters__status">
-          <span className="visually-hidden">Filter by priority</span>
-          <select
-            className="rk-select__control"
-            value={filters.priority}
-            onChange={(event) => update({ priority: event.target.value })}
-          >
-            <option value="">All priorities</option>
-            {ISSUE_PRIORITIES.map((priority) => (
-              <option key={priority} value={priority}>
-                {priority.charAt(0) + priority.slice(1).toLowerCase()}
-              </option>
-            ))}
-          </select>
-        </label>
+            <ListSelectFilter
+              label="Filter by priority"
+              value={filters.priority}
+              onChange={(event) => update({ priority: event.target.value })}
+            >
+              <option value="">All priorities</option>
+              {ISSUE_PRIORITIES.map((priority) => (
+                <option key={priority} value={priority}>
+                  {priority.charAt(0) + priority.slice(1).toLowerCase()}
+                </option>
+              ))}
+            </ListSelectFilter>
 
-        <label className="cms-filters__status">
-          <span className="visually-hidden">Filter by type</span>
-          <select
-            className="rk-select__control"
-            value={filters.type}
-            onChange={(event) => update({ type: event.target.value })}
-          >
-            <option value="">All types</option>
-            {SUBMISSION_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {TYPE_LABELS[type]}
-              </option>
-            ))}
-          </select>
-        </label>
+            <ListSelectFilter
+              label="Filter by type"
+              value={filters.type}
+              onChange={(event) => update({ type: event.target.value })}
+            >
+              <option value="">All types</option>
+              {SUBMISSION_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {TYPE_LABELS[type]}
+                </option>
+              ))}
+            </ListSelectFilter>
 
-        <label className="cms-filters__status">
-          <span className="visually-hidden">Filter by category</span>
-          <select
-            className="rk-select__control"
-            value={filters.categoryId}
-            onChange={(event) => update({ categoryId: event.target.value })}
-          >
-            <option value="">All categories</option>
-            {categoryOptions.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <ListSelectFilter
+              label="Filter by category"
+              value={filters.categoryId}
+              onChange={(event) => update({ categoryId: event.target.value })}
+            >
+              <option value="">All categories</option>
+              {categoryOptions.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.label}
+                </option>
+              ))}
+            </ListSelectFilter>
 
-        <label className="cms-filters__status">
-          <span className="visually-hidden">Filter by moderation state</span>
-          <select
-            className="rk-select__control"
-            value={filters.moderationStatus}
-            onChange={(event) => update({ moderationStatus: event.target.value })}
-          >
-            <option value="">Any review state</option>
-            {MODERATION_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status.replace(/_/g, ' ').toLowerCase()}
-              </option>
-            ))}
-          </select>
-        </label>
+            <ListSelectFilter
+              label="Filter by moderation state"
+              value={filters.moderationStatus}
+              onChange={(event) => update({ moderationStatus: event.target.value })}
+            >
+              <option value="">Any review state</option>
+              {MODERATION_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status.replace(/_/g, ' ').toLowerCase()}
+                </option>
+              ))}
+            </ListSelectFilter>
 
-        <label className="cms-checkbox">
-          <input
-            type="checkbox"
-            checked={filters.unassignedOnly}
-            onChange={(event) => update({ unassignedOnly: event.target.checked })}
-          />
-          <span>Unassigned only</span>
-        </label>
-
-        <form
-          role="search"
-          className="cms-filters__search"
-          onSubmit={(event: FormEvent) => {
-            event.preventDefault();
-            update({ search: draftSearch.trim() });
-          }}
-        >
-          <input
-            className="rk-input rk-input--sm"
-            type="search"
-            value={draftSearch}
-            aria-label="Search submissions"
-            placeholder="Reference or title"
-            onChange={(event) => setDraftSearch(event.target.value)}
-          />
-          <Button type="submit" variant="secondary" size="sm">
-            Search
-          </Button>
-        </form>
-      </FilterBar>
+            <label className="cms-checkbox">
+              <input
+                type="checkbox"
+                checked={filters.unassignedOnly}
+                onChange={(event) => update({ unassignedOnly: event.target.checked })}
+              />
+              <span>Unassigned only</span>
+            </label>
+          </>
+        }
+      />
 
       <QrBoundary
         state={state}
@@ -335,15 +363,7 @@ export function IssuesPage() {
             title="No submissions match this view."
             message="Citizens can send feedback from the public website at /feedback. Clear the filters to see everything received."
             action={
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setFilters(NO_FILTERS);
-                  setDraftSearch('');
-                  setOffset(0);
-                  navigate('/admin/issues', { replace: true });
-                }}
-              >
+              <Button variant="secondary" onClick={clearFilters}>
                 Clear filters
               </Button>
             }
@@ -352,84 +372,95 @@ export function IssuesPage() {
       >
         {(data) => (
           <>
-            <DataTable
-              caption="Citizen submissions"
-              rows={data.issues.nodes}
-              columns={[
-                {
-                  key: 'reference',
-                  header: 'Reference',
-                  render: (row) => (
-                    <Link className="cms-table__link mono" to={`/admin/issues/${row.id}`}>
-                      {row.referenceNumber}
+            <ListTableCard
+              title="Submissions"
+              count={data.issues.totalCount}
+              countLabel="submissions"
+            >
+              <DataTable
+                caption="Citizen submissions"
+                rows={data.issues.nodes}
+                columns={[
+                  {
+                    key: 'reference',
+                    header: 'Reference',
+                    render: (row) => (
+                      <Link className="cms-table__link mono" to={`/admin/issues/${row.id}`}>
+                        {row.referenceNumber}
+                      </Link>
+                    ),
+                  },
+                  {
+                    key: 'title',
+                    header: 'Title',
+                    render: (row) => (
+                      <Link className="cms-table__link" to={`/admin/issues/${row.id}`}>
+                        {row.title}
+                      </Link>
+                    ),
+                  },
+                  {
+                    key: 'type',
+                    header: 'Type',
+                    secondary: true,
+                    render: (row) => <IssueTypeLabel value={row.type} />,
+                  },
+                  {
+                    key: 'category',
+                    header: 'Category',
+                    secondary: true,
+                    render: (row) => row.category?.label ?? '—',
+                  },
+                  {
+                    key: 'priority',
+                    header: 'Priority',
+                    render: (row) => <IssuePriorityBadge value={row.priority} />,
+                  },
+                  {
+                    key: 'status',
+                    header: 'Status',
+                    render: (row) => <IssueStatusBadge value={row.status} />,
+                  },
+                  {
+                    key: 'location',
+                    header: 'Location',
+                    secondary: true,
+                    render: (row) => row.ward ?? row.locality ?? '—',
+                  },
+                  {
+                    key: 'source',
+                    header: 'Source',
+                    secondary: true,
+                    render: (row) => issueSourceLabel(row.source),
+                  },
+                  {
+                    key: 'submitted',
+                    header: 'Received',
+                    render: (row) => formatDate(row.submittedAt) ?? '—',
+                  },
+                  {
+                    key: 'assigned',
+                    header: 'Assigned',
+                    secondary: true,
+                    // "Unassigned" rather than a dash: an empty cell reads as
+                    // missing data, and this is a state somebody must act on.
+                    render: (row) => row.assignedTo?.fullName ?? 'Unassigned',
+                  },
+                ]}
+                actions={(row) => (
+                  <div className="list-row-actions">
+                    <Link
+                      className="list-action-btn list-action-btn--view"
+                      to={`/admin/issues/${row.id}`}
+                      aria-label={`View ${row.referenceNumber}`}
+                      title="View"
+                    >
+                      <Icon name="eye" size={1} />
                     </Link>
-                  ),
-                },
-                {
-                  key: 'title',
-                  header: 'Title',
-                  render: (row) => (
-                    <Link className="cms-table__link" to={`/admin/issues/${row.id}`}>
-                      {row.title}
-                    </Link>
-                  ),
-                },
-                {
-                  key: 'type',
-                  header: 'Type',
-                  secondary: true,
-                  render: (row) => <IssueTypeLabel value={row.type} />,
-                },
-                {
-                  key: 'category',
-                  header: 'Category',
-                  secondary: true,
-                  render: (row) => row.category?.label ?? '—',
-                },
-                {
-                  key: 'priority',
-                  header: 'Priority',
-                  render: (row) => <IssuePriorityBadge value={row.priority} />,
-                },
-                {
-                  key: 'status',
-                  header: 'Status',
-                  render: (row) => <IssueStatusBadge value={row.status} />,
-                },
-                {
-                  key: 'location',
-                  header: 'Location',
-                  secondary: true,
-                  render: (row) => row.ward ?? row.locality ?? '—',
-                },
-                {
-                  key: 'source',
-                  header: 'Source',
-                  secondary: true,
-                  render: (row) => issueSourceLabel(row.source),
-                },
-                {
-                  key: 'submitted',
-                  header: 'Received',
-                  render: (row) => formatDate(row.submittedAt) ?? '—',
-                },
-                {
-                  key: 'assigned',
-                  header: 'Assigned',
-                  secondary: true,
-                  // "Unassigned" rather than a dash: an empty cell reads as
-                  // missing data, and this is a state somebody must act on.
-                  render: (row) => row.assignedTo?.fullName ?? 'Unassigned',
-                },
-              ]}
-              actions={(row) => (
-                <div className="cms-row-actions">
-                  <Link className="cms-row-actions__link" to={`/admin/issues/${row.id}`}>
-                    Open
-                  </Link>
-                </div>
-              )}
-            />
+                  </div>
+                )}
+              />
+            </ListTableCard>
 
             <div className="issue-pagination">
               <p className="issue-pagination__count" aria-live="polite">

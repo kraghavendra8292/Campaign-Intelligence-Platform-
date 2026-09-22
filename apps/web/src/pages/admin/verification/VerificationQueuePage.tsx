@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { EVIDENCE_TYPE_LABELS, type VerificationStatus } from '@rk/types';
-import { Badge, Button } from '@rk/ui';
+import { Badge, Button, Icon } from '@rk/ui';
 import { useAdminMutation, useAdminQuery } from '../../../features/admin/adminApi';
 import {
   DECIDE_VERIFICATION,
@@ -14,6 +14,7 @@ import {
   type WorkSubjectType,
 } from '../../../features/work/workQueries';
 import { CmsPageHeader, IfPermitted } from '../../../components/cms/CmsShell';
+import { ListTableCard } from '../../../components/cms/ListPro';
 import { QrBoundary } from '../../../components/qr/QrShell';
 import { ChartCard } from '../../../components/analytics/charts';
 import { formatDateTime } from '../../../lib/format';
@@ -53,6 +54,7 @@ const STATUS_TABS = [
 export function VerificationQueuePage() {
   const [tab, setTab] = useState<0 | 1 | 2 | 3>(0);
   const [open, setOpen] = useState<{ type: WorkSubjectType; id: string } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const variables = useMemo(
     () => ({ filter: { statuses: [...STATUS_TABS[tab].statuses], first: 50 } }),
@@ -64,11 +66,22 @@ export function VerificationQueuePage() {
     variables,
   );
 
+  useEffect(() => {
+    if (queue.state.status !== 'loading') setRefreshing(false);
+  }, [queue.state.status]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    queue.refetch();
+  }, [queue]);
+
   return (
-    <div className="cms-page verify-page">
+    <div className="cms-page list-page verify-page">
       <CmsPageHeader
         title="Verification"
         description="Claims waiting to be checked against their evidence, and the record of what was decided."
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
 
       <div className="verify-tabs" role="tablist">
@@ -89,15 +102,39 @@ export function VerificationQueuePage() {
         ))}
       </div>
 
+      <div className="list-toolbar">
+        <div className="list-toolbar__left" />
+        <div className="list-toolbar__right">
+          <button
+            type="button"
+            className={`cms-icon-btn cms-icon-btn--square${refreshing ? ' cms-icon-btn--busy' : ''}`}
+            aria-label="Refresh"
+            title="Refresh"
+            disabled={queue.state.status === 'loading'}
+            onClick={handleRefresh}
+          >
+            <Icon name="refresh" size={1.15} />
+          </button>
+        </div>
+      </div>
+
       <QrBoundary state={queue.state} refetch={queue.refetch}>
         {(data) =>
           data.verificationQueue.length === 0 ? (
             <p className="chart-empty">Nothing here.</p>
           ) : (
-            <div className="table-scroll">
-              <table className="cms-table">
+            <ListTableCard
+              title={STATUS_TABS[tab].label}
+              count={data.verificationQueue.length}
+              countLabel="claims"
+            >
+              <table className="list-table">
+                <caption className="visually-hidden">Verification queue</caption>
                 <thead>
                   <tr>
+                    <th scope="col" className="list-table__actions-col">
+                      <span className="visually-hidden">Actions</span>
+                    </th>
                     <th scope="col">Claim</th>
                     <th scope="col">Kind</th>
                     <th scope="col">Category</th>
@@ -106,51 +143,57 @@ export function VerificationQueuePage() {
                     <th scope="col">Submitted by</th>
                     <th scope="col">Waiting since</th>
                     <th scope="col">Status</th>
-                    <th scope="col" />
                   </tr>
                 </thead>
                 <tbody>
-                  {data.verificationQueue.map((row) => (
-                    <tr key={`${row.subjectType}:${row.id}`}>
-                      <td>{row.title}</td>
-                      <td>{row.subjectType === 'PROJECT' ? 'Work' : 'Achievement'}</td>
-                      <td>{row.category.replace(/_/g, ' ').toLowerCase()}</td>
-                      <td>{row.area ?? '—'}</td>
-                      <td>
-                        {/* Zero evidence is called out rather than shown as a
-                            bare 0: it is the one value that makes the claim
-                            undecidable, and it should look like a problem. */}
-                        {row.evidenceCount === 0 ? (
-                          <Badge tone="error">none</Badge>
-                        ) : (
-                          row.evidenceCount
-                        )}
-                      </td>
-                      <td>{row.submittedBy?.fullName ?? '—'}</td>
-                      <td>{formatDateTime(row.submittedForReviewAt) ?? '—'}</td>
-                      <td>
-                        <Badge tone={STATUS_TONE[row.verification]}>
-                          {row.verification.replace(/_/g, ' ').toLowerCase()}
-                        </Badge>
-                      </td>
-                      <td>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() =>
-                            setOpen(
-                              open?.id === row.id ? null : { type: row.subjectType, id: row.id },
-                            )
-                          }
-                        >
-                          {open?.id === row.id ? 'Close' : 'Review'}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {data.verificationQueue.map((row) => {
+                    const isOpen = open?.id === row.id;
+                    return (
+                      <tr key={`${row.subjectType}:${row.id}`}>
+                        <td className="list-table__actions-col">
+                          <div className="list-row-actions">
+                            <button
+                              type="button"
+                              className="list-action-btn list-action-btn--view"
+                              aria-label={isOpen ? `Close ${row.title}` : `Review ${row.title}`}
+                              title={isOpen ? 'Close' : 'Review'}
+                              onClick={() =>
+                                setOpen(
+                                  isOpen ? null : { type: row.subjectType, id: row.id },
+                                )
+                              }
+                            >
+                              <Icon name={isOpen ? 'close' : 'eye'} size={1} />
+                            </button>
+                          </div>
+                        </td>
+                        <td>{row.title}</td>
+                        <td>{row.subjectType === 'PROJECT' ? 'Work' : 'Achievement'}</td>
+                        <td>{row.category.replace(/_/g, ' ').toLowerCase()}</td>
+                        <td>{row.area ?? '—'}</td>
+                        <td>
+                          {/* Zero evidence is called out rather than shown as a
+                              bare 0: it is the one value that makes the claim
+                              undecidable, and it should look like a problem. */}
+                          {row.evidenceCount === 0 ? (
+                            <Badge tone="error">none</Badge>
+                          ) : (
+                            row.evidenceCount
+                          )}
+                        </td>
+                        <td>{row.submittedBy?.fullName ?? '—'}</td>
+                        <td>{formatDateTime(row.submittedForReviewAt) ?? '—'}</td>
+                        <td>
+                          <Badge tone={STATUS_TONE[row.verification]}>
+                            {row.verification.replace(/_/g, ' ').toLowerCase()}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-            </div>
+            </ListTableCard>
           )
         }
       </QrBoundary>

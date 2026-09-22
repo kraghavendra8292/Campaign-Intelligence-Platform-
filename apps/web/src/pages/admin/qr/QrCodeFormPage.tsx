@@ -192,6 +192,12 @@ export function QrCodeFormPage() {
             ? 'A new code is active immediately, so it works the moment it is printed.'
             : undefined
         }
+        backTo={
+          isNew
+            ? `/admin/qr-campaigns/${campaignId}`
+            : `/admin/qr-campaigns/${campaignId}/qr/${qrId}`
+        }
+        backLabel={isNew ? 'Back to campaign' : 'Back to QR code'}
       />
 
       <form className="cms-form" onSubmit={handleSubmit} noValidate>

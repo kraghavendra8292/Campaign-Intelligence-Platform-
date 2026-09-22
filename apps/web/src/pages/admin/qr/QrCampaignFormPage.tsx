@@ -132,6 +132,8 @@ export function QrCampaignFormPage() {
             ? 'Created as a draft. Activate it once its QR codes are ready to print.'
             : undefined
         }
+        backTo={isNew ? '/admin/qr-campaigns' : `/admin/qr-campaigns/${id}`}
+        backLabel={isNew ? 'Back to campaigns' : 'Back to campaign'}
       />
 
       <form className="cms-form" onSubmit={handleSubmit} noValidate>

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   ISSUE_PRIORITIES,
   ISSUE_STATUS_TRANSITIONS,
@@ -189,11 +189,8 @@ export function IssueDetailPage() {
               <CmsPageHeader
                 title={issue.title}
                 description={`${issue.referenceNumber} · received ${formatDate(issue.submittedAt) ?? ''}`}
-                actions={
-                  <Link to="/admin/issues">
-                    <Button variant="secondary">Back to inbox</Button>
-                  </Link>
-                }
+                backTo="/admin/issues"
+                backLabel="Back to inbox"
               />
 
               <div className="issue-detail">

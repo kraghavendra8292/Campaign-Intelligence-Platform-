@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Button, Card, ErrorState, LoadingState } from '@rk/ui';
+import { Link } from 'react-router-dom';
+import { Button, Card, ErrorState, Icon, LoadingState } from '@rk/ui';
 import { LOCALES, type Locale, type Permission } from '@rk/types';
 import { useAuth } from '../../features/auth/AuthProvider';
 import { useCmsLocale } from '../../features/cms/CmsLocaleContext';
@@ -20,6 +21,8 @@ export function CmsPageHeader({
   description,
   actions,
   localized,
+  backTo,
+  backLabel = 'Back',
 }: {
   title: string;
   description?: string;
@@ -30,10 +33,19 @@ export function CmsPageHeader({
    * set of files shared by all languages.
    */
   localized?: boolean;
+  /** When set, shows a Back control that navigates to this path. */
+  backTo?: string;
+  backLabel?: string;
 }) {
   return (
     <header className="cms-page-header">
-      <div>
+      <div className="cms-page-header__lead">
+        {backTo ? (
+          <Link to={backTo} className="cms-page-header__back">
+            <Icon name="chevronLeft" size={1} />
+            {backLabel}
+          </Link>
+        ) : null}
         <h1 className="cms-page-header__title">{title}</h1>
         {description ? <p className="cms-page-header__description">{description}</p> : null}
       </div>

@@ -176,6 +176,8 @@ export function CmsCandidatePage() {
         title="Candidate profile"
         description="The About page and homepage introduction on the public site."
         localized
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
 
       <CmsBoundary state={state} refetch={refetch}>
@@ -368,6 +370,8 @@ export function CmsVisionPage() {
         title="Vision"
         description="The vision statement shown on the public site."
         localized
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
 
       <CmsBoundary state={state} refetch={refetch}>
@@ -544,6 +548,8 @@ export function CmsContactPage() {
         title="Contact information"
         description="Office details and social links shown on the public contact page."
         localized
+        backTo="/admin"
+        backLabel="Back to dashboard"
       />
 
       <CmsBoundary state={state} refetch={refetch}>

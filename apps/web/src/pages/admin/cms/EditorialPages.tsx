@@ -1,7 +1,15 @@
-import { useCallback, useMemo, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { CONTENT_CATEGORIES } from '@rk/types';
-import { Button } from '@rk/ui';
+import { CONTENT_CATEGORIES, CONTENT_STATUSES, type Permission } from '@rk/types';
+import { Button, Icon } from '@rk/ui';
 import {
   useCmsMutation,
   useCmsQuery,
@@ -28,11 +36,18 @@ import {
   CmsCard,
   CmsPageHeader,
   ConfirmDialog,
-  DataTable,
   IfPermitted,
   ToastRegion,
   useToasts,
 } from '../../../components/cms/CmsShell';
+import {
+  ListKpiCard,
+  ListKpiGrid,
+  ListSelectFilter,
+  ListTableCard,
+  ListToolbar,
+  LIST_SEARCH_DEBOUNCE_MS,
+} from '../../../components/cms/ListPro';
 import {
   CheckboxField,
   FormActions,
@@ -44,10 +59,12 @@ import {
 } from '../../../components/cms/fields';
 import { RichTextEditor } from '../../../components/cms/RichTextEditor';
 import { MediaPicker } from '../../../components/cms/MediaPicker';
-import { PublishControls, StatusFilter, StatusPill } from './shared';
+import { StatusPill } from './shared';
 import { formatDate, formatDateTime } from '../../../lib/format';
+import { useAdminI18n } from '../../../features/admin/AdminI18nContext';
+import type { AdminStringKey } from '../../../i18n/adminStrings';
 
-/** News and event CMS screens. Same lifecycle as projects. */
+/** News and event CMS screens. Same lifecycle as projects; list uses list-pro. */
 
 interface Row {
   id: string;
@@ -62,6 +79,14 @@ interface Row {
   eventStatus?: string;
 }
 
+type ColumnKey = 'status' | 'extra' | 'updated';
+
+function statusLabel(value: string, t: (key: AdminStringKey) => string): string {
+  const key = `status.${value}` as AdminStringKey;
+  const translated = t(key);
+  return translated === key ? value.replace(/_/g, ' ').toLowerCase() : translated;
+}
+
 /** Shared list scaffolding for the two editorial types. */
 function EditorialList({
   title,
@@ -70,12 +95,15 @@ function EditorialList({
   editPath,
   publicPath,
   createPermission,
+  updatePermission,
   publishPermission,
   deletePermission,
   query,
   dataKey,
   transitionMutation,
   deleteMutation,
+  searchLabel,
+  createFirstLabel,
   extraColumn,
 }: {
   title: string;
@@ -84,22 +112,44 @@ function EditorialList({
   editPath: (id: string) => string;
   publicPath: (slug: string) => string;
   createPermission: 'NEWS_CREATE' | 'EVENT_CREATE';
+  updatePermission: 'NEWS_UPDATE' | 'EVENT_UPDATE';
   publishPermission: 'NEWS_PUBLISH' | 'EVENT_PUBLISH';
   deletePermission: 'NEWS_DELETE' | 'EVENT_DELETE';
   query: string;
   dataKey: 'cmsNews' | 'cmsEvents';
   transitionMutation: string;
   deleteMutation: string;
+  searchLabel: string;
+  createFirstLabel: string;
   extraColumn?: { header: string; render: (row: Row) => string };
 }) {
   const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  const [draftSearch, setDraftSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
   const { toasts, success, failure } = useToasts();
   const { locale } = useCmsLocale();
+  const { t } = useAdminI18n();
+
+  const columnOptions = useMemo(() => {
+    const options: Array<{ key: ColumnKey; label: string }> = [
+      { key: 'status', label: 'Status' },
+    ];
+    if (extraColumn) options.push({ key: 'extra', label: extraColumn.header });
+    options.push({ key: 'updated', label: 'Updated' });
+    return options;
+  }, [extraColumn]);
+
+  const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>({
+    status: true,
+    extra: Boolean(extraColumn),
+    updated: true,
+  });
 
   const variables = useMemo(
-    () => ({ first: 50, status: status || null, locale }),
-    [status, locale],
+    () => ({ first: 50, status: status || null, search: search || null, locale }),
+    [status, search, locale],
   );
   const { state, refetch } = useCmsQuery<Record<string, { nodes: Row[]; totalCount: number }>>(
     query,
@@ -108,6 +158,17 @@ function EditorialList({
 
   const transition = useCmsMutation<unknown, { id: string; action: string }>(transitionMutation);
   const remove = useCmsMutation<unknown, { id: string }>(deleteMutation);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearch(draftSearch.trim());
+    }, LIST_SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(handle);
+  }, [draftSearch]);
+
+  useEffect(() => {
+    if (state.status !== 'loading') setRefreshing(false);
+  }, [state.status]);
 
   const runTransition = useCallback(
     async (id: string, action: string) => {
@@ -122,12 +183,40 @@ function EditorialList({
     [transition, refetch, success, failure],
   );
 
+  const hasFilters = Boolean(status || search);
+  const filtersBusy = state.status === 'loading';
+
+  const clearFilters = useCallback(() => {
+    setStatus('');
+    setSearch('');
+    setDraftSearch('');
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetch();
+  }, [refetch]);
+
+  const summary =
+    state.status === 'success'
+      ? {
+          total: state.data[dataKey]?.totalCount ?? 0,
+          published: (state.data[dataKey]?.nodes ?? []).filter((row) => row.status === 'PUBLISHED')
+            .length,
+          featured: (state.data[dataKey]?.nodes ?? []).filter((row) => row.featured).length,
+        }
+      : null;
+
+  const nodes = state.status === 'success' ? (state.data[dataKey]?.nodes ?? []) : [];
+
   return (
-    <div className="cms-page">
+    <div className="cms-page list-page">
       <CmsPageHeader
         title={title}
         description={description}
         localized
+        backTo="/admin"
+        backLabel="Back to dashboard"
         actions={
           <IfPermitted permission={createPermission}>
             <Link to={newPath}>
@@ -137,83 +226,158 @@ function EditorialList({
         }
       />
 
-      <div className="cms-filters">
-        <StatusFilter value={status} onChange={setStatus} />
-      </div>
+      {summary && nodes.length > 0 ? (
+        <ListKpiGrid label={`${title} summary`}>
+          <ListKpiCard
+            label={`Total ${title.toLowerCase()}`}
+            value={summary.total.toLocaleString()}
+            hint={hasFilters ? 'Matching current filters' : 'In this editing language'}
+          />
+          <ListKpiCard
+            label="Published"
+            value={summary.published.toLocaleString()}
+            hint={`${summary.featured.toLocaleString()} featured in this view`}
+          />
+        </ListKpiGrid>
+      ) : null}
+
+      <ListToolbar
+        search={draftSearch}
+        onSearchChange={(value) => {
+          setDraftSearch(value);
+          if (!value) setSearch('');
+        }}
+        searchLabel={searchLabel}
+        filter={
+          <ListSelectFilter
+            label={t('filter.byStatus')}
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+          >
+            <option value="">{t('filter.allStatuses')}</option>
+            {CONTENT_STATUSES.map((value) => (
+              <option key={value} value={value}>
+                {statusLabel(value, t)}
+              </option>
+            ))}
+          </ListSelectFilter>
+        }
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
+        busy={filtersBusy}
+        hasFilters={hasFilters}
+        onClear={clearFilters}
+      />
 
       <CmsBoundary
         state={state}
         refetch={refetch}
         isEmpty={(data) => (data[dataKey]?.nodes.length ?? 0) === 0}
-        emptyMessage={`No ${title.toLowerCase()} yet.`}
+        emptyMessage={
+          hasFilters
+            ? `No ${title.toLowerCase()} match these filters.`
+            : `No ${title.toLowerCase()} yet.`
+        }
+        emptyAction={
+          hasFilters ? (
+            <Button type="button" variant="secondary" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          ) : (
+            <IfPermitted permission={createPermission}>
+              <Link to={newPath}>
+                <Button variant="primary">{createFirstLabel}</Button>
+              </Link>
+            </IfPermitted>
+          )
+        }
       >
-        {(data) => (
-          <DataTable
-            caption={title}
-            rows={data[dataKey]?.nodes ?? []}
-            columns={[
-              {
-                key: 'title',
-                header: 'Title',
-                render: (row) => (
-                  <Link className="cms-table__link" to={editPath(row.id)}>
-                    {row.title}
-                  </Link>
-                ),
-              },
-              {
-                key: 'status',
-                header: 'Status',
-                render: (row) => <StatusPill value={row.status} />,
-              },
-              ...(extraColumn
-                ? [
-                    {
-                      key: 'extra',
-                      header: extraColumn.header,
-                      secondary: true,
-                      render: (row: Row) => extraColumn.render(row),
-                    },
-                  ]
-                : []),
-              {
-                key: 'updated',
-                header: 'Updated',
-                secondary: true,
-                render: (row: Row) => formatDate(row.updatedAt) ?? '—',
-              },
-            ]}
-            actions={(row) => (
-              <div className="cms-row-actions">
-                <PublishControls
-                  status={row.status}
-                  publishPermission={publishPermission}
-                  onTransition={(action) => void runTransition(row.id, action)}
-                  busy={transition.state.submitting}
-                />
-                {row.status === 'PUBLISHED' ? (
-                  <a
-                    className="cms-row-actions__link"
-                    href={publicPath(row.slug)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View
-                  </a>
-                ) : null}
-                <IfPermitted permission={deletePermission}>
-                  <button
-                    type="button"
-                    className="cms-row-actions__danger"
-                    onClick={() => setPendingDelete(row)}
-                  >
-                    Delete
-                  </button>
-                </IfPermitted>
-              </div>
-            )}
-          />
-        )}
+        {(data) => {
+          const list = data[dataKey];
+          const rows = list?.nodes ?? [];
+          const totalCount = list?.totalCount ?? rows.length;
+
+          return (
+            <ListTableCard
+              title={title}
+              count={totalCount}
+              columns
+              columnOptions={columnOptions}
+              visibleColumns={visibleColumns}
+              onToggleColumn={(key) =>
+                setVisibleColumns((current) => ({
+                  ...current,
+                  [key]: !current[key as ColumnKey],
+                }))
+              }
+            >
+              <table className="list-table">
+                <caption className="visually-hidden">{title}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className="list-table__actions-col">
+                      <span className="visually-hidden">Actions</span>
+                    </th>
+                    <th scope="col">Title</th>
+                    {visibleColumns.status ? <th scope="col">Status</th> : null}
+                    {extraColumn && visibleColumns.extra ? (
+                      <th scope="col" className="list-table__secondary">
+                        {extraColumn.header}
+                      </th>
+                    ) : null}
+                    {visibleColumns.updated ? (
+                      <th scope="col" className="list-table__secondary list-table__metric-head">
+                        Updated
+                      </th>
+                    ) : null}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id}>
+                      <td className="list-table__actions-col">
+                        <EditorialRowActions
+                          row={row}
+                          editPath={editPath}
+                          publicPath={publicPath}
+                          updatePermission={updatePermission}
+                          publishPermission={publishPermission}
+                          deletePermission={deletePermission}
+                          busy={transition.state.submitting}
+                          onTransition={runTransition}
+                          onDelete={() => setPendingDelete(row)}
+                        />
+                      </td>
+                      <td>
+                        <div className="cms-table__primary-cell">
+                          <Link className="cms-table__link" to={editPath(row.id)}>
+                            {row.title}
+                          </Link>
+                          {row.featured ? (
+                            <span className="cms-table__subtle">Featured</span>
+                          ) : null}
+                        </div>
+                      </td>
+                      {visibleColumns.status ? (
+                        <td>
+                          <StatusPill value={row.status} />
+                        </td>
+                      ) : null}
+                      {extraColumn && visibleColumns.extra ? (
+                        <td className="list-table__secondary">{extraColumn.render(row)}</td>
+                      ) : null}
+                      {visibleColumns.updated ? (
+                        <td className="list-table__secondary list-table__metric">
+                          {formatDate(row.updatedAt) ?? '—'}
+                        </td>
+                      ) : null}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ListTableCard>
+          );
+        }}
       </CmsBoundary>
 
       <ConfirmDialog
@@ -240,6 +404,182 @@ function EditorialList({
   );
 }
 
+function EditorialRowActions({
+  row,
+  editPath,
+  publicPath,
+  updatePermission,
+  publishPermission,
+  deletePermission,
+  busy,
+  onTransition,
+  onDelete,
+}: {
+  row: Row;
+  editPath: (id: string) => string;
+  publicPath: (slug: string) => string;
+  updatePermission: Permission;
+  publishPermission: Permission;
+  deletePermission: Permission;
+  busy: boolean;
+  onTransition: (id: string, action: string) => void;
+  onDelete: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const { t } = useAdminI18n();
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && menuRef.current && !menuRef.current.contains(target)) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="list-row-actions" ref={menuRef}>
+      <IfPermitted permission={updatePermission}>
+        <Link
+          className="list-action-btn list-action-btn--edit"
+          to={editPath(row.id)}
+          aria-label={`Edit ${row.title}`}
+          title="Edit"
+        >
+          <Icon name="pencil" size={1} />
+        </Link>
+      </IfPermitted>
+
+      {row.status === 'PUBLISHED' ? (
+        <a
+          className="list-action-btn list-action-btn--view"
+          href={publicPath(row.slug)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`View ${row.title}`}
+          title="View"
+        >
+          <Icon name="eye" size={1} />
+        </a>
+      ) : null}
+
+      <IfPermitted permission={publishPermission}>
+        {row.status !== 'PUBLISHED' && row.status !== 'ARCHIVED' ? (
+          <button
+            type="button"
+            className="list-action-btn list-action-btn--activate"
+            aria-label="Publish"
+            title="Publish"
+            disabled={busy}
+            onClick={() => onTransition(row.id, 'PUBLISH')}
+          >
+            <Icon name="play" size={1} />
+          </button>
+        ) : null}
+        {row.status === 'PUBLISHED' ? (
+          <button
+            type="button"
+            className="list-action-btn list-action-btn--pause"
+            aria-label="Unpublish"
+            title="Unpublish"
+            disabled={busy}
+            onClick={() => onTransition(row.id, 'UNPUBLISH')}
+          >
+            <Icon name="pause" size={1} />
+          </button>
+        ) : null}
+      </IfPermitted>
+
+      <IfPermitted permission={deletePermission}>
+        <button
+          type="button"
+          className="list-action-btn list-action-btn--danger"
+          aria-label="Delete"
+          title="Delete"
+          onClick={onDelete}
+        >
+          <Icon name="trash" size={1} />
+        </button>
+      </IfPermitted>
+
+      <div className={`cms-actions-menu${open ? ' cms-actions-menu--open' : ''}`}>
+        <button
+          type="button"
+          className="list-action-btn list-action-btn--more"
+          aria-label={`More actions for ${row.title}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          title="More"
+          onClick={() => setOpen((value) => !value)}
+        >
+          <Icon name="moreVertical" size={1.05} />
+        </button>
+        {open ? (
+          <div className="cms-actions-menu__panel" role="menu">
+            {row.status === 'DRAFT' ? (
+              <MenuButton
+                disabled={busy}
+                onClick={() => {
+                  setOpen(false);
+                  onTransition(row.id, 'SUBMIT_FOR_REVIEW');
+                }}
+              >
+                {t('action.submitForReview')}
+              </MenuButton>
+            ) : null}
+            <IfPermitted permission={publishPermission}>
+              {row.status !== 'ARCHIVED' ? (
+                <MenuButton
+                  disabled={busy}
+                  onClick={() => {
+                    setOpen(false);
+                    onTransition(row.id, 'ARCHIVE');
+                  }}
+                >
+                  {t('action.archive')}
+                </MenuButton>
+              ) : null}
+            </IfPermitted>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function MenuButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      className="cms-actions-menu__item"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function CmsNewsPage() {
   return (
     <EditorialList
@@ -249,12 +589,15 @@ export function CmsNewsPage() {
       editPath={(id) => `/admin/content/news/${id}`}
       publicPath={(slug) => `/news/${slug}`}
       createPermission="NEWS_CREATE"
+      updatePermission="NEWS_UPDATE"
       publishPermission="NEWS_PUBLISH"
       deletePermission="NEWS_DELETE"
       query={CMS_NEWS}
       dataKey="cmsNews"
       transitionMutation={TRANSITION_NEWS}
       deleteMutation={DELETE_NEWS}
+      searchLabel="Search news"
+      createFirstLabel="Create the first update"
     />
   );
 }
@@ -268,12 +611,15 @@ export function CmsEventsPage() {
       editPath={(id) => `/admin/content/events/${id}`}
       publicPath={(slug) => `/events/${slug}`}
       createPermission="EVENT_CREATE"
+      updatePermission="EVENT_UPDATE"
       publishPermission="EVENT_PUBLISH"
       deletePermission="EVENT_DELETE"
       query={CMS_EVENTS}
       dataKey="cmsEvents"
       transitionMutation={TRANSITION_EVENT}
       deleteMutation={DELETE_EVENT}
+      searchLabel="Search events"
+      createFirstLabel="Create the first event"
       extraColumn={{
         header: 'Starts',
         render: (row) => formatDateTime(row.startsAt ?? null) ?? '—',
@@ -346,7 +692,12 @@ export function CmsNewsFormPage() {
 
   return (
     <div className="cms-page">
-      <CmsPageHeader title={isNew ? 'New update' : 'Edit update'} localized={isNew} />
+      <CmsPageHeader
+        title={isNew ? 'New update' : 'Edit update'}
+        localized={isNew}
+        backTo="/admin/content/news"
+        backLabel="Back to news"
+      />
 
       <form
         className="cms-form"
@@ -545,7 +896,12 @@ export function CmsEventFormPage() {
 
   return (
     <div className="cms-page">
-      <CmsPageHeader title={isNew ? 'New event' : 'Edit event'} localized={isNew} />
+      <CmsPageHeader
+        title={isNew ? 'New event' : 'Edit event'}
+        localized={isNew}
+        backTo="/admin/content/events"
+        backLabel="Back to events"
+      />
 
       <form
         className="cms-form"
