@@ -3,17 +3,14 @@ import { createRoot } from 'react-dom/client';
 
 // Token custom properties must load before any component stylesheet that
 // consumes them, so the import order here is significant.
+//
+// Public critical CSS only. Console styles (cms/qr/dashboard/…) load on demand
+// via `loadConsoleStyles()` when `/admin` or `/login` mounts — that keeps the
+// homepage LCP path free of ~90 KB of unused CSS.
 import '@rk/design-tokens/tokens.css';
 import '@rk/ui/styles.css';
 import './styles/global.css';
 import './styles/site.css';
-import './styles/cms.css';
-import './styles/qr.css';
-import './styles/issues.css';
-import './styles/ai.css';
-import './styles/analytics.css';
-import './styles/dashboard.css';
-import './styles/communication.css';
 import './styles/work.css';
 
 import { App } from './App';

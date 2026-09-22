@@ -14,17 +14,32 @@ export interface SiteImageProps {
   sizes?: string;
 }
 
+/** Intrinsic size fallbacks when CMS metadata is missing — prevents CLS. */
+const ASPECT_DIMENSIONS: Record<
+  NonNullable<SiteImageProps['aspectRatio']>,
+  { width: number; height: number }
+> = {
+  '16/9': { width: 1600, height: 900 },
+  '4/3': { width: 1200, height: 900 },
+  '1/1': { width: 800, height: 800 },
+  '3/2': { width: 1200, height: 800 },
+};
+
 /**
  * Public-site image.
  *
  * Three things this handles that a bare `<img>` does not:
  *
  *  - **No layout shift.** The wrapper owns the aspect ratio, so the box exists
- *    before the bytes arrive and text below never jumps.
+ *    before the bytes arrive and text below never jumps. Width/height attributes
+ *    always ship so the browser can compute ratio even without CSS.
  *  - **A real fallback.** Content may legitimately have no image; a broken icon
  *    is worse than a deliberate placeholder.
  *  - **Alt text discipline.** Decorative placeholders are `alt=""`; real images
  *    use CMS alt text and fall back to the content title rather than a filename.
+ *
+ * Loading policy: above-the-fold (`priority`) uses `eager` + `fetchpriority=high`.
+ * Everything else is `lazy` so homepage LCP is not contested by work tiles.
  */
 export function SiteImage({
   image,
@@ -48,16 +63,20 @@ export function SiteImage({
     );
   }
 
+  const fallback = ASPECT_DIMENSIONS[aspectRatio];
+  const width = image.width ?? fallback.width;
+  const height = image.height ?? fallback.height;
+
   return (
     <div className={classes}>
       <img
         src={mediaUrl(image)}
         alt={image.altText ?? fallbackAlt}
-        width={image.width ?? undefined}
-        height={image.height ?? undefined}
+        width={width}
+        height={height}
         loading={priority ? 'eager' : 'lazy'}
         decoding={priority ? 'sync' : 'async'}
-        {...(priority ? { fetchPriority: 'high' as const } : {})}
+        {...(priority ? { fetchPriority: 'high' as const } : { fetchPriority: 'low' as const })}
         {...(sizes ? { sizes } : {})}
         onError={() => setFailed(true)}
       />

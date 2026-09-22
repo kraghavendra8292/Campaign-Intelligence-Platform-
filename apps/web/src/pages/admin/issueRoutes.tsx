@@ -28,6 +28,13 @@ export const ISSUE_ROUTES: RouteObject[] = [
     },
   },
   {
+    path: 'issues/opinions',
+    lazy: async () => {
+      const { SiteFeedbackPage } = await import('./issues/SiteFeedbackPage');
+      return { Component: SiteFeedbackPage };
+    },
+  },
+  {
     path: 'issues/:id',
     lazy: async () => {
       const { IssueDetailPage } = await import('./issues/IssueDetailPage');

@@ -114,6 +114,9 @@ model Organization {
   issueHistoryEntries IssueHistory[]
   issueNotes          IssueInternalNote[]
 
+  // Homepage opinion pulse (Great / Ok / Worst).
+  siteFeedback        SiteFeedback[]
+
   // Phase 6 AI intelligence. Derived from tenant data, so tenant-owned too:
   // cascading from the organisation is what guarantees an AI summary cannot
   // outlive the submission it describes.
@@ -219,6 +222,7 @@ model User {
   assignedIssues      Issue[]             @relation("IssueAssignee")
   issueHistoryActions IssueHistory[]      @relation("IssueHistoryActor")
   issueNotesAuthored  IssueInternalNote[] @relation("IssueNoteAuthor")
+  siteFeedback        SiteFeedback[]      @relation("SiteFeedbackSubmitter")
 
   // Phase 6. SetNull as well, and for a sharper reason than authorship: these
   // record who APPROVED model output. That attribution must survive the
@@ -2487,4 +2491,36 @@ model IssueFollowUp {
   @@index([organizationId, status, reopenRequested])
   @@index([issueId, submittedAt])
   @@map("issue_follow_ups")
+}
+
+/// Homepage opinion pulse: Great / Ok / Worst with optional short commentary.
+///
+/// Not an Issue. No status workflow, no contact fields, no reference number.
+/// Tenant-scoped, rate-limited on the public write path.
+enum SiteFeedbackReaction {
+  GREAT
+  OK
+  WORST
+
+  @@map("site_feedback_reaction")
+}
+
+model SiteFeedback {
+  id             String               @id @default(uuid()) @db.Uuid
+  organizationId String               @db.Uuid
+  reaction       SiteFeedbackReaction
+  /// Optional free-text commentary. Max 500 characters enforced in the service.
+  comment        String?              @db.VarChar(500)
+
+  /// Set only when a signed-in user submits from the public site.
+  submittedByUserId String? @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  submittedBy  User?        @relation("SiteFeedbackSubmitter", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, reaction, createdAt])
+  @@map("site_feedback")
 }

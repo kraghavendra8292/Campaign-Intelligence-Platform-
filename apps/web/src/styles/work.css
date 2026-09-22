@@ -129,6 +129,40 @@
   color: var(--color-text-muted, #555);
 }
 
+.work-detail__back {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+}
+
+.work-detail__back a {
+  color: var(--color-primary, #1b7a4b);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.work-detail__back a:hover {
+  text-decoration: underline;
+}
+
+.work-detail__cover {
+  margin: 1rem 0 1.25rem;
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+}
+
+.work-detail__section {
+  margin: 1.75rem 0;
+}
+
+.work-detail__section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.fact-grid--budget {
+  margin-top: 0.25rem;
+}
+
 .work-detail__timeline ol {
   list-style: none;
   margin: 0;

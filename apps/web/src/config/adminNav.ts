@@ -80,6 +80,7 @@ export const ADMIN_NAV: readonly AdminNavGroup[] = [
     items: [
       { to: '/admin/qr-campaigns', labelKey: 'nav.qrCampaigns', icon: 'qrCode' },
       { to: '/admin/issues', labelKey: 'nav.issues', icon: 'message' },
+      { to: '/admin/issues/opinions', labelKey: 'nav.opinions', icon: 'message' },
       { to: '/admin/communications', labelKey: 'nav.communications', icon: 'message' },
     ],
   },

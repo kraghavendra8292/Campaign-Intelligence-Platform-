@@ -65,6 +65,10 @@ tmp/
 apps/api/var/
 var/media/
 
+# Legacy AI PNG drafts for work seeds — runtime loads WebP from DB/S3 only.
+# Keep *.webp under seed-assets for re-seeding; never commit the PNG originals.
+apps/api/prisma/seed-assets/**/*.png
+
 # OS
 .DS_Store
 .DS_Store?

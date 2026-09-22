@@ -10,6 +10,7 @@ import { analyticsTypeDefs } from './typeDefs/analytics';
 import { communicationTypeDefs } from './typeDefs/communication';
 import { workTypeDefs } from './typeDefs/work';
 import { opsTypeDefs } from './typeDefs/ops';
+import { siteFeedbackTypeDefs } from './typeDefs/siteFeedback';
 
 export { baseTypeDefs } from './typeDefs/base';
 export { healthTypeDefs } from './typeDefs/health';
@@ -23,6 +24,7 @@ export { analyticsTypeDefs } from './typeDefs/analytics';
 export { communicationTypeDefs } from './typeDefs/communication';
 export { workTypeDefs } from './typeDefs/work';
 export { opsTypeDefs } from './typeDefs/ops';
+export { siteFeedbackTypeDefs } from './typeDefs/siteFeedback';
 export * from './operations';
 
 /**
@@ -59,6 +61,9 @@ export const typeDefs = [
   // ops declares only its own types and depends on nothing but the DateTime
   // scalar from base, so its position is not load-bearing.
   opsTypeDefs,
+  // siteFeedback reuses PublicPageInfo from publicSite and IssueStaffUser from
+  // issues, so it comes after both.
+  siteFeedbackTypeDefs,
 ] as const;
 
 /** The complete schema as a single SDL document, for tooling and codegen. */

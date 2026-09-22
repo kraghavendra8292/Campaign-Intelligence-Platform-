@@ -251,9 +251,8 @@ function WorkCard({ work }: { work: PublicWorkCard }) {
 /**
  * One work, with its timeline and evidence.
  *
- * The order on the page is deliberate: what it is, what state it is in, what
- * happened when, and only then the evidence. A reader who stops after the first
- * screen has still been told whether this is a proposal or a finished thing.
+ * The order on the page is deliberate: what it is, what state it is in, budget
+ * and stretch, before/after photos, explanation, progress, then evidence.
  */
 export function WorkDetailPage() {
   const { slug = '' } = useParams();
@@ -276,10 +275,19 @@ export function WorkDetailPage() {
 
   return (
     <div className="section">
-      <div className="section__inner">
+      <div className="section__inner section__inner--narrow">
+        <p className="work-detail__back">
+          <Link to="/work">{t('section.work')}</Link>
+        </p>
+
         <QueryBoundary state={state} refetch={refetch}>
           {(data) => {
             const item = data.publicWork;
+            const before = item.media.filter((entry) => entry.role === 'BEFORE');
+            const after = item.media.filter((entry) => entry.role === 'AFTER');
+            const gallery = item.media.filter((entry) => entry.role === 'GALLERY');
+            const spentAmount = parseSpentAmount(item.descriptionHtml);
+
             return (
               <article className="work-detail">
                 <header className="work-detail__header">
@@ -293,19 +301,45 @@ export function WorkDetailPage() {
                   ) : null}
                 </header>
 
-                <SiteImage image={item.coverImage} fallbackAlt={item.title} aspectRatio="16/9" />
+                <SiteImage
+                  image={item.coverImage}
+                  fallbackAlt={item.title}
+                  aspectRatio="16/9"
+                  priority
+                  className="work-detail__cover"
+                />
+
+                <dl className="fact-grid fact-grid--budget">
+                  <Fact
+                    label={t('work.cost')}
+                    value={formatCurrency(
+                      item.costAmount === null ? null : Number(item.costAmount),
+                      item.costCurrency,
+                    )}
+                  />
+                  <Fact
+                    label={t('work.spent')}
+                    value={
+                      spentAmount === null
+                        ? formatCurrency(null, item.costCurrency)
+                        : formatCurrency(spentAmount, item.costCurrency)
+                    }
+                  />
+                  <Fact
+                    label={t('work.route')}
+                    value={item.locationName ?? item.area ?? null}
+                  />
+                  <Fact
+                    label={t('work.beneficiaries')}
+                    value={formatCount(item.beneficiaryCount)}
+                  />
+                </dl>
 
                 <dl className="work-detail__facts">
                   {item.area ? (
                     <>
                       <dt>{t('work.area')}</dt>
                       <dd>{item.area}</dd>
-                    </>
-                  ) : null}
-                  {item.locationName ? (
-                    <>
-                      <dt>{t('work.location')}</dt>
-                      <dd>{item.locationName}</dd>
                     </>
                   ) : null}
                   {item.startDate ? (
@@ -320,8 +354,6 @@ export function WorkDetailPage() {
                       <dd>{formatDate(item.completionDate)}</dd>
                     </>
                   ) : null}
-                  {/* Department and agency appear only when recorded. The
-                      platform never infers who did a piece of work. */}
                   {item.department ? (
                     <>
                       <dt>{t('work.department')}</dt>
@@ -342,34 +374,60 @@ export function WorkDetailPage() {
                   ) : null}
                 </dl>
 
-                {/*
-                  Cost and beneficiary count keep the Phase 3 treatment: an
-                  absent figure is STATED as "not stated" rather than hidden, so
-                  a reader can tell an unpublished number from a forgotten
-                  field - and the UI never substitutes a zero for either.
-                */}
-                <dl className="fact-grid">
-                  <Fact
-                    label={t('work.cost')}
-                    value={formatCurrency(
-                      item.costAmount === null ? null : Number(item.costAmount),
-                      item.costCurrency,
-                    )}
-                  />
-                  <Fact
-                    label={t('work.beneficiaries')}
-                    value={formatCount(item.beneficiaryCount)}
-                  />
-                </dl>
+                {before.length > 0 || after.length > 0 ? (
+                  <section className="work-detail__section" aria-labelledby="work-before-after">
+                    <h2 id="work-before-after">{t('work.beforeAfter')}</h2>
+                    <div className="before-after">
+                      {before[0] ? (
+                        <figure>
+                          <SiteImage
+                            image={before[0].image}
+                            fallbackAlt={`${item.title} — ${t('label.before')}`}
+                            aspectRatio="4/3"
+                          />
+                          <figcaption>{before[0].caption ?? t('label.before')}</figcaption>
+                        </figure>
+                      ) : null}
+                      {after[0] ? (
+                        <figure>
+                          <SiteImage
+                            image={after[0].image}
+                            fallbackAlt={`${item.title} — ${t('label.after')}`}
+                            aspectRatio="4/3"
+                          />
+                          <figcaption>{after[0].caption ?? t('label.after')}</figcaption>
+                        </figure>
+                      ) : null}
+                    </div>
+                  </section>
+                ) : null}
 
                 {item.descriptionHtml ? (
-                  <div
-                    className="rich-text"
-                    // Sanitised on write by the Phase 3 CMS against an
-                    // allow-list; never sanitised here, so there is exactly one
-                    // place responsible for it.
-                    dangerouslySetInnerHTML={{ __html: item.descriptionHtml }}
-                  />
+                  <section className="work-detail__section" aria-labelledby="work-explanation">
+                    <h2 id="work-explanation">{t('card.viewDetails')}</h2>
+                    <div
+                      className="rich-text"
+                      dangerouslySetInnerHTML={{ __html: item.descriptionHtml }}
+                    />
+                  </section>
+                ) : null}
+
+                {gallery.length > 0 ? (
+                  <section className="work-detail__section" aria-labelledby="work-gallery">
+                    <h2 id="work-gallery">{t('label.gallery')}</h2>
+                    <div className="photo-grid">
+                      {gallery.map((entry) => (
+                        <figure key={entry.id}>
+                          <SiteImage
+                            image={entry.image}
+                            fallbackAlt={entry.caption ?? item.title}
+                            aspectRatio="4/3"
+                          />
+                          {entry.caption ? <figcaption>{entry.caption}</figcaption> : null}
+                        </figure>
+                      ))}
+                    </div>
+                  </section>
                 ) : null}
 
                 {item.updates.length > 0 ? (
@@ -400,4 +458,17 @@ export function WorkDetailPage() {
       </div>
     </div>
   );
+}
+
+/**
+ * Spent amount is stored as a machine-readable marker inside descriptionHtml
+ * so we can show Budget vs Spent without a schema migration:
+ *   <!--spent:4520000-->
+ */
+function parseSpentAmount(descriptionHtml: string | null): number | null {
+  if (!descriptionHtml) return null;
+  const match = /<!--\s*spent:([0-9]+(?:\.[0-9]+)?)\s*-->/i.exec(descriptionHtml);
+  if (!match?.[1]) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
 }

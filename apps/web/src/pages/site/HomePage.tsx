@@ -13,20 +13,16 @@ import {
   EventCard,
   NewsCard,
   PriorityCard,
-  ProjectCard,
 } from '../../components/site/cards';
+import { WorkTileCard } from '../../components/site/WorkTileCard';
+import { HomeOpinionSection } from '../../components/site/HomeOpinionSection';
 import { QueryBoundary, SectionHeader, SiteEmptyState } from '../../components/site/states';
 
 /**
- * Public homepage.
+ * Public homepage — Pro Max card layout.
  *
- * Every section is CMS-driven and every one degrades: a campaign that has
- * published no achievements gets no achievements section rather than an empty
- * heading. That matters for a new tenant, whose site must look deliberate on
- * day one rather than half-built.
- *
- * All content is fetched in a single `publicHomepage` query, so the page paints
- * after one round trip instead of seven.
+ * CMS-driven via a single `publicHomepage` query. Sections omit themselves when
+ * empty so a new tenant never shows hollow headings.
  */
 export function SiteHomePage() {
   const { t } = useSite();
@@ -59,13 +55,9 @@ export function SiteHomePage() {
           fallbackAlt: page.profile?.fullName ?? page.organization.name,
         });
 
-        /*
-         * The headline and calls to action are the same content either way -
-         * only the frame around them changes. With photographs published they
-         * sit over the cover slideshow; with none they keep the original split
-         * hero, so a campaign that has uploaded nothing still gets a finished
-         * page rather than an empty band where a picture should be.
-         */
+        const projectCount = page.featuredProjects.length;
+        const achievementCount = page.featuredAchievements.length;
+
         const heroContent = (
           <div className="hero__content">
             {page.profile?.designation ? (
@@ -97,14 +89,12 @@ export function SiteHomePage() {
 
         return (
           <>
-            {/* --- Hero ------------------------------------------------ */}
             {heroSlides.length > 0 ? (
               <CampaignHeroCarousel slides={heroSlides}>{heroContent}</CampaignHeroCarousel>
             ) : (
               <section className="hero" aria-labelledby="hero-title">
                 <div className="hero__inner">
                   {heroContent}
-
                   <div className="hero__portrait">
                     <SiteImage
                       image={null}
@@ -117,7 +107,30 @@ export function SiteHomePage() {
               </section>
             )}
 
-            {/* --- Quick actions --------------------------------------- */}
+            <HomeOpinionSection />
+
+            {page.featuredProjects.length > 0 ? (
+              <section className="section" aria-labelledby="home-work">
+                <div className="section__inner">
+                  <SectionHeader
+                    id="home-work"
+                    title={t('section.work')}
+                    subtitle={t('section.workSubtitle')}
+                    action={
+                      <Link to="/work">
+                        <Button variant="ghost">{t('section.viewAllWork')}</Button>
+                      </Link>
+                    }
+                  />
+                  <div className="work-tile-grid">
+                    {page.featuredProjects.slice(0, 4).map((project) => (
+                      <WorkTileCard key={project.id} project={project} />
+                    ))}
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
             <section className="quick-actions" aria-label={t('quick.title')}>
               <div className="quick-actions__inner">
                 <Link className="quick-action" to="/work">
@@ -144,13 +157,6 @@ export function SiteHomePage() {
                   </span>
                   <span className="quick-action__label">{t('quick.events')}</span>
                 </Link>
-
-                {/*
-                  Phase 5 made these real. They were inert placeholders through
-                  Phases 3 and 4 so the information architecture was visible
-                  without anything pretending to work; now they lead somewhere,
-                  so the `aria-disabled` spans become ordinary links.
-                */}
                 <Link className="quick-action" to="/feedback">
                   <span className="quick-action__icon" aria-hidden="true">
                     💬
@@ -166,30 +172,31 @@ export function SiteHomePage() {
               </div>
             </section>
 
-            {/* --- Our work -------------------------------------------- */}
-            {page.featuredProjects.length > 0 ? (
-              <section className="section" aria-labelledby="home-work">
-                <div className="section__inner">
-                  <SectionHeader
-                    id="home-work"
-                    title={t('section.work')}
-                    subtitle={t('section.workSubtitle')}
-                    action={
-                      <Link to="/work">
-                        <Button variant="ghost">{t('section.viewAllWork')}</Button>
-                      </Link>
-                    }
-                  />
-                  <div className="card-grid card-grid--3">
-                    {page.featuredProjects.map((project) => (
-                      <ProjectCard key={project.id} project={project} />
-                    ))}
-                  </div>
+            {(projectCount > 0 || achievementCount > 0) ? (
+              <section className="home-stats" aria-label={t('quick.title')}>
+                <div className="home-stats__inner">
+                  {projectCount > 0 ? (
+                    <div className="home-stats__card">
+                      <span className="home-stats__icon" aria-hidden="true">
+                        🏠
+                      </span>
+                      <p className="home-stats__value">{projectCount}+</p>
+                      <p className="home-stats__label">{t('home.stats.projects')}</p>
+                    </div>
+                  ) : null}
+                  {achievementCount > 0 ? (
+                    <div className="home-stats__card">
+                      <span className="home-stats__icon" aria-hidden="true">
+                        👥
+                      </span>
+                      <p className="home-stats__value">{achievementCount}+</p>
+                      <p className="home-stats__label">{t('home.stats.achievements')}</p>
+                    </div>
+                  ) : null}
                 </div>
               </section>
             ) : null}
 
-            {/* --- Vision ---------------------------------------------- */}
             {page.priorities.length > 0 || page.vision ? (
               <section className="section section--tinted" aria-labelledby="home-vision">
                 <div className="section__inner">
@@ -216,7 +223,6 @@ export function SiteHomePage() {
               </section>
             ) : null}
 
-            {/* --- Achievements ---------------------------------------- */}
             {page.featuredAchievements.length > 0 ? (
               <section className="section" aria-labelledby="home-achievements">
                 <div className="section__inner">
@@ -239,7 +245,6 @@ export function SiteHomePage() {
               </section>
             ) : null}
 
-            {/* --- Latest updates -------------------------------------- */}
             {page.latestNews.length > 0 ? (
               <section className="section section--tinted" aria-labelledby="home-news">
                 <div className="section__inner">
@@ -262,7 +267,6 @@ export function SiteHomePage() {
               </section>
             ) : null}
 
-            {/* --- Upcoming events ------------------------------------- */}
             {page.upcomingEvents.length > 0 ? (
               <section className="section" aria-labelledby="home-events">
                 <div className="section__inner">

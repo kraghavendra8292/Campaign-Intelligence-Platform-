@@ -3,6 +3,7 @@ export * from './roles';
 export * from './content';
 export * from './qr';
 export * from './issues';
+export * from './siteFeedback';
 export * from './ai';
 export * from './analytics';
 export * from './communication';

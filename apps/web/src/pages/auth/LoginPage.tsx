@@ -2,6 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Card, CardBody, CardHeader, ErrorState, Field, Input } from '@rk/ui';
 import { ApiError, useAuth } from '../../features/auth/AuthProvider';
+import { loadConsoleStyles } from '../../styles/loadConsoleStyles';
+
+loadConsoleStyles();
 
 interface LocationState {
   from?: string;

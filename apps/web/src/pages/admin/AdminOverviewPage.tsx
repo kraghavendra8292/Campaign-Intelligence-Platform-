@@ -24,6 +24,7 @@ import {
   KpiSkeletonRow,
   WidgetSkeleton,
 } from '../../components/dashboard/DashboardParts';
+import { OpinionPulseWidget } from '../../components/dashboard/OpinionPulseWidget';
 import { StatusPill } from './cms/shared';
 import type { AdminStringKey } from '../../i18n/adminStrings';
 
@@ -213,6 +214,8 @@ export function AdminOverviewPage() {
           />
         </div>
       ) : null}
+
+      <OpinionPulseWidget />
 
       {/* ------------------------------------------------------- Analytics -- */}
       <div className="dashboard__grid dashboard__grid--wide">

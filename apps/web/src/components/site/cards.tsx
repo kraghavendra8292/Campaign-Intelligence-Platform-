@@ -48,6 +48,7 @@ export function ProjectCard({ project }: { project: ProjectCardData }) {
           fallbackAlt={project.title}
           aspectRatio="3/2"
           className="content-card__media"
+          sizes="(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw"
         />
 
         <div className="content-card__body">
@@ -97,6 +98,7 @@ export function AchievementCard({ achievement }: { achievement: AchievementCardD
           fallbackAlt={achievement.title}
           aspectRatio="3/2"
           className="content-card__media"
+          sizes="(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw"
         />
 
         <div className="content-card__body">
@@ -146,6 +148,7 @@ export function NewsCard({ article }: { article: NewsCardData }) {
           fallbackAlt={article.title}
           aspectRatio="16/9"
           className="content-card__media"
+          sizes="(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw"
         />
 
         <div className="content-card__body">

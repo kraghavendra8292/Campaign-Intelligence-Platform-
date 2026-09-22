@@ -11,6 +11,7 @@
  * sites to prove that neither leaks into the other.
  */
 import type { PrismaClient } from '../src/generated/prisma/client';
+import { replaceDemoWorks } from './seedWorks';
 
 type Prisma = PrismaClient;
 
@@ -109,6 +110,8 @@ function daysAhead(days: number): Date {
 }
 
 export async function seedDemoContent(prisma: Prisma): Promise<void> {
+  const seededOrgs: Array<{ id: string; slug: string; area: string; areaKn: string }> = [];
+
   for (const org of DEMO_ORGS) {
     const organization = await prisma.organization.upsert({
       where: { slug: org.slug },
@@ -118,6 +121,12 @@ export async function seedDemoContent(prisma: Prisma): Promise<void> {
     });
 
     const organizationId = organization.id;
+    seededOrgs.push({
+      id: organizationId,
+      slug: org.slug,
+      area: org.area,
+      areaKn: org.areaKn,
+    });
 
     // --- Candidate profile -------------------------------------------------
     await prisma.candidateProfile.upsert({
@@ -183,94 +192,7 @@ export async function seedDemoContent(prisma: Prisma): Promise<void> {
       });
     }
 
-    // --- Projects ----------------------------------------------------------
-    // Deliberately spans statuses: the publishing test needs a draft and an
-    // archived project that must never appear on the public site.
-    const projects = [
-      {
-        slug: 'ward-road-resurfacing',
-        title: 'Ward road resurfacing programme',
-        category: 'INFRASTRUCTURE' as const,
-        projectStatus: 'COMPLETED' as const,
-        status: 'PUBLISHED' as const,
-        featured: true,
-        start: daysAgo(400),
-        completion: daysAgo(120),
-      },
-      {
-        slug: 'community-water-points',
-        title: 'Community water points',
-        category: 'WATER' as const,
-        projectStatus: 'COMPLETED' as const,
-        status: 'PUBLISHED' as const,
-        featured: true,
-        start: daysAgo(320),
-        completion: daysAgo(90),
-      },
-      {
-        slug: 'school-library-upgrade',
-        title: 'School library upgrade',
-        category: 'EDUCATION' as const,
-        projectStatus: 'IN_PROGRESS' as const,
-        status: 'PUBLISHED' as const,
-        featured: false,
-        start: daysAgo(70),
-        completion: null,
-      },
-      {
-        slug: 'primary-health-centre-extension',
-        title: 'Primary health centre extension',
-        category: 'HEALTHCARE' as const,
-        // Draft: must NOT appear publicly, by slug or in listings.
-        projectStatus: 'PLANNED' as const,
-        status: 'DRAFT' as const,
-        featured: false,
-        start: null,
-        completion: null,
-      },
-      {
-        slug: 'old-bus-shelter-repair',
-        title: 'Bus shelter repair (completed programme)',
-        category: 'PUBLIC_SERVICES' as const,
-        // Archived: also must NOT appear publicly.
-        projectStatus: 'COMPLETED' as const,
-        status: 'ARCHIVED' as const,
-        featured: false,
-        start: daysAgo(900),
-        completion: daysAgo(700),
-      },
-    ];
-
-    for (const [index, project] of projects.entries()) {
-      await prisma.project.upsert({
-        where: {
-          organizationId_slug_locale: { organizationId, slug: project.slug, locale: 'en' },
-        },
-        update: {},
-        create: {
-          organizationId,
-          locale: 'en',
-          slug: project.slug,
-          title: `${project.title} (Demo)`,
-          shortDescription: `DEMO CONTENT. Illustrative project record in ${org.area}.`,
-          descriptionHtml: `<p>This is <strong>demo content</strong> describing a fictional project in ${org.area}. Figures shown are placeholders, not real public expenditure.</p>`,
-          category: project.category,
-          area: org.area,
-          locationName: `${org.area} (demo location)`,
-          startDate: project.start,
-          completionDate: project.completion,
-          projectStatus: project.projectStatus,
-          // Metrics are left NULL rather than invented. The UI renders "not
-          // stated" for absent values, which is the honest presentation.
-          costAmount: null,
-          beneficiaryCount: null,
-          featured: project.featured,
-          displayOrder: index,
-          status: project.status,
-          publishedAt: project.status === 'PUBLISHED' ? daysAgo(100 - index * 5) : null,
-        },
-      });
-    }
+    // Projects are seeded once after every org exists — see replaceDemoWorks below.
 
     // --- Achievements ------------------------------------------------------
     const achievements = [
@@ -375,9 +297,6 @@ export async function seedDemoContent(prisma: Prisma): Promise<void> {
     }
 
     // --- Gallery -----------------------------------------------------------
-    // Albums are seeded without photos: seeding binary image files would put
-    // fabricated "documentary" photographs of public works into the repository,
-    // which is precisely the kind of content this platform must not invent.
     await prisma.galleryAlbum.upsert({
       where: {
         organizationId_slug_locale: { organizationId, slug: 'demo-album', locale: 'en' },
@@ -437,6 +356,8 @@ export async function seedDemoContent(prisma: Prisma): Promise<void> {
 
     console.log(`Seeded DEMO content for "${org.slug}" (en + kn).`);
   }
+
+  await replaceDemoWorks(prisma, seededOrgs);
 }
 
 /**
@@ -535,57 +456,7 @@ async function seedKannada(prisma: Prisma, organizationId: string, org: DemoOrg)
     });
   }
 
-  // Two of the three published English projects are translated and published;
-  // the third is left as a Kannada DRAFT, so the publishing boundary is
-  // exercised in both languages rather than only in English.
-  const projects = [
-    {
-      slug: 'ward-road-resurfacing',
-      title: 'ವಾರ್ಡ್ ರಸ್ತೆ ನವೀಕರಣ (ಡೆಮೋ)',
-      category: 'INFRASTRUCTURE' as const,
-      projectStatus: 'COMPLETED' as const,
-      status: 'PUBLISHED' as const,
-    },
-    {
-      slug: 'community-water-points',
-      title: 'ಸಮುದಾಯ ನೀರಿನ ಕೇಂದ್ರಗಳು (ಡೆಮೋ)',
-      category: 'WATER' as const,
-      projectStatus: 'IN_PROGRESS' as const,
-      status: 'PUBLISHED' as const,
-    },
-    {
-      slug: 'school-library-upgrade',
-      title: 'ಶಾಲಾ ಗ್ರಂಥಾಲಯ ಉನ್ನತೀಕರಣ (ಡೆಮೋ)',
-      category: 'EDUCATION' as const,
-      projectStatus: 'IN_PROGRESS' as const,
-      // Translated but not yet approved: must not appear on the Kannada site.
-      status: 'DRAFT' as const,
-    },
-  ];
-
-  for (const [index, project] of projects.entries()) {
-    await prisma.project.upsert({
-      where: { organizationId_slug_locale: { organizationId, slug: project.slug, locale: 'kn' } },
-      update: {},
-      create: {
-        organizationId,
-        locale: 'kn',
-        slug: project.slug,
-        title: project.title,
-        shortDescription: 'ಡೆಮೋ ವಿವರಣೆ.',
-        descriptionHtml: '<p>ಡೆಮೋ ಯೋಜನೆಯ ವಿವರ.</p>',
-        category: project.category,
-        area: org.areaKn,
-        projectStatus: project.projectStatus,
-        featured: index < 2,
-        displayOrder: index,
-        status: project.status,
-        publishedAt: project.status === 'PUBLISHED' ? daysAgo(50) : null,
-        // Cost and beneficiary figures are left unset on purpose: the public
-        // page must say "not stated" rather than invent a number.
-      },
-    });
-  }
+  // Kannada project rows are created by replaceDemoWorks (published siblings).
 
   await prisma.newsArticle.upsert({
     where: { organizationId_slug_locale: { organizationId, slug: 'demo-update-1', locale: 'kn' } },

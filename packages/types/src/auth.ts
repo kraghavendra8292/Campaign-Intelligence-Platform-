@@ -116,6 +116,8 @@ export const AUDIT_ACTIONS = [
   // number is a disclosure of personal data somebody volunteered for a narrow
   // purpose, and it should leave a trace.
   'ISSUE_SUBMITTED',
+  // Homepage opinion pulse (Great / Ok / Worst). Null actor — public visitor.
+  'SITE_FEEDBACK_SUBMITTED',
   'ISSUE_UPDATED',
   'ISSUE_STATUS_CHANGED',
   'ISSUE_PRIORITY_CHANGED',

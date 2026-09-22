@@ -544,7 +544,7 @@ export const publicContentService = {
       publicContentService.candidateProfile(tenant, locale),
       publicContentService.vision(tenant, locale),
       publicContentService.priorities(tenant, locale),
-      publicContentService.projects(tenant, locale, { first: 3, featuredOnly: null }),
+      publicContentService.projects(tenant, locale, { first: 4, featuredOnly: null }),
       publicContentService.achievements(tenant, locale, { first: 3 }),
       publicContentService.news(tenant, locale, { first: 3 }),
       publicContentService.events(tenant, locale, { first: 3, upcomingOnly: true }),

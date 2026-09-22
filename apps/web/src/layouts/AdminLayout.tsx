@@ -6,6 +6,9 @@ import { AdminSidebar, DESKTOP_SIDEBAR_QUERY } from '../components/admin/AdminSi
 import { AdminLanguageSelect } from '../components/admin/AdminLanguageSelect';
 import { AdminI18nProvider, useAdminI18n } from '../features/admin/AdminI18nContext';
 import { useMediaQuery } from '../lib/useMediaQuery';
+import { loadConsoleStyles } from '../styles/loadConsoleStyles';
+
+loadConsoleStyles();
 
 /**
  * Shell for the authenticated campaign console.

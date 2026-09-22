@@ -11,6 +11,7 @@ import { analyticsResolvers } from '../../modules/analytics/analytics.resolvers'
 import { communicationResolvers } from '../../modules/communication/communication.resolvers';
 import { workResolvers } from '../../modules/work/work.resolvers';
 import { opsResolvers } from '../../modules/ops/index';
+import { siteFeedbackResolvers } from '../../modules/content/siteFeedback/siteFeedback.resolvers';
 
 /**
  * ISO 8601 date-time scalar.
@@ -97,6 +98,7 @@ export const resolvers = {
     ...communicationResolvers.Query,
     ...workResolvers.Query,
     ...opsResolvers.Query,
+    ...siteFeedbackResolvers.Query,
   },
 
   Mutation: {
@@ -110,5 +112,6 @@ export const resolvers = {
     ...aiResolvers.Mutation,
     ...communicationResolvers.Mutation,
     ...workResolvers.Mutation,
+    ...siteFeedbackResolvers.Mutation,
   },
 };

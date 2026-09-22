@@ -162,11 +162,14 @@ export function CampaignHeroCarousel({ slides, children }: CampaignHeroCarouselP
                 alt={item.alt}
                 className="hero-carousel__image"
                 data-focus={item.focus}
-                width={item.image.width ?? undefined}
-                height={item.image.height ?? undefined}
+                width={item.image.width ?? 1600}
+                height={item.image.height ?? 900}
+                sizes="100vw"
                 loading={position === 0 ? 'eager' : 'lazy'}
                 decoding={position === 0 ? 'sync' : 'async'}
-                {...(position === 0 ? { fetchPriority: 'high' as const } : {})}
+                {...(position === 0
+                  ? { fetchPriority: 'high' as const }
+                  : { fetchPriority: 'low' as const })}
               />
             ) : null}
           </div>

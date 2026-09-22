@@ -123,6 +123,53 @@ const WORK_CARD = /* GraphQL */ `
   }
 `;
 
+/** Detail is a separate GraphQL type — cannot spread WorkCardFields onto it. */
+const WORK_DETAIL = /* GraphQL */ `
+  fragment WorkDetailFields on PublicWorkDetail {
+    id
+    slug
+    title
+    shortDescription
+    descriptionHtml
+    category
+    area
+    locationName
+    workStatus
+    verification
+    verifiedAt
+    startDate
+    completionDate
+    department
+    agency
+    costAmount
+    costCurrency
+    beneficiaryCount
+    publishedAt
+    metaTitle
+    metaDescription
+    coverImage {
+      ...WorkImageFields
+    }
+    media {
+      id
+      role
+      caption
+      image {
+        ...WorkImageFields
+      }
+    }
+    updates {
+      id
+      title
+      bodyHtml
+      occurredOn
+    }
+    evidence {
+      ...PublicEvidenceFields
+    }
+  }
+`;
+
 const PUBLIC_EVIDENCE = /* GraphQL */ `
   fragment PublicEvidenceFields on PublicWorkEvidence {
     id
@@ -159,34 +206,11 @@ export const PUBLIC_WORKS_QUERY = /* GraphQL */ `
 
 export const PUBLIC_WORK_QUERY = /* GraphQL */ `
   ${WORK_IMAGE}
-  ${WORK_CARD}
   ${PUBLIC_EVIDENCE}
+  ${WORK_DETAIL}
   query PublicWork($input: PublicSiteInput, $slug: String!) {
     publicWork(input: $input, slug: $slug) {
-      ...WorkCardFields
-      descriptionHtml
-      costAmount
-      costCurrency
-      beneficiaryCount
-      metaTitle
-      metaDescription
-      media {
-        id
-        role
-        caption
-        image {
-          ...WorkImageFields
-        }
-      }
-      updates {
-        id
-        title
-        bodyHtml
-        occurredOn
-      }
-      evidence {
-        ...PublicEvidenceFields
-      }
+      ...WorkDetailFields
     }
   }
 `;
