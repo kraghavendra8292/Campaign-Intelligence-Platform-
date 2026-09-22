@@ -177,6 +177,22 @@ export function QrCampaignsPage() {
                 render: (row) => row.totalScans.toLocaleString(),
               },
               {
+                key: 'feedbacks',
+                header: 'Feedbacks',
+                render: (row) => row.issueCount.toLocaleString(),
+              },
+              {
+                key: 'open',
+                header: 'Open',
+                render: (row) => row.openIssueCount.toLocaleString(),
+              },
+              {
+                key: 'conversion',
+                header: 'Conversion',
+                render: (row) =>
+                  row.conversionRatePct === null ? '—' : `${row.conversionRatePct}%`,
+              },
+              {
                 key: 'dates',
                 header: 'Runs',
                 secondary: true,
@@ -197,6 +213,14 @@ export function QrCampaignsPage() {
                     to={`/admin/qr-campaigns/${row.id}/analytics`}
                   >
                     Analytics
+                  </Link>
+                </IfPermitted>
+                <IfPermitted permission="ISSUE_READ">
+                  <Link
+                    className="cms-row-actions__link"
+                    to={`/admin/issues?campaignId=${encodeURIComponent(row.id)}`}
+                  >
+                    Feedbacks
                   </Link>
                 </IfPermitted>
                 <IfPermitted permission="QR_CAMPAIGN_UPDATE">

@@ -92,6 +92,17 @@ export const qrTypeDefs = /* GraphQL */ `
     qrCodeCount: Int!
     "All-time scans across this campaign's codes."
     totalScans: Int!
+    "Citizen issues attributed to this QR campaign (via rk_qr)."
+    issueCount: Int!
+    "Attributed issues that are not closed or rejected."
+    openIssueCount: Int!
+    """
+    Issue submissions per scan, as a percentage.
+
+    Null when there are no scans: a rate with an empty denominator is undefined,
+    and "0%" would read as failure when the truth is that nobody scanned yet.
+    """
+    conversionRatePct: Float
   }
 
   type QrCampaignConnection {
@@ -185,12 +196,22 @@ export const qrTypeDefs = /* GraphQL */ `
     days: Int!
   }
 
+  "One labelled count bucket (issues by status/priority, etc.)."
+  type QrCountBucket {
+    key: String!
+    label: String!
+    count: Int!
+  }
+
   """
   Aggregate scan analytics.
 
   Every figure is a count of SCAN EVENTS. None of them is a count of people: a
   scan cannot be attributed to a person, and the field names say "scans" so a
   reader is never invited to assume otherwise.
+
+  Issue fields join Phase 5 submissions attributed to the same QR campaign or
+  code (via rk_qr), so conversion is a statement about a poster channel.
   """
   type QrAnalytics {
     range: AnalyticsWindow!
@@ -226,6 +247,15 @@ export const qrTypeDefs = /* GraphQL */ `
 
     "Id of the highest-scanning code in the window, or null when there are no scans."
     topQrCodeId: ID
+
+    "Citizen issues attributed to this scope within the analytics window."
+    issuesFromQr: Int!
+    "Attributed issues still open (not closed or rejected)."
+    openIssues: Int!
+    "Issues per scan in the window. Null when there were no scans."
+    conversionRatePct: Float
+    issuesByStatus: [QrCountBucket!]!
+    issuesByPriority: [QrCountBucket!]!
   }
 
   type CampaignComparisonRow {

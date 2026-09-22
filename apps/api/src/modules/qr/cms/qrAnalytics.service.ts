@@ -10,6 +10,7 @@ import type { Prisma } from '../../../generated/prisma/client';
 import { prisma } from '../../../database/prisma';
 import { AppError } from '../../../errors/AppError';
 import { requireQrAnalytics } from '../shared/qrGuards';
+import { issueAnalyticsForQrScope } from '../shared/campaignIssueStats';
 
 /**
  * Aggregate QR analytics.
@@ -172,6 +173,11 @@ export interface QrAnalyticsResult {
   readonly byDayOfWeek: readonly CountedLabel[];
   readonly byHourBucket: readonly CountedLabel[];
   readonly topQrCodeId: string | null;
+  readonly issuesFromQr: number;
+  readonly openIssues: number;
+  readonly conversionRatePct: number | null;
+  readonly issuesByStatus: ReadonlyArray<{ key: string; label: string; count: number }>;
+  readonly issuesByPriority: ReadonlyArray<{ key: string; label: string; count: number }>;
 }
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -358,6 +364,15 @@ export const qrAnalyticsService = {
 
     const ranked = topN(byQrCode, 1);
 
+    const issueStats = await issueAnalyticsForQrScope({
+      organizationId,
+      from: range.from,
+      to: range.to,
+      campaignId: args.campaignId,
+      qrCodeId: args.qrCodeId,
+      totalScans,
+    });
+
     return {
       range,
       totalScans,
@@ -393,6 +408,7 @@ export const qrAnalyticsService = {
         scans,
       })),
       topQrCodeId: ranked[0] && ranked[0].scans > 0 ? ranked[0].key : null,
+      ...issueStats,
     };
   },
 

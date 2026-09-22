@@ -147,6 +147,8 @@ export interface IssueListArgs {
   readonly from?: string | null;
   readonly to?: string | null;
   readonly search?: string | null;
+  readonly campaignId?: string | null;
+  readonly qrCodeId?: string | null;
 }
 
 function parseDate(value: string | null | undefined, field: string): Date | null {
@@ -184,6 +186,8 @@ function buildWhere(organizationId: string, args: IssueListArgs): Prisma.IssueWh
     ...(!args.unassignedOnly && args.assignedToUserId
       ? { assignedToUserId: args.assignedToUserId }
       : {}),
+    ...(args.campaignId ? { campaignId: args.campaignId } : {}),
+    ...(args.qrCodeId ? { qrCodeId: args.qrCodeId } : {}),
     ...(from || to
       ? { submittedAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
       : {}),

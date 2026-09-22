@@ -50,6 +50,7 @@ const ADMIN_PERMISSIONS = [
   'QR_CODE_ARCHIVE',
   'QR_CODE_DOWNLOAD',
   'QR_ANALYTICS_READ',
+  'ISSUE_READ',
 ];
 
 const VIEWER_PERMISSIONS = ['QR_CAMPAIGN_READ', 'QR_CODE_READ'];
@@ -68,6 +69,9 @@ function campaignRow(overrides: Record<string, unknown> = {}) {
     updatedAt: '2026-01-01T00:00:00.000Z',
     qrCodeCount: 3,
     totalScans: 1248,
+    issueCount: 42,
+    openIssueCount: 11,
+    conversionRatePct: 3.4,
     ...overrides,
   };
 }
@@ -127,6 +131,17 @@ function analytics(overrides: Record<string, unknown> = {}) {
     activeQrCodes: 3,
     totalQrCodes: 4,
     topQrCodeId: 'qr-1',
+    issuesFromQr: 42,
+    openIssues: 11,
+    conversionRatePct: 3.4,
+    issuesByStatus: [
+      { key: 'SUBMITTED', label: 'Submitted', count: 18 },
+      { key: 'IN_PROGRESS', label: 'In progress', count: 12 },
+    ],
+    issuesByPriority: [
+      { key: 'MEDIUM', label: 'Medium', count: 28 },
+      { key: 'HIGH', label: 'High', count: 10 },
+    ],
     trend: [
       { date: '2026-01-01T00:00:00.000Z', scans: 30 },
       { date: '2026-01-02T00:00:00.000Z', scans: 52 },
@@ -184,7 +199,10 @@ describe('QR campaigns list', () => {
     const table = screen.getByRole('table');
     expect(within(table).getByText('1,248')).toBeInTheDocument();
     expect(within(table).getByText('3')).toBeInTheDocument();
+    expect(within(table).getByText('42')).toBeInTheDocument();
+    expect(within(table).getByText('3.4%')).toBeInTheDocument();
     expect(within(table).getByText('active')).toBeInTheDocument();
+    expect(within(table).getByRole('link', { name: 'Feedbacks' })).toBeInTheDocument();
   });
 
   it('shows a specific empty state, not a bare table', async () => {
@@ -312,6 +330,7 @@ describe('QR campaign detail', () => {
         qrCodes: { nodes: [codeRow()], totalCount: 1 },
       },
       QrAnalytics: { qrAnalytics: analytics() },
+      Issues: { issues: { nodes: [], totalCount: 0, hasMore: false } },
     });
 
     expect(
@@ -322,15 +341,18 @@ describe('QR campaign detail', () => {
     expect(screen.getByText('/work/road-development')).toBeInTheDocument();
     expect(screen.getByText('Top performing QR')).toBeInTheDocument();
     expect(screen.getAllByText('12th Main Road Poster (DEMO)').length).toBeGreaterThan(0);
+    expect(screen.getByText('Conversion')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Feedbacks' })).toBeInTheDocument();
   });
 
   it('shows an empty state when a campaign has no codes yet', async () => {
     renderAdmin('/admin/qr-campaigns/camp-1', {
       QrCampaignDetail: {
-        qrCampaign: campaignRow({ qrCodeCount: 0, totalScans: 0 }),
+        qrCampaign: campaignRow({ qrCodeCount: 0, totalScans: 0, issueCount: 0, openIssueCount: 0, conversionRatePct: null }),
         qrCodes: { nodes: [], totalCount: 0 },
       },
-      QrAnalytics: { qrAnalytics: analytics({ totalScans: 0, trend: [] }) },
+      QrAnalytics: { qrAnalytics: analytics({ totalScans: 0, trend: [], issuesFromQr: 0, openIssues: 0, conversionRatePct: null }) },
+      Issues: { issues: { nodes: [], totalCount: 0, hasMore: false } },
     });
 
     expect(
@@ -346,6 +368,7 @@ describe('QR campaign detail', () => {
         qrCodes: { nodes: [codeRow()], totalCount: 1 },
       },
       QrAnalytics: graphqlError('FORBIDDEN', 'Missing permission'),
+      Issues: { issues: { nodes: [], totalCount: 0, hasMore: false } },
     });
 
     // The page is useful without the optional panel; it does not fail over it.

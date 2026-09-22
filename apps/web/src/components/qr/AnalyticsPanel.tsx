@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import { Button } from '@rk/ui';
 import type { QrAnalyticsData } from '../../features/qr/qrQueries';
+import { RankedBars as SharedRankedBars } from '../analytics/charts';
 import { ChartCard, ColumnChart, RankedBars, TrendChart } from './charts';
 import { StatCard, StatGrid } from './QrShell';
 
@@ -11,7 +13,7 @@ import { StatCard, StatGrid } from './QrShell';
  * are the same at every scope - only the filter changes. Three copies would
  * drift, and the first thing to drift would be the careful wording below.
  *
- * WORDING IS LOad-BEARING HERE. Every figure says "scans", because that is what
+ * WORDING IS LOAD-BEARING HERE. Every figure says "scans", because that is what
  * was measured: an event, not a person. "1,248 scans" is true; "1,248 people"
  * would be a claim the data cannot support - one person scanning a poster twice
  * and two people scanning it once are indistinguishable, by design.
@@ -22,11 +24,14 @@ export function AnalyticsPanel({
   showQrBreakdown = true,
   onExportCsv,
   exporting,
+  feedbacksHref,
 }: {
   data: QrAnalyticsData;
   showQrBreakdown?: boolean;
   onExportCsv?: () => void;
   exporting?: boolean;
+  /** When set, links to the filtered issues inbox for this scope. */
+  feedbacksHref?: string | null;
 }) {
   const humanScans = data.totalScans - data.automatedScans;
 
@@ -39,6 +44,29 @@ export function AnalyticsPanel({
           hint={`${data.range.days} day${data.range.days === 1 ? '' : 's'}`}
           tone="primary"
         />
+        <StatCard
+          label="Feedbacks"
+          value={data.issuesFromQr.toLocaleString()}
+          hint="Citizen issues from this QR scope"
+        />
+        <StatCard
+          label="Open feedbacks"
+          value={data.openIssues.toLocaleString()}
+          hint="Not closed or rejected"
+        />
+        <StatCard
+          label="Conversion"
+          value={data.conversionRatePct === null ? '—' : `${data.conversionRatePct}%`}
+          hint={
+            data.conversionRatePct === null
+              ? 'No scans in this period'
+              : 'Issues submitted per scan'
+          }
+          tone="accent"
+        />
+      </StatGrid>
+
+      <StatGrid>
         <StatCard
           label="Estimated unique visits"
           // An em dash, not a zero. The estimate is unavailable when no scan in
@@ -62,7 +90,11 @@ export function AnalyticsPanel({
           label="Active QR codes"
           value={data.activeQrCodes.toLocaleString()}
           hint={`${data.totalQrCodes.toLocaleString()} in total`}
-          tone="accent"
+        />
+        <StatCard
+          label="Excluding automated"
+          value={humanScans.toLocaleString()}
+          hint={`${data.automatedScans.toLocaleString()} identified as crawlers or scripts`}
         />
       </StatGrid>
 
@@ -71,9 +103,8 @@ export function AnalyticsPanel({
         <StatCard label="Last 7 days" value={data.scansLast7Days.toLocaleString()} />
         <StatCard label="Last 30 days" value={data.scansLast30Days.toLocaleString()} />
         <StatCard
-          label="Excluding automated"
-          value={humanScans.toLocaleString()}
-          hint={`${data.automatedScans.toLocaleString()} identified as crawlers or scripts`}
+          label="Open / all feedbacks"
+          value={`${data.openIssues.toLocaleString()} / ${data.issuesFromQr.toLocaleString()}`}
         />
       </StatGrid>
 
@@ -97,6 +128,47 @@ export function AnalyticsPanel({
       </ChartCard>
 
       <div className="chart-grid">
+        <ChartCard
+          title="Feedback by status"
+          description="Citizen issues attributed to this QR scope."
+          action={
+            feedbacksHref ? (
+              <Link to={feedbacksHref}>
+                <Button variant="secondary" size="sm">
+                  View all feedbacks
+                </Button>
+              </Link>
+            ) : undefined
+          }
+        >
+          <SharedRankedBars
+            buckets={data.issuesByStatus.map((bucket) => ({
+              key: bucket.key,
+              label: bucket.label,
+              value: bucket.count,
+            }))}
+            total={data.issuesFromQr}
+            emptyMessage="No feedbacks attributed to this scope yet."
+            unit="feedbacks"
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Feedback by priority"
+          description="Administrative triage on attributed issues."
+        >
+          <SharedRankedBars
+            buckets={data.issuesByPriority.map((bucket) => ({
+              key: bucket.key,
+              label: bucket.label,
+              value: bucket.count,
+            }))}
+            total={data.issuesFromQr}
+            emptyMessage="No feedbacks attributed to this scope yet."
+            unit="feedbacks"
+          />
+        </ChartCard>
+
         {showQrBreakdown ? (
           <ChartCard title="Scans by QR code" description="Which codes are being scanned.">
             <RankedBars
@@ -148,9 +220,9 @@ export function AnalyticsPanel({
 
       <p className="analytics__note">
         All figures count <strong>scan events</strong>, not people. A single person scanning a
-        poster twice is two scans. Nothing here identifies an individual, and no political
-        preference, affiliation or supporter status is recorded or inferred anywhere in this
-        platform.
+        poster twice is two scans. Feedbacks are citizen issues attributed via QR. Nothing here
+        identifies an individual, and no political preference, affiliation or supporter status is
+        recorded or inferred anywhere in this platform.
       </p>
     </div>
   );

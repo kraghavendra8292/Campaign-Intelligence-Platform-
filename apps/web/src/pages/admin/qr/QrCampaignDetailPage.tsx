@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Button } from '@rk/ui';
 import { useAdminMutation, useAdminQuery } from '../../../features/admin/adminApi';
+import { useAuth } from '../../../features/auth/AuthProvider';
 import {
   QR_ANALYTICS,
   QR_CAMPAIGN,
@@ -11,6 +12,7 @@ import {
   type QrCampaignRow,
   type QrCodeRow,
 } from '../../../features/qr/qrQueries';
+import { ISSUES_QUERY, type IssueRow } from '../../../features/issues/issueQueries';
 import {
   CmsCard,
   CmsPageHeader,
@@ -27,6 +29,7 @@ import {
   StatGrid,
 } from '../../../components/qr/QrShell';
 import { ChartCard, TrendChart } from '../../../components/qr/charts';
+import { IssuePriorityBadge, IssueStatusBadge } from '../../../components/issues/IssueBadges';
 import { formatDate } from '../../../lib/format';
 
 /**
@@ -49,6 +52,8 @@ interface CampaignDetailData {
 export function QrCampaignDetailPage() {
   const { campaignId = '' } = useParams();
   const { toasts, success, failure } = useToasts();
+  const { can } = useAuth();
+  const canReadIssues = can('ISSUE_READ');
 
   const { state, refetch } = useAdminQuery<CampaignDetailData>(QR_CAMPAIGN, { id: campaignId });
 
@@ -57,6 +62,14 @@ export function QrCampaignDetailPage() {
   const analytics = useAdminQuery<{ qrAnalytics: QrAnalyticsData }>(QR_ANALYTICS, {
     filter: { range: 'LAST_30_DAYS', campaignId },
   });
+
+  const recentFeedbacks = useAdminQuery<{
+    issues: { nodes: IssueRow[]; totalCount: number };
+  }>(
+    ISSUES_QUERY,
+    { filter: { first: 5, campaignId } },
+    { skip: !canReadIssues },
+  );
 
   const campaignTransition = useAdminMutation<unknown, { id: string; action: string }>(
     TRANSITION_QR_CAMPAIGN,
@@ -92,6 +105,8 @@ export function QrCampaignDetailPage() {
   );
 
   const summary = analytics.state.status === 'success' ? analytics.state.data.qrAnalytics : null;
+  const feedbacks =
+    recentFeedbacks.state.status === 'success' ? recentFeedbacks.state.data.issues : null;
 
   return (
     <div className="cms-page">
@@ -102,6 +117,7 @@ export function QrCampaignDetailPage() {
           const topCode = summary?.topQrCodeId
             ? codes.find((code) => code.id === summary.topQrCodeId)
             : undefined;
+          const feedbacksHref = `/admin/issues?campaignId=${encodeURIComponent(campaign.id)}`;
 
           return (
             <>
@@ -113,6 +129,11 @@ export function QrCampaignDetailPage() {
                     <IfPermitted permission="QR_ANALYTICS_READ">
                       <Link to={`/admin/qr-campaigns/${campaign.id}/analytics`}>
                         <Button variant="secondary">Analytics</Button>
+                      </Link>
+                    </IfPermitted>
+                    <IfPermitted permission="ISSUE_READ">
+                      <Link to={feedbacksHref}>
+                        <Button variant="secondary">Feedbacks</Button>
                       </Link>
                     </IfPermitted>
                     <IfPermitted permission="QR_CODE_CREATE">
@@ -194,6 +215,35 @@ export function QrCampaignDetailPage() {
                 </div>
               </CmsCard>
 
+              <StatGrid>
+                <StatCard
+                  label="Total scans"
+                  value={campaign.totalScans.toLocaleString()}
+                  hint="All time"
+                  tone="primary"
+                />
+                <StatCard
+                  label="Feedbacks"
+                  value={campaign.issueCount.toLocaleString()}
+                  hint={`${campaign.openIssueCount.toLocaleString()} open`}
+                />
+                <StatCard
+                  label="Conversion"
+                  value={
+                    campaign.conversionRatePct === null ? '—' : `${campaign.conversionRatePct}%`
+                  }
+                  hint={campaign.conversionRatePct === null ? 'No scans yet' : 'Issues per scan'}
+                  tone="accent"
+                />
+                <StatCard
+                  label="QR codes"
+                  value={campaign.qrCodeCount.toLocaleString()}
+                  hint={
+                    summary ? `${summary.activeQrCodes.toLocaleString()} active` : undefined
+                  }
+                />
+              </StatGrid>
+
               {/*
                 Analytics is optional on this screen: a user without
                 QR_ANALYTICS_READ still gets the campaign and its codes, rather
@@ -208,9 +258,9 @@ export function QrCampaignDetailPage() {
                       tone="primary"
                     />
                     <StatCard
-                      label="Active QR codes"
-                      value={summary.activeQrCodes.toLocaleString()}
-                      hint={`${summary.totalQrCodes.toLocaleString()} in total`}
+                      label="Feedbacks (30 days)"
+                      value={summary.issuesFromQr.toLocaleString()}
+                      hint={`${summary.openIssues.toLocaleString()} open`}
                     />
                     <StatCard
                       label="Top performing QR"
@@ -232,6 +282,65 @@ export function QrCampaignDetailPage() {
                     <TrendChart points={summary.trend} />
                   </ChartCard>
                 </>
+              ) : null}
+
+              {canReadIssues ? (
+                <CmsCard title="Recent feedbacks">
+                  <div className="cms-form-actions__primary" style={{ marginBottom: '1rem' }}>
+                    <Link to={feedbacksHref}>
+                      <Button variant="secondary" size="sm">
+                        View all feedbacks
+                      </Button>
+                    </Link>
+                  </div>
+                  {feedbacks && feedbacks.nodes.length > 0 ? (
+                    <DataTable
+                      caption="Recent feedbacks for this campaign"
+                      rows={feedbacks.nodes}
+                      columns={[
+                        {
+                          key: 'reference',
+                          header: 'Reference',
+                          render: (row) => (
+                            <Link className="cms-table__link mono" to={`/admin/issues/${row.id}`}>
+                              {row.referenceNumber}
+                            </Link>
+                          ),
+                        },
+                        {
+                          key: 'title',
+                          header: 'Title',
+                          render: (row) => (
+                            <Link className="cms-table__link" to={`/admin/issues/${row.id}`}>
+                              {row.title}
+                            </Link>
+                          ),
+                        },
+                        {
+                          key: 'status',
+                          header: 'Status',
+                          render: (row) => <IssueStatusBadge value={row.status} />,
+                        },
+                        {
+                          key: 'priority',
+                          header: 'Priority',
+                          render: (row) => <IssuePriorityBadge value={row.priority} />,
+                        },
+                        {
+                          key: 'submitted',
+                          header: 'Submitted',
+                          secondary: true,
+                          render: (row) => formatDate(row.submittedAt) ?? '—',
+                        },
+                      ]}
+                    />
+                  ) : (
+                    <QrEmptyState
+                      title="No feedbacks attributed to this campaign yet."
+                      message="When someone scans a QR code and submits an issue, it will appear here."
+                    />
+                  )}
+                </CmsCard>
               ) : null}
 
               <CmsCard title="QR codes">

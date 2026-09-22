@@ -339,6 +339,10 @@ export const issueTypeDefs = /* GraphQL */ `
     to: DateTime
     "Matches the reference number or the title. Never the description."
     search: String
+    "Citizen issues attributed to this QR campaign (via rk_qr)."
+    campaignId: ID
+    "Citizen issues attributed to this QR code."
+    qrCodeId: ID
   }
 
   input IssueAnalyticsFilter {

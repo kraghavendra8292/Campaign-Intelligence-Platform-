@@ -13,6 +13,11 @@ import {
   requireText,
   rethrowSlugConflict,
 } from '../shared/qrGuards';
+import {
+  EMPTY_CAMPAIGN_ISSUE_STATS,
+  issueStatsForCampaigns,
+  type CampaignIssueStats,
+} from '../shared/campaignIssueStats';
 
 /**
  * QR campaign administration.
@@ -42,6 +47,27 @@ const CAMPAIGN_SELECT = {
   createdBy: { select: { id: true, fullName: true } },
   _count: { select: { qrCodes: true, scanEvents: true } },
 } satisfies Prisma.QrCampaignSelect;
+
+export type CampaignWithIssueStats = Prisma.QrCampaignGetPayload<{
+  select: typeof CAMPAIGN_SELECT;
+}> &
+  CampaignIssueStats;
+
+async function withIssueStats(
+  organizationId: string,
+  rows: ReadonlyArray<Prisma.QrCampaignGetPayload<{ select: typeof CAMPAIGN_SELECT }>>,
+): Promise<CampaignWithIssueStats[]> {
+  const scansByCampaignId = new Map(rows.map((row) => [row.id, row._count.scanEvents]));
+  const stats = await issueStatsForCampaigns(
+    organizationId,
+    rows.map((row) => row.id),
+    scansByCampaignId,
+  );
+  return rows.map((row) => ({
+    ...row,
+    ...(stats.get(row.id) ?? EMPTY_CAMPAIGN_ISSUE_STATS),
+  }));
+}
 
 export interface QrCampaignInput {
   readonly name: string;
@@ -101,7 +127,7 @@ export const qrCampaignService = {
       prisma.qrCampaign.count({ where }),
     ]);
 
-    return { nodes, totalCount };
+    return { nodes: await withIssueStats(organizationId, nodes), totalCount };
   },
 
   async getById(auth: AuthContext, id: string) {
@@ -115,7 +141,8 @@ export const qrCampaignService = {
     });
 
     if (!campaign) throw AppError.notFound('This QR campaign is not available.');
-    return campaign;
+    const [enriched] = await withIssueStats(organizationId, [campaign]);
+    return enriched!;
   },
 
   async create(auth: AuthContext, input: QrCampaignInput, meta: RequestMeta) {
@@ -155,7 +182,7 @@ export const qrCampaignService = {
         ...meta,
       });
 
-      return campaign;
+      return { ...campaign, ...EMPTY_CAMPAIGN_ISSUE_STATS };
     } catch (error) {
       rethrowSlugConflict(error, slug);
     }
@@ -200,7 +227,8 @@ export const qrCampaignService = {
         ...meta,
       });
 
-      return campaign;
+      const [enriched] = await withIssueStats(organizationId, [campaign]);
+      return enriched!;
     } catch (error) {
       rethrowSlugConflict(error, slug);
     }
@@ -245,7 +273,8 @@ export const qrCampaignService = {
       ...meta,
     });
 
-    return campaign;
+    const [enriched] = await withIssueStats(organizationId, [campaign]);
+    return enriched!;
   },
 };
 

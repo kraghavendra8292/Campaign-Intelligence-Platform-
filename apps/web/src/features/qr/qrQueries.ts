@@ -21,6 +21,9 @@ const CAMPAIGN_FIELDS = /* GraphQL */ `
     updatedAt
     qrCodeCount
     totalScans
+    issueCount
+    openIssueCount
+    conversionRatePct
   }
 `;
 
@@ -74,6 +77,19 @@ const ANALYTICS_FIELDS = /* GraphQL */ `
     activeQrCodes
     totalQrCodes
     topQrCodeId
+    issuesFromQr
+    openIssues
+    conversionRatePct
+    issuesByStatus {
+      key
+      label
+      count
+    }
+    issuesByPriority {
+      key
+      label
+      count
+    }
     trend {
       date
       scans
@@ -271,6 +287,9 @@ export interface QrCampaignRow {
   updatedAt: string;
   qrCodeCount: number;
   totalScans: number;
+  issueCount: number;
+  openIssueCount: number;
+  conversionRatePct: number | null;
 }
 
 export interface QrCodeRow {
@@ -305,6 +324,12 @@ export interface ScanBucket {
   scans: number;
 }
 
+export interface QrCountBucket {
+  key: string;
+  label: string;
+  count: number;
+}
+
 export interface QrAnalyticsData {
   range: { from: string; to: string; days: number };
   totalScans: number;
@@ -317,6 +342,11 @@ export interface QrAnalyticsData {
   activeQrCodes: number;
   totalQrCodes: number;
   topQrCodeId: string | null;
+  issuesFromQr: number;
+  openIssues: number;
+  conversionRatePct: number | null;
+  issuesByStatus: QrCountBucket[];
+  issuesByPriority: QrCountBucket[];
   trend: Array<{ date: string; scans: number }>;
   byQrCode: ScanBucket[];
   bySource: ScanBucket[];

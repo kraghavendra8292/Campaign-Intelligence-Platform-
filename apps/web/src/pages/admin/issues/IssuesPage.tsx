@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, MODERATION_STATUSES, SUBMISSION_TYPES } from '@rk/types';
 import { Button } from '@rk/ui';
 import { useAdminQuery } from '../../../features/admin/adminApi';
@@ -53,6 +53,8 @@ interface Filters {
   ward: string;
   unassignedOnly: boolean;
   search: string;
+  campaignId: string;
+  qrCodeId: string;
 }
 
 const NO_FILTERS: Filters = {
@@ -65,13 +67,49 @@ const NO_FILTERS: Filters = {
   ward: '',
   unassignedOnly: false,
   search: '',
+  campaignId: '',
+  qrCodeId: '',
 };
 
+function filtersFromSearch(params: URLSearchParams): Filters {
+  return {
+    ...NO_FILTERS,
+    status: params.get('status') ?? '',
+    priority: params.get('priority') ?? '',
+    type: params.get('type') ?? '',
+    categoryId: params.get('categoryId') ?? '',
+    source: params.get('source') ?? '',
+    moderationStatus: params.get('moderationStatus') ?? '',
+    ward: params.get('ward') ?? '',
+    unassignedOnly: params.get('unassignedOnly') === '1',
+    search: params.get('search') ?? '',
+    campaignId: params.get('campaignId') ?? '',
+    qrCodeId: params.get('qrCodeId') ?? '',
+  };
+}
+
 export function IssuesPage() {
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const [draftSearch, setDraftSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const initial = useMemo(() => filtersFromSearch(searchParams), [searchParams]);
+  const [filters, setFilters] = useState<Filters>(initial);
+  const [draftSearch, setDraftSearch] = useState(initial.search);
   const [offset, setOffset] = useState(0);
   const { toasts } = useToasts();
+
+  useEffect(() => {
+    const next = filtersFromSearch(searchParams);
+    setFilters(next);
+    setDraftSearch(next.search);
+    setOffset(0);
+  }, [searchParams]);
+
+  const clearQrFilter = useCallback(() => {
+    setFilters(NO_FILTERS);
+    setDraftSearch('');
+    setOffset(0);
+    navigate('/admin/issues', { replace: true });
+  }, [navigate]);
 
   const variables = useMemo(
     () => ({
@@ -87,6 +125,8 @@ export function IssuesPage() {
         ward: filters.ward || null,
         unassignedOnly: filters.unassignedOnly || null,
         search: filters.search || null,
+        campaignId: filters.campaignId || null,
+        qrCodeId: filters.qrCodeId || null,
       },
     }),
     [filters, offset],
@@ -122,13 +162,30 @@ export function IssuesPage() {
     <div className="cms-page">
       <CmsPageHeader
         title="Issues & feedback"
-        description="What citizens have sent in, and how the team is handling it."
+        description={
+          filters.campaignId
+            ? 'Citizen issues attributed to a QR campaign.'
+            : filters.qrCodeId
+              ? 'Citizen issues attributed to a QR code.'
+              : 'What citizens have sent in, and how the team is handling it.'
+        }
         actions={
           <Link to="/admin/issues/analytics">
             <Button variant="secondary">Analytics</Button>
           </Link>
         }
       />
+
+      {filters.campaignId || filters.qrCodeId ? (
+        <FilterBar>
+          <p className="cms-filters__hint">
+            Showing feedbacks filtered by {filters.campaignId ? 'QR campaign' : 'QR code'}.
+          </p>
+          <Button variant="secondary" size="sm" onClick={clearQrFilter}>
+            Clear QR filter
+          </Button>
+        </FilterBar>
+      ) : null}
 
       {summary ? (
         <StatGrid>
@@ -284,6 +341,7 @@ export function IssuesPage() {
                   setFilters(NO_FILTERS);
                   setDraftSearch('');
                   setOffset(0);
+                  navigate('/admin/issues', { replace: true });
                 }}
               >
                 Clear filters

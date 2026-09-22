@@ -145,6 +145,13 @@ function AnalyticsScreen({
               showQrBreakdown={showQrBreakdown}
               onExportCsv={() => void exportCsv()}
               exporting={exporting}
+              feedbacksHref={
+                campaignId
+                  ? `/admin/issues?campaignId=${encodeURIComponent(campaignId)}`
+                  : qrCodeId
+                    ? `/admin/issues?qrCodeId=${encodeURIComponent(qrCodeId)}`
+                    : '/admin/issues?source=QR'
+              }
             />
 
             {showComparison && data.qrCampaignComparison ? (
