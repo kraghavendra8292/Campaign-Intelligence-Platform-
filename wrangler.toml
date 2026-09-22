@@ -1,19 +1,25 @@
-# Cloudflare Workers/Pages static deploy for the Vite web app.
+# Cloudflare Workers — static web app + QR scan proxy.
 #
-# This repo is an npm workspace. Bare `wrangler deploy` (what Cloudflare CI
-# runs) refuses to auto-detect a target at the workspace root. An explicit
-# `[assets]` directory skips that detection and uploads the Vite build output.
+# QR symbols encode  https://<this-host>/q/<code>
+# The Worker proxies /q/* to API_ORIGIN so scans are counted by the API, which
+# then 302s to the public site destination (PUBLIC_SITE_URL on the API).
 #
-# Cloudflare dashboard (Git integration):
-#   Build command:          npm run build
-#   Build output directory: apps/web/dist
-#   Root directory:         (leave empty — repository root)
+# Required Worker environment (Cloudflare dashboard → Settings → Variables):
+#   API_ORIGIN = https://<your-render-api-host>   (no trailing slash)
 #
-# Or use `npm run build:pages` to compile only the web app.
+# Required API environment (Render):
+#   QR_SCAN_BASE_URL = https://campaign-intelligence-platform.youragency.workers.dev
+#   PUBLIC_SITE_URL  = https://campaign-intelligence-platform.youragency.workers.dev
+#   PUBLIC_WEB_URL   = https://campaign-intelligence-platform.youragency.workers.dev
+#   CORS_ORIGINS     = https://campaign-intelligence-platform.youragency.workers.dev
 
 name = "campaign-intelligence-platform"
+main = "workers/scan-proxy.ts"
 compatibility_date = "2026-09-22"
 
 [assets]
 directory = "./apps/web/dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+# Only /q/* needs the Worker; everything else is static SPA assets.
+run_worker_first = ["/q/*"]

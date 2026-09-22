@@ -693,6 +693,8 @@ describe.skipIf(!available)('public QR redirect', () => {
     expect(location.searchParams.get('utm_source')).toBe('qr');
     expect(location.searchParams.get('utm_medium')).toBe('poster');
     expect(location.searchParams.get('utm_campaign')).toBe('redirect-happy');
+    expect(location.searchParams.get('org')).toBe(tenantA.slug);
+    expect(location.searchParams.get('rk_qr')).toBe(code.code);
 
     // Not indexable, and not cacheable - a cached redirect would keep working
     // after the code was paused.

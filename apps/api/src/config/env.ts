@@ -164,6 +164,20 @@ function assertProductionHardening(parsed: z.infer<typeof apiEnvSchema>): void {
     problems.push('CORS_ORIGINS must not contain a plain http:// origin.');
   }
 
+  for (const [name, value] of [
+    ['QR_SCAN_BASE_URL', parsed.QR_SCAN_BASE_URL],
+    ['PUBLIC_SITE_URL', parsed.PUBLIC_SITE_URL],
+    ['PUBLIC_WEB_URL', parsed.PUBLIC_WEB_URL],
+    ['NOTIFICATION_LINK_BASE_URL', parsed.NOTIFICATION_LINK_BASE_URL],
+  ] as const) {
+    if (isLoopbackHttpUrl(value)) {
+      problems.push(
+        `${name} must not be a localhost URL in production: QR symbols, redirects ` +
+          'and emailed links would point at the visitor’s own machine.',
+      );
+    }
+  }
+
   if (parsed.AI_ENABLED && parsed.AI_PROVIDER === 'openai' && !parsed.OPENAI_API_KEY) {
     problems.push(
       'OPENAI_API_KEY is required when AI_ENABLED=true and AI_PROVIDER=openai: ' +
@@ -202,15 +216,54 @@ function assertProductionHardening(parsed: z.infer<typeof apiEnvSchema>): void {
   }
 }
 
+/** True for http(s) URLs whose host is loopback (localhost / 127.0.0.1 / ::1). */
+function isLoopbackHttpUrl(value: string): boolean {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Applies platform-provided public URL defaults before schema parsing.
+ *
+ * Render injects `RENDER_EXTERNAL_URL` for the service. When an operator forgets
+ * `QR_SCAN_BASE_URL`, that value is a safer production default than the
+ * localhost schema default — QR symbols would otherwise encode
+ * http://localhost:4000 and never record a scan.
+ */
+function applyPublicUrlDefaults(
+  source: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+  const renderUrl = firstNonEmpty(source.RENDER_EXTERNAL_URL)?.replace(/\/+$/, '');
+  if (!renderUrl) return source;
+
+  const next = { ...source };
+  if (!firstNonEmpty(source.QR_SCAN_BASE_URL)) {
+    next.QR_SCAN_BASE_URL = renderUrl;
+  }
+  return next;
+}
+
+function firstNonEmpty(...values: Array<string | undefined>): string | undefined {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim().length > 0) return value.trim();
+  }
+  return undefined;
+}
+
 function build(source: Record<string, string | undefined>): ApiEnv {
-  const parsed = parseEnv('@rk/api', apiEnvSchema, source);
+  const withDefaults = applyPublicUrlDefaults(source);
+  const parsed = parseEnv('@rk/api', apiEnvSchema, withDefaults);
   const isProduction = parsed.NODE_ENV === 'production';
 
   if (isProduction) {
     assertProductionHardening({
       ...parsed,
       GRAPHQL_INTROSPECTION:
-        source.GRAPHQL_INTROSPECTION === undefined ? false : parsed.GRAPHQL_INTROSPECTION,
+        withDefaults.GRAPHQL_INTROSPECTION === undefined ? false : parsed.GRAPHQL_INTROSPECTION,
     });
   }
 
@@ -218,9 +271,9 @@ function build(source: Record<string, string | undefined>): ApiEnv {
     ...parsed,
     // Developer-friendly defaults that stay safe in production: pretty logs and
     // the GraphQL IDE are enabled outside production unless explicitly set.
-    LOG_PRETTY: source.LOG_PRETTY === undefined ? !isProduction : parsed.LOG_PRETTY,
+    LOG_PRETTY: withDefaults.LOG_PRETTY === undefined ? !isProduction : parsed.LOG_PRETTY,
     GRAPHQL_INTROSPECTION:
-      source.GRAPHQL_INTROSPECTION === undefined ? !isProduction : parsed.GRAPHQL_INTROSPECTION,
+      withDefaults.GRAPHQL_INTROSPECTION === undefined ? !isProduction : parsed.GRAPHQL_INTROSPECTION,
     isProduction,
     isDevelopment: parsed.NODE_ENV === 'development',
     isTest: parsed.NODE_ENV === 'test',

@@ -99,8 +99,10 @@ export const contentEnvSchema = {
  * `QR_SCAN_BASE_URL` is the origin printed INTO every QR symbol. It is separate
  * from `PUBLIC_SITE_URL` because the scan endpoint lives on the API while the
  * destination page lives on the web app, and in production those are usually
- * different hosts. Getting this wrong means printing codes that point nowhere,
- * so it is configuration rather than something inferred at request time.
+ * different hosts — unless a reverse proxy (Cloudflare Worker `/q/*`) fronts
+ * both on one origin. Getting this wrong means printing codes that point
+ * nowhere, so it is configuration rather than something inferred at request
+ * time (aside from Render's `RENDER_EXTERNAL_URL` fallback).
  */
 export const qrEnvSchema = {
   /** Origin that serves `GET /q/:code`. Encoded into printed symbols. */

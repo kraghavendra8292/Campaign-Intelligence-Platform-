@@ -177,6 +177,7 @@ export function createQrRedirectRouter(env: ApiEnv): Router {
         // Carried so a submission made after this scan can be attributed to
         // this exact printed code. See the note in `buildRedirectUrl`.
         code,
+        resolved.organizationSlug,
       );
 
       // Started, NOT awaited. The citizen is redirected while this is still in

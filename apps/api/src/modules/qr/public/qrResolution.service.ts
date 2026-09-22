@@ -19,6 +19,8 @@ export interface ResolvedQr {
   readonly outcome: QrResolutionOutcome;
   readonly qrCodeId: string | null;
   readonly organizationId: string | null;
+  /** Public tenant slug, carried into the destination as `?org=` on shared hosts. */
+  readonly organizationSlug: string | null;
   readonly campaignId: string | null;
   readonly destinationPath: string | null;
   readonly utm: {
@@ -33,6 +35,7 @@ const NOT_FOUND: ResolvedQr = {
   outcome: 'NOT_FOUND',
   qrCodeId: null,
   organizationId: null,
+  organizationSlug: null,
   campaignId: null,
   destinationPath: null,
   utm: null,
@@ -67,7 +70,7 @@ export const qrResolutionService = {
         utmMedium: true,
         utmCampaign: true,
         utmContent: true,
-        organization: { select: { status: true } },
+        organization: { select: { status: true, slug: true } },
       },
     });
 
@@ -77,6 +80,7 @@ export const qrResolutionService = {
     const base = {
       qrCodeId: qr.id,
       organizationId: qr.organizationId,
+      organizationSlug: qr.organization.slug,
       campaignId: qr.campaignId,
     };
 
@@ -115,6 +119,7 @@ export function buildRedirectUrl(
   destinationPath: string,
   utm: ResolvedQr['utm'],
   code?: string | null,
+  organizationSlug?: string | null,
 ): string {
   const url = new URL(destinationPath, siteOrigin);
 
@@ -128,6 +133,15 @@ export function buildRedirectUrl(
   if (utm?.medium) url.searchParams.set('utm_medium', utm.medium);
   if (utm?.campaign) url.searchParams.set('utm_campaign', utm.campaign);
   if (utm?.content) url.searchParams.set('utm_content', utm.content);
+
+  /*
+   * Shared hosts (preview Workers URLs, staging) have no tenant subdomain, so
+   * the public site resolves the organisation from `?org=<slug>`. Always carry
+   * it from the code's tenant so a scan never lands on the wrong site.
+   */
+  if (organizationSlug && !url.searchParams.has('org')) {
+    url.searchParams.set('org', organizationSlug);
+  }
 
   /*
    * Phase 5: the public code itself travels with the visitor.
