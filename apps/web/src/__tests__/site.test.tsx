@@ -202,14 +202,16 @@ describe('public site - project listing', () => {
     });
   });
 
-  it('filters by category from the filter chips', async () => {
+  it('filters by category from the filter dropdown', async () => {
     const mock = mockSite({ PublicWorks: worksPage() });
     renderAt('/work');
 
     await screen.findByText('Sample Road Project');
 
-    const chips = screen.getByRole('group', { name: /category/i });
-    await userEvent.click(within(chips).getByRole('button', { name: 'Infrastructure' }));
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: /category/i }),
+      'INFRASTRUCTURE',
+    );
 
     await waitFor(() => {
       expect(mock.variablesFor('PublicWorks')).toMatchObject({

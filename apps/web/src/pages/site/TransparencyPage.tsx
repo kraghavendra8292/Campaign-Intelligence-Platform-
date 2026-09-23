@@ -10,6 +10,7 @@ import {
 } from '../../features/work/workQueries';
 import { VerificationBadge, WorkStatusBadge } from '../../components/work/VerificationBadge';
 import { QueryBoundary } from '../../components/site/states';
+import { SiteBackBar } from '../../components/site/SiteBackBar';
 import { formatDate } from '../../lib/format';
 
 /**
@@ -43,6 +44,7 @@ export function TransparencyPage() {
   return (
     <div className="section">
       <div className="section__inner">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <header className="section__header">
           <h1>{t('transparency.title')}</h1>
           <p className="section__subtitle">{t('transparency.subtitle')}</p>

@@ -12,6 +12,7 @@ import {
   PublicTimeline,
   PublicUpdates,
 } from '../../components/communication/PublicIssueSections';
+import { SiteBackBar } from '../../components/site/SiteBackBar';
 import { useSite } from '../../features/site/SiteContext';
 import { useSeo } from '../../features/site/useSeo';
 import { formatDate } from '../../lib/format';
@@ -104,6 +105,7 @@ export function TrackIssuePage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <header className="section-header">
           <div>
             <h1 className="section-header__title">{t('track.title')}</h1>

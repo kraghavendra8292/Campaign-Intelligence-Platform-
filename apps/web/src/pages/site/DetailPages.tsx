@@ -17,6 +17,7 @@ import type {
   ProjectDetail,
 } from '../../features/site/types';
 import { SiteImage } from '../../components/site/SiteImage';
+import { SiteBackBar } from '../../components/site/SiteBackBar';
 import { CategoryBadge, StatusBadge, VerifiedBadge } from '../../components/site/StatusBadge';
 import { QueryBoundary, RichText } from '../../components/site/states';
 import { formatCount, formatCurrency, formatDate, formatDateRange } from '../../lib/format';
@@ -42,14 +43,6 @@ export function Fact({ label, value }: { label: string; value: string | null | u
         {value ?? <span className="fact__absent">{t('label.notStated')}</span>}
       </dd>
     </div>
-  );
-}
-
-function Breadcrumb({ to, label }: { to: string; label: string }) {
-  return (
-    <nav className="breadcrumb" aria-label="Breadcrumb">
-      <Link to={to}>← {label}</Link>
-    </nav>
   );
 }
 
@@ -79,7 +72,12 @@ export function ProjectDetailPage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
-        <Breadcrumb to="/work" label={t('section.work')} />
+        <SiteBackBar
+          fallbackTo="/work"
+          backLabel={t('work.back')}
+          listTo="/work"
+          listLabel={t('section.work')}
+        />
 
         <QueryBoundary state={state} refetch={refetch} loadingVariant="detail">
           {(data) => {
@@ -225,7 +223,12 @@ export function AchievementDetailPage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
-        <Breadcrumb to="/achievements" label={t('section.achievements')} />
+        <SiteBackBar
+          fallbackTo="/achievements"
+          backLabel={t('achievement.back')}
+          listTo="/achievements"
+          listLabel={t('section.achievements')}
+        />
 
         <QueryBoundary state={state} refetch={refetch} loadingVariant="detail">
           {(data) => {
@@ -342,7 +345,12 @@ export function NewsDetailPage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
-        <Breadcrumb to="/news" label={t('section.news')} />
+        <SiteBackBar
+          fallbackTo="/news"
+          backLabel={t('news.back')}
+          listTo="/news"
+          listLabel={t('section.news')}
+        />
 
         <QueryBoundary state={state} refetch={refetch} loadingVariant="detail">
           {(data) => {
@@ -411,7 +419,12 @@ export function EventDetailPage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
-        <Breadcrumb to="/events" label={t('section.events')} />
+        <SiteBackBar
+          fallbackTo="/events"
+          backLabel={t('event.back')}
+          listTo="/events"
+          listLabel={t('section.events')}
+        />
 
         <QueryBoundary state={state} refetch={refetch} loadingVariant="detail">
           {(data) => {

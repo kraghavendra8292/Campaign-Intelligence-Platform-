@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@rk/ui';
+import { Button, Icon, type IconName } from '@rk/ui';
 import { useSite } from '../../features/site/SiteContext';
 import { usePublicQuery } from '../../features/site/usePublicQuery';
 import { useSeo } from '../../features/site/useSeo';
 import { HOMEPAGE_QUERY } from '../../features/site/queries';
-import type { HomepageData } from '../../features/site/types';
+import type { HomepageData, ProjectCard } from '../../features/site/types';
 import { SiteImage } from '../../components/site/SiteImage';
 import { CampaignHeroCarousel } from '../../components/site/CampaignHeroCarousel';
 import { buildHeroSlides } from '../../features/site/heroSlides';
@@ -18,11 +18,46 @@ import { WorkTileCard } from '../../components/site/WorkTileCard';
 import { HomeOpinionSection } from '../../components/site/HomeOpinionSection';
 import { QueryBoundary, SectionHeader, SiteEmptyState } from '../../components/site/states';
 
+const QUICK_ACTIONS = [
+  {
+    to: '/work',
+    labelKey: 'quick.projects' as const,
+    image: '/categories/category-development.webp',
+  },
+  {
+    to: '/achievements',
+    labelKey: 'quick.achievements' as const,
+    image: '/categories/category-achievements.webp',
+  },
+  {
+    to: '/news',
+    labelKey: 'quick.news' as const,
+    image: '/categories/category-news.webp',
+  },
+  {
+    to: '/events',
+    labelKey: 'quick.events' as const,
+    image: '/categories/category-events.webp',
+  },
+  {
+    to: '/feedback',
+    labelKey: 'future.reportIssue' as const,
+    image: '/categories/category-feedback.webp',
+  },
+  {
+    to: '/track',
+    labelKey: 'nav.track' as const,
+    image: '/categories/category-track.webp',
+  },
+] as const;
+
 /**
  * Public homepage — Pro Max card layout.
  *
  * CMS-driven via a single `publicHomepage` query. Sections omit themselves when
  * empty so a new tenant never shows hollow headings.
+ *
+ * Order: Identity → Hero → Works → Feedback → Quick actions → …
  */
 export function SiteHomePage() {
   const { t } = useSite();
@@ -43,10 +78,10 @@ export function SiteHomePage() {
   );
 
   return (
-    <QueryBoundary state={state} refetch={refetch}>
+    <>
+      <QueryBoundary state={state} refetch={refetch}>
       {(result) => {
         const page = result.publicHomepage;
-        const headline = page.vision?.headline ?? page.profile?.fullName ?? page.organization.name;
 
         const heroSlides = buildHeroSlides({
           coverImage: page.profile?.coverImage,
@@ -55,32 +90,27 @@ export function SiteHomePage() {
           fallbackAlt: page.profile?.fullName ?? page.organization.name,
         });
 
-        const projectCount = page.featuredProjects.length;
         const achievementCount = page.featuredAchievements.length;
 
         const heroContent = (
           <div className="hero__content">
-            {page.profile?.designation ? (
-              <p className="hero__eyebrow">{page.profile.designation}</p>
-            ) : null}
+            <p className="hero__tagline">{t('hero.campaignTagline')}</p>
 
             <h1 className="hero__title" id="hero-title">
-              {headline}
+              {t('hero.campaignTitle')}
             </h1>
 
-            {(page.vision?.summary ?? page.profile?.shortBio) ? (
-              <p className="hero__subtitle">{page.vision?.summary ?? page.profile?.shortBio}</p>
-            ) : null}
+            <p className="hero__subtitle">{t('hero.campaignSubtitle')}</p>
 
             <div className="hero__actions">
-              <Link to="/work">
+              <Link to="/feedback">
                 <Button variant="primary" size="lg">
-                  {t('hero.primaryCta')}
+                  {t('opinion.title')}
                 </Button>
               </Link>
-              <Link to="/about">
+              <Link to="/work">
                 <Button variant="secondary" size="lg">
-                  {t('hero.secondaryCta')}
+                  {t('section.work')}
                 </Button>
               </Link>
             </div>
@@ -107,95 +137,27 @@ export function SiteHomePage() {
               </section>
             )}
 
-            <HomeOpinionSection />
-
             {page.featuredProjects.length > 0 ? (
-              <section className="section" aria-labelledby="home-work">
-                <div className="section__inner">
-                  <SectionHeader
-                    id="home-work"
-                    title={t('section.work')}
-                    subtitle={t('section.workSubtitle')}
-                    action={
-                      <Link to="/work">
-                        <Button variant="ghost">{t('section.viewAllWork')}</Button>
-                      </Link>
-                    }
-                  />
-                  <div className="work-tile-grid">
-                    {page.featuredProjects.slice(0, 4).map((project) => (
-                      <WorkTileCard key={project.id} project={project} />
-                    ))}
-                  </div>
-                </div>
-              </section>
+              <HomeWorksBlock
+                projects={page.featuredProjects}
+                achievementCount={achievementCount}
+              />
             ) : null}
+
+            <HomeOpinionSection />
 
             <section className="quick-actions" aria-label={t('quick.title')}>
               <div className="quick-actions__inner">
-                <Link className="quick-action" to="/work">
-                  <span className="quick-action__icon" aria-hidden="true">
-                    🏗️
-                  </span>
-                  <span className="quick-action__label">{t('quick.projects')}</span>
-                </Link>
-                <Link className="quick-action" to="/achievements">
-                  <span className="quick-action__icon" aria-hidden="true">
-                    🏅
-                  </span>
-                  <span className="quick-action__label">{t('quick.achievements')}</span>
-                </Link>
-                <Link className="quick-action" to="/news">
-                  <span className="quick-action__icon" aria-hidden="true">
-                    📰
-                  </span>
-                  <span className="quick-action__label">{t('quick.news')}</span>
-                </Link>
-                <Link className="quick-action" to="/events">
-                  <span className="quick-action__icon" aria-hidden="true">
-                    📅
-                  </span>
-                  <span className="quick-action__label">{t('quick.events')}</span>
-                </Link>
-                <Link className="quick-action" to="/feedback">
-                  <span className="quick-action__icon" aria-hidden="true">
-                    💬
-                  </span>
-                  <span className="quick-action__label">{t('future.feedback')}</span>
-                </Link>
-                <Link className="quick-action" to="/track">
-                  <span className="quick-action__icon" aria-hidden="true">
-                    📍
-                  </span>
-                  <span className="quick-action__label">{t('nav.track')}</span>
-                </Link>
+                {QUICK_ACTIONS.map((action) => (
+                  <Link key={action.to} className="quick-action quick-action--visual" to={action.to}>
+                    <span className="quick-action__media">
+                      <img src={action.image} alt="" loading="lazy" decoding="async" />
+                    </span>
+                    <span className="quick-action__label">{t(action.labelKey)}</span>
+                  </Link>
+                ))}
               </div>
             </section>
-
-            {(projectCount > 0 || achievementCount > 0) ? (
-              <section className="home-stats" aria-label={t('quick.title')}>
-                <div className="home-stats__inner">
-                  {projectCount > 0 ? (
-                    <div className="home-stats__card">
-                      <span className="home-stats__icon" aria-hidden="true">
-                        🏠
-                      </span>
-                      <p className="home-stats__value">{projectCount}+</p>
-                      <p className="home-stats__label">{t('home.stats.projects')}</p>
-                    </div>
-                  ) : null}
-                  {achievementCount > 0 ? (
-                    <div className="home-stats__card">
-                      <span className="home-stats__icon" aria-hidden="true">
-                        👥
-                      </span>
-                      <p className="home-stats__value">{achievementCount}+</p>
-                      <p className="home-stats__label">{t('home.stats.achievements')}</p>
-                    </div>
-                  ) : null}
-                </div>
-              </section>
-            ) : null}
 
             {page.priorities.length > 0 || page.vision ? (
               <section className="section section--tinted" aria-labelledby="home-vision">
@@ -292,5 +254,91 @@ export function SiteHomePage() {
         );
       }}
     </QueryBoundary>
+    </>
   );
+}
+
+const WORK_STAT_ITEMS: Array<{
+  key: 'completed' | 'ongoing' | 'projects' | 'achievements';
+  icon: IconName;
+  labelKey: 'home.stats.completed' | 'home.stats.ongoing' | 'home.stats.projects' | 'home.stats.achievements';
+}> = [
+  { key: 'completed', icon: 'checkCircle', labelKey: 'home.stats.completed' },
+  { key: 'ongoing', icon: 'clock', labelKey: 'home.stats.ongoing' },
+  { key: 'projects', icon: 'building', labelKey: 'home.stats.projects' },
+  { key: 'achievements', icon: 'trophy', labelKey: 'home.stats.achievements' },
+];
+
+function HomeWorksBlock({
+  projects,
+  achievementCount,
+}: {
+  projects: ProjectCard[];
+  achievementCount: number;
+}) {
+  const { t } = useSite();
+  const workStats = summarizeWorkStats(projects);
+  const projectCount = projects.length;
+
+  return (
+    <section className="section section--works" aria-labelledby="home-work">
+      <div className="section__inner">
+        <header className="works-header">
+          <div className="works-header__title-row">
+            <span className="works-header__icon" aria-hidden="true">
+              <Icon name="building" size={1.15} />
+            </span>
+            <h2 className="works-header__title" id="home-work">
+              {t('section.work')}
+            </h2>
+          </div>
+          <Link to="/work" className="works-header__link">
+            {t('section.viewAllWork')}
+            <span aria-hidden="true"> →</span>
+          </Link>
+        </header>
+
+        <div className="work-tile-grid">
+          {projects.slice(0, 4).map((project) => (
+            <WorkTileCard key={project.id} project={project} />
+          ))}
+        </div>
+
+        <div className="works-stats" aria-label={t('section.work')}>
+          {WORK_STAT_ITEMS.map((item) => {
+            const value =
+              item.key === 'completed'
+                ? workStats.completed
+                : item.key === 'ongoing'
+                  ? workStats.ongoing
+                  : item.key === 'projects'
+                    ? projectCount
+                    : achievementCount;
+
+            return (
+              <div key={item.key} className="works-stats__item">
+                <span className={`works-stats__icon works-stats__icon--${item.key}`} aria-hidden="true">
+                  <Icon name={item.icon} size={1.35} />
+                </span>
+                <span className="works-stats__copy">
+                  <span className="works-stats__value">{value}</span>
+                  <span className="works-stats__label">{t(item.labelKey)}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function summarizeWorkStats(projects: ProjectCard[]) {
+  let completed = 0;
+  let ongoing = 0;
+  for (const project of projects) {
+    if (project.projectStatus === 'COMPLETED') completed += 1;
+    else if (project.projectStatus === 'IN_PROGRESS') ongoing += 1;
+  }
+  return { completed, ongoing };
 }

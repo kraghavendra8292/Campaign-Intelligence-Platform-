@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { routes } from '../routes/routes';
@@ -116,8 +116,10 @@ describe('public works listing', () => {
 
     await screen.findByText('Sample Road Project');
 
-    const chips = screen.getByRole('group', { name: /status/i });
-    await userEvent.click(within(chips).getByRole('button', { name: 'Proposed' }));
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: /status/i }),
+      'PROPOSED',
+    );
 
     await waitFor(() => {
       expect(mock.variablesFor('PublicWorks')).toMatchObject({
@@ -131,7 +133,7 @@ describe('public works listing', () => {
     renderAt('/work');
 
     await screen.findByText('Sample Road Project');
-    await userEvent.click(screen.getByRole('checkbox', { name: /verified only/i }));
+    await userEvent.click(screen.getByRole('button', { name: /verified only/i }));
 
     await waitFor(() => {
       expect(mock.variablesFor('PublicWorks')).toMatchObject({

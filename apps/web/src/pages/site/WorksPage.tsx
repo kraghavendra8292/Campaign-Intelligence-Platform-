@@ -1,10 +1,11 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { CONTENT_CATEGORIES, type ContentCategory } from '@rk/types';
-import { Button, Input } from '@rk/ui';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import type { ContentCategory } from '@rk/types';
+import { Button } from '@rk/ui';
 import { useSite } from '../../features/site/SiteContext';
 import { useSeo } from '../../features/site/useSeo';
 import { usePublicQuery } from '../../features/site/usePublicQuery';
+import { graphqlRequest } from '../../features/auth/authClient';
 import {
   PUBLIC_WORK_QUERY,
   PUBLIC_WORKS_QUERY,
@@ -13,6 +14,15 @@ import {
   type PublicWorkStatus,
 } from '../../features/work/workQueries';
 import { QueryBoundary, SectionHeader } from '../../components/site/states';
+import { SiteBackBar } from '../../components/site/SiteBackBar';
+import {
+  CategorySelect,
+  FilterInlineRow,
+  FilterPanel,
+  FilterSearch,
+  FilterSelect,
+  FilterToggle,
+} from '../../components/site/ListingFilters';
 import { Fact } from './DetailPages';
 import { SiteImage } from '../../components/site/SiteImage';
 import { VerificationBadge, WorkStatusBadge } from '../../components/work/VerificationBadge';
@@ -92,56 +102,54 @@ export function WorksPage() {
   return (
     <div className="section">
       <div className="section__inner">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <SectionHeader title={t('section.work')} subtitle={t('section.workSubtitle')} />
 
-        <div className="filter-bar">
-          <div className="filter-bar__chips" role="group" aria-label={t('work.filterStatus')}>
-            {STATUS_FILTERS.map((option) => (
-              <button
-                key={option.value ?? 'all'}
-                type="button"
-                className={`filter-chip${workStatus === option.value ? ' filter-chip--active' : ''}`}
-                aria-pressed={workStatus === option.value}
-                onClick={() => setFilter('status', option.value)}
-              >
-                {t(option.key)}
-              </button>
-            ))}
-          </div>
-
-          <div className="filter-bar__chips" role="group" aria-label={t('filter.category')}>
-            <button
-              type="button"
-              className={`filter-chip${category === null ? ' filter-chip--active' : ''}`}
-              aria-pressed={category === null}
-              onClick={() => setFilter('category', null)}
-            >
-              {t('filter.all')}
-            </button>
-            {CONTENT_CATEGORIES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={`filter-chip${category === item ? ' filter-chip--active' : ''}`}
-                aria-pressed={category === item}
-                onClick={() => setFilter('category', item)}
-              >
-                {t(`category.${item}` as StringKey)}
-              </button>
-            ))}
-          </div>
-
-          <label className="filter-bar__toggle">
-            <input
-              type="checkbox"
-              checked={verifiedOnly}
-              onChange={(event) => setFilter('verified', event.target.checked ? '1' : null)}
+        <FilterPanel
+          compact
+          showClear={Boolean(category || workStatus || verifiedOnly || search || area || yearParam)}
+          onClear={() => {
+            setCursors([]);
+            setParams(new URLSearchParams(), { replace: true });
+          }}
+        >
+          <FilterInlineRow>
+            <FilterSearch
+              id="works-search"
+              compact
+              initial={search}
+              placeholder={t('filter.searchPlaceholder')}
+              ariaLabel={t('work.searchLabel')}
+              onSubmit={(term) => setFilter('q', term || null)}
             />
-            {t('work.verifiedOnly')}
-          </label>
 
-          <WorkSearch initial={search} onSubmit={(term) => setFilter('q', term || null)} />
-        </div>
+            <FilterSelect
+              id="works-status"
+              label={t('filter.statusLabel')}
+              value={workStatus ?? ''}
+              onChange={(next) => setFilter('status', next || null)}
+              options={STATUS_FILTERS.map((option) => ({
+                value: option.value ?? '',
+                label:
+                  option.value === null
+                    ? `${t('filter.statusLabel')}: ${t(option.key)}`
+                    : t(option.key),
+              }))}
+            />
+
+            <CategorySelect
+              value={category}
+              onChange={(next) => setFilter('category', next)}
+            />
+
+            <FilterToggle
+              pressed={verifiedOnly}
+              onClick={() => setFilter('verified', verifiedOnly ? null : '1')}
+            >
+              {t('work.verifiedOnly')}
+            </FilterToggle>
+          </FilterInlineRow>
+        </FilterPanel>
 
         <QueryBoundary
           state={state}
@@ -151,7 +159,7 @@ export function WorksPage() {
         >
           {(data) => (
             <>
-              <p className="filter-bar__count">
+              <p className="filter-panel__count">
                 {t('work.showing')
                   .replace('{shown}', String(data.publicWorks.nodes.length))
                   .replace('{total}', String(data.publicWorks.totalCount))}
@@ -179,34 +187,6 @@ export function WorksPage() {
         </QueryBoundary>
       </div>
     </div>
-  );
-}
-
-function WorkSearch({ initial, onSubmit }: { initial: string; onSubmit: (term: string) => void }) {
-  const { t } = useSite();
-  const [value, setValue] = useState(initial);
-
-  return (
-    <form
-      className="filter-bar__search"
-      role="search"
-      onSubmit={(event: FormEvent) => {
-        event.preventDefault();
-        onSubmit(value.trim());
-      }}
-    >
-      <Input
-        id="works-search"
-        type="search"
-        value={value}
-        placeholder={t('filter.searchPlaceholder')}
-        aria-label={t('work.searchLabel')}
-        onChange={(event) => setValue(event.target.value)}
-      />
-      <Button type="submit" variant="secondary">
-        {t('filter.search')}
-      </Button>
-    </form>
   );
 }
 
@@ -249,214 +229,397 @@ function WorkCard({ work }: { work: PublicWorkCard }) {
 }
 
 /**
- * One work, with its timeline and evidence.
+ * One work, with its timeline and evidence — plus a continuous feed of other
+ * published works loaded as the citizen scrolls, and a clear back control.
  *
  * The order on the page is deliberate: what it is, what state it is in, budget
  * and stretch, before/after photos, explanation, progress, then evidence.
  */
 export function WorkDetailPage() {
-  const { slug = '' } = useParams();
-  const { t } = useSite();
+  const { slug: routeSlug = '' } = useParams();
+  const { t, organizationSlug, locale } = useSite();
+  const navigate = useNavigate();
+
+  // Entry slug is the work the user opened. Scroll-driven URL updates must not
+  // rebind the primary query (that would flash loading and wipe the feed).
+  const [entrySlug, setEntrySlug] = useState(routeSlug);
+  const [queue, setQueue] = useState<string[]>([]);
+  const [feed, setFeed] = useState<PublicWorkDetail[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [feedExhausted, setFeedExhausted] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef(false);
+  const activeSlugRef = useRef(routeSlug);
+  const feedSlugsRef = useRef<Set<string>>(new Set());
 
   const { state, refetch } = usePublicQuery<{ publicWork: PublicWorkDetail }>(
     PUBLIC_WORK_QUERY,
-    { slug },
-    { skip: !slug },
+    { slug: entrySlug },
+    { skip: !entrySlug },
   );
 
-  const work = state.status === 'success' ? state.data.publicWork : null;
+  const visibleWork =
+    feed.find((item) => item.slug === routeSlug) ??
+    feed[0] ??
+    (state.status === 'success' ? state.data.publicWork : null);
 
   useSeo({
-    title: work?.metaTitle ?? work?.title ?? t('section.work'),
-    description: work?.metaDescription ?? work?.shortDescription ?? undefined,
-    path: `/work/${slug}`,
-    image: work?.coverImage ?? undefined,
+    title: visibleWork?.metaTitle ?? visibleWork?.title ?? t('section.work'),
+    description: visibleWork?.metaDescription ?? visibleWork?.shortDescription ?? undefined,
+    path: `/work/${routeSlug || entrySlug}`,
+    image: visibleWork?.coverImage ?? undefined,
   });
 
+  useEffect(() => {
+    feedSlugsRef.current = new Set(feed.map((item) => item.slug));
+  }, [feed]);
+
+  // Deep-link / list navigation to a work that is not already in the feed.
+  useEffect(() => {
+    if (!routeSlug) return;
+    if (routeSlug === entrySlug) return;
+    if (feedSlugsRef.current.has(routeSlug)) {
+      activeSlugRef.current = routeSlug;
+      return;
+    }
+    setEntrySlug(routeSlug);
+    setFeed([]);
+    setQueue([]);
+    setFeedExhausted(false);
+    activeSlugRef.current = routeSlug;
+  }, [routeSlug, entrySlug]);
+
+  // Seed feed from the entry work query.
+  useEffect(() => {
+    if (state.status !== 'success') return;
+    const opened = state.data.publicWork;
+    activeSlugRef.current = opened.slug;
+    setFeed((current) => {
+      if (current.some((item) => item.id === opened.id)) return current;
+      return [opened];
+    });
+  }, [state]);
+
+  // Slug queue for infinite scroll — rebuilt when the entry work changes.
+  useEffect(() => {
+    if (!entrySlug) return;
+    let cancelled = false;
+
+    void graphqlRequest<{
+      publicWorks: { nodes: Array<{ slug: string }> };
+    }>(PUBLIC_WORKS_QUERY, {
+      skipAuthRetry: true,
+      variables: {
+        input: { organizationSlug, locale },
+        filter: { first: 40 },
+      },
+    })
+      .then((data) => {
+        if (cancelled) return;
+        const rest = data.publicWorks.nodes
+          .map((node) => node.slug)
+          .filter((item) => item !== entrySlug);
+        setQueue(rest);
+        setFeedExhausted(rest.length === 0);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setQueue([]);
+          setFeedExhausted(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entrySlug, organizationSlug, locale]);
+
+  const loadNext = useCallback(async () => {
+    if (loadingRef.current || feedExhausted) return;
+    const nextSlug = queue[0];
+    if (!nextSlug) {
+      setFeedExhausted(true);
+      return;
+    }
+
+    loadingRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      const data = await graphqlRequest<{ publicWork: PublicWorkDetail }>(PUBLIC_WORK_QUERY, {
+        skipAuthRetry: true,
+        variables: {
+          input: { organizationSlug, locale },
+          slug: nextSlug,
+        },
+      });
+      setFeed((current) =>
+        current.some((item) => item.id === data.publicWork.id)
+          ? current
+          : [...current, data.publicWork],
+      );
+      setQueue((current) => {
+        const remaining = current.slice(1);
+        if (remaining.length === 0) setFeedExhausted(true);
+        return remaining;
+      });
+    } catch {
+      setQueue((current) => {
+        const remaining = current.slice(1);
+        if (remaining.length === 0) setFeedExhausted(true);
+        return remaining;
+      });
+    } finally {
+      loadingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [feedExhausted, queue, organizationSlug, locale]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || typeof IntersectionObserver !== 'function') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) void loadNext();
+      },
+      { rootMargin: '320px 0px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [loadNext, feed.length]);
+
+  // Keep the address bar in sync with the work in view (shareable URL).
+  useEffect(() => {
+    if (feed.length === 0 || typeof IntersectionObserver !== 'function') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        const nextSlug = visible?.target.getAttribute('data-work-slug');
+        if (!nextSlug || nextSlug === activeSlugRef.current) return;
+        activeSlugRef.current = nextSlug;
+        navigate(`/work/${nextSlug}`, { replace: true, state: { preserveScroll: true } });
+      },
+      { threshold: [0.45, 0.6, 0.75] },
+    );
+
+    for (const article of document.querySelectorAll<HTMLElement>('[data-work-slug]')) {
+      observer.observe(article);
+    }
+
+    return () => observer.disconnect();
+  }, [feed, navigate]);
+
   return (
-    <div className="section">
+    <div className="section section--work-feed">
       <div className="section__inner section__inner--narrow">
-        <p className="work-detail__back">
-          <Link to="/work">{t('section.work')}</Link>
-        </p>
+        <SiteBackBar
+          fallbackTo="/work"
+          backLabel={t('work.back')}
+          listTo="/work"
+          listLabel={t('section.work')}
+        />
 
         <QueryBoundary state={state} refetch={refetch}>
-          {(data) => {
-            const item = data.publicWork;
-            const before = item.media.filter((entry) => entry.role === 'BEFORE');
-            const after = item.media.filter((entry) => entry.role === 'AFTER');
-            const gallery = item.media.filter((entry) => entry.role === 'GALLERY');
-            const spentAmount = parseSpentAmount(item.descriptionHtml);
-
-            return (
-              <article className="work-detail">
-                <header className="work-detail__header">
-                  <div className="work-card__badges">
-                    <WorkStatusBadge status={item.workStatus} />
-                    <VerificationBadge verification={item.verification} />
-                  </div>
-                  <h1>{item.title}</h1>
-                  {item.shortDescription ? (
-                    <p className="work-detail__summary">{item.shortDescription}</p>
-                  ) : null}
-                </header>
-
-                <SiteImage
-                  image={item.coverImage}
-                  fallbackAlt={item.title}
-                  aspectRatio="16/9"
-                  priority
-                  className="work-detail__cover"
+          {() => (
+            <div className="work-feed">
+              {feed.map((item, index) => (
+                <WorkDetailArticle
+                  key={item.id}
+                  item={item}
+                  headingLevel={index === 0 ? 1 : 2}
                 />
+              ))}
 
-                <dl className="fact-grid fact-grid--budget">
-                  <Fact
-                    label={t('work.cost')}
-                    value={formatCurrency(
-                      item.costAmount === null ? null : Number(item.costAmount),
-                      item.costCurrency,
-                    )}
-                  />
-                  <Fact
-                    label={t('work.spent')}
-                    value={
-                      spentAmount === null
-                        ? formatCurrency(null, item.costCurrency)
-                        : formatCurrency(spentAmount, item.costCurrency)
-                    }
-                  />
-                  <Fact
-                    label={t('work.route')}
-                    value={item.locationName ?? item.area ?? null}
-                  />
-                  <Fact
-                    label={t('work.beneficiaries')}
-                    value={formatCount(item.beneficiaryCount)}
-                  />
-                </dl>
+              <div ref={sentinelRef} className="work-feed__sentinel" aria-hidden="true" />
 
-                <dl className="work-detail__facts">
-                  {item.area ? (
-                    <>
-                      <dt>{t('work.area')}</dt>
-                      <dd>{item.area}</dd>
-                    </>
-                  ) : null}
-                  {item.startDate ? (
-                    <>
-                      <dt>{t('work.started')}</dt>
-                      <dd>{formatDate(item.startDate)}</dd>
-                    </>
-                  ) : null}
-                  {item.completionDate ? (
-                    <>
-                      <dt>{t('work.completed')}</dt>
-                      <dd>{formatDate(item.completionDate)}</dd>
-                    </>
-                  ) : null}
-                  {item.department ? (
-                    <>
-                      <dt>{t('work.department')}</dt>
-                      <dd>{item.department}</dd>
-                    </>
-                  ) : null}
-                  {item.agency ? (
-                    <>
-                      <dt>{t('work.agency')}</dt>
-                      <dd>{item.agency}</dd>
-                    </>
-                  ) : null}
-                  {item.verifiedAt ? (
-                    <>
-                      <dt>{t('work.verifiedOn')}</dt>
-                      <dd>{formatDate(item.verifiedAt)}</dd>
-                    </>
-                  ) : null}
-                </dl>
+              {loadingMore ? (
+                <p className="work-feed__status" role="status">
+                  {t('work.loadingMore')}
+                </p>
+              ) : null}
 
-                {before.length > 0 || after.length > 0 ? (
-                  <section className="work-detail__section" aria-labelledby="work-before-after">
-                    <h2 id="work-before-after">{t('work.beforeAfter')}</h2>
-                    <div className="before-after">
-                      {before[0] ? (
-                        <figure>
-                          <SiteImage
-                            image={before[0].image}
-                            fallbackAlt={`${item.title} — ${t('label.before')}`}
-                            aspectRatio="4/3"
-                          />
-                          <figcaption>{before[0].caption ?? t('label.before')}</figcaption>
-                        </figure>
-                      ) : null}
-                      {after[0] ? (
-                        <figure>
-                          <SiteImage
-                            image={after[0].image}
-                            fallbackAlt={`${item.title} — ${t('label.after')}`}
-                            aspectRatio="4/3"
-                          />
-                          <figcaption>{after[0].caption ?? t('label.after')}</figcaption>
-                        </figure>
-                      ) : null}
-                    </div>
-                  </section>
-                ) : null}
-
-                {item.descriptionHtml ? (
-                  <section className="work-detail__section" aria-labelledby="work-explanation">
-                    <h2 id="work-explanation">{t('card.viewDetails')}</h2>
-                    <div
-                      className="rich-text"
-                      dangerouslySetInnerHTML={{ __html: item.descriptionHtml }}
-                    />
-                  </section>
-                ) : null}
-
-                {gallery.length > 0 ? (
-                  <section className="work-detail__section" aria-labelledby="work-gallery">
-                    <h2 id="work-gallery">{t('label.gallery')}</h2>
-                    <div className="photo-grid">
-                      {gallery.map((entry) => (
-                        <figure key={entry.id}>
-                          <SiteImage
-                            image={entry.image}
-                            fallbackAlt={entry.caption ?? item.title}
-                            aspectRatio="4/3"
-                          />
-                          {entry.caption ? <figcaption>{entry.caption}</figcaption> : null}
-                        </figure>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                {item.updates.length > 0 ? (
-                  <section className="work-detail__timeline">
-                    <h2>{t('work.timeline')}</h2>
-                    <ol>
-                      {item.updates.map((update) => (
-                        <li key={update.id}>
-                          <span className="work-detail__timeline-date">
-                            {formatDate(update.occurredOn)}
-                          </span>
-                          <span className="work-detail__timeline-title">{update.title}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </section>
-                ) : null}
-
-                <EvidenceGallery evidence={item.evidence} heading={t('work.evidence')} />
-
-                {item.evidence.length === 0 ? (
-                  <p className="work-detail__no-evidence">{t('work.noEvidence')}</p>
-                ) : null}
-              </article>
-            );
-          }}
+              {feedExhausted && feed.length > 1 ? (
+                <p className="work-feed__status">{t('work.endOfFeed')}</p>
+              ) : null}
+            </div>
+          )}
         </QueryBoundary>
       </div>
     </div>
+  );
+}
+
+function WorkDetailArticle({
+  item,
+  headingLevel,
+}: {
+  item: PublicWorkDetail;
+  headingLevel: 1 | 2;
+}) {
+  const { t } = useSite();
+  const before = item.media.filter((entry) => entry.role === 'BEFORE');
+  const after = item.media.filter((entry) => entry.role === 'AFTER');
+  const gallery = item.media.filter((entry) => entry.role === 'GALLERY');
+  const spentAmount = parseSpentAmount(item.descriptionHtml);
+  const HeadingTag = headingLevel === 1 ? 'h1' : 'h2';
+
+  return (
+    <article className="work-detail" data-work-slug={item.slug} id={`work-${item.slug}`}>
+      <header className="work-detail__header">
+        <div className="work-card__badges">
+          <WorkStatusBadge status={item.workStatus} />
+          <VerificationBadge verification={item.verification} />
+        </div>
+        <HeadingTag className="work-detail__title">{item.title}</HeadingTag>
+        {item.shortDescription ? (
+          <p className="work-detail__summary">{item.shortDescription}</p>
+        ) : null}
+      </header>
+
+      <SiteImage
+        image={item.coverImage}
+        fallbackAlt={item.title}
+        aspectRatio="16/9"
+        priority={headingLevel === 1}
+        className="work-detail__cover"
+      />
+
+      <dl className="fact-grid fact-grid--budget">
+        <Fact
+          label={t('work.cost')}
+          value={formatCurrency(
+            item.costAmount === null ? null : Number(item.costAmount),
+            item.costCurrency,
+          )}
+        />
+        <Fact
+          label={t('work.spent')}
+          value={
+            spentAmount === null
+              ? formatCurrency(null, item.costCurrency)
+              : formatCurrency(spentAmount, item.costCurrency)
+          }
+        />
+        <Fact label={t('work.route')} value={item.locationName ?? item.area ?? null} />
+        <Fact label={t('work.beneficiaries')} value={formatCount(item.beneficiaryCount)} />
+      </dl>
+
+      <dl className="work-detail__facts">
+        {item.area ? (
+          <>
+            <dt>{t('work.area')}</dt>
+            <dd>{item.area}</dd>
+          </>
+        ) : null}
+        {item.startDate ? (
+          <>
+            <dt>{t('work.started')}</dt>
+            <dd>{formatDate(item.startDate)}</dd>
+          </>
+        ) : null}
+        {item.completionDate ? (
+          <>
+            <dt>{t('work.completed')}</dt>
+            <dd>{formatDate(item.completionDate)}</dd>
+          </>
+        ) : null}
+        {item.department ? (
+          <>
+            <dt>{t('work.department')}</dt>
+            <dd>{item.department}</dd>
+          </>
+        ) : null}
+        {item.agency ? (
+          <>
+            <dt>{t('work.agency')}</dt>
+            <dd>{item.agency}</dd>
+          </>
+        ) : null}
+        {item.verifiedAt ? (
+          <>
+            <dt>{t('work.verifiedOn')}</dt>
+            <dd>{formatDate(item.verifiedAt)}</dd>
+          </>
+        ) : null}
+      </dl>
+
+      {before.length > 0 || after.length > 0 ? (
+        <section className="work-detail__section" aria-labelledby={`work-before-after-${item.id}`}>
+          <h2 id={`work-before-after-${item.id}`}>{t('work.beforeAfter')}</h2>
+          <div className="before-after">
+            {before[0] ? (
+              <figure>
+                <SiteImage
+                  image={before[0].image}
+                  fallbackAlt={`${item.title} — ${t('label.before')}`}
+                  aspectRatio="4/3"
+                />
+                <figcaption>{before[0].caption ?? t('label.before')}</figcaption>
+              </figure>
+            ) : null}
+            {after[0] ? (
+              <figure>
+                <SiteImage
+                  image={after[0].image}
+                  fallbackAlt={`${item.title} — ${t('label.after')}`}
+                  aspectRatio="4/3"
+                />
+                <figcaption>{after[0].caption ?? t('label.after')}</figcaption>
+              </figure>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {item.descriptionHtml ? (
+        <section className="work-detail__section" aria-labelledby={`work-explanation-${item.id}`}>
+          <h2 id={`work-explanation-${item.id}`}>{t('card.viewDetails')}</h2>
+          <div className="rich-text" dangerouslySetInnerHTML={{ __html: item.descriptionHtml }} />
+        </section>
+      ) : null}
+
+      {gallery.length > 0 ? (
+        <section className="work-detail__section" aria-labelledby={`work-gallery-${item.id}`}>
+          <h2 id={`work-gallery-${item.id}`}>{t('label.gallery')}</h2>
+          <div className="photo-grid">
+            {gallery.map((entry) => (
+              <figure key={entry.id}>
+                <SiteImage
+                  image={entry.image}
+                  fallbackAlt={entry.caption ?? item.title}
+                  aspectRatio="4/3"
+                />
+                {entry.caption ? <figcaption>{entry.caption}</figcaption> : null}
+              </figure>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {item.updates.length > 0 ? (
+        <section className="work-detail__timeline">
+          <h2>{t('work.timeline')}</h2>
+          <ol>
+            {item.updates.map((update) => (
+              <li key={update.id}>
+                <span className="work-detail__timeline-date">{formatDate(update.occurredOn)}</span>
+                <span className="work-detail__timeline-title">{update.title}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
+      <EvidenceGallery evidence={item.evidence} heading={t('work.evidence')} />
+
+      {item.evidence.length === 0 ? (
+        <p className="work-detail__no-evidence">{t('work.noEvidence')}</p>
+      ) : null}
+    </article>
   );
 }
 
@@ -472,3 +635,4 @@ function parseSpentAmount(descriptionHtml: string | null): number | null {
   const value = Number(match[1]);
   return Number.isFinite(value) ? value : null;
 }
+

@@ -11,7 +11,223 @@
  */
 
 /* --------------------------------------------------------------------------
- * Public form
+ * Public report-issue form (compact)
+ * ----------------------------------------------------------------------- */
+.section--report {
+  padding-top: var(--spacing-3);
+  padding-bottom: var(--spacing-8);
+}
+
+.report-hero {
+  margin: var(--spacing-3) 0 var(--spacing-5);
+}
+
+.report-hero__eyebrow {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.report-hero__title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: 1.2;
+}
+
+.report-hero__subtitle {
+  margin: var(--spacing-2) 0 0;
+  max-width: 42ch;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 0.04));
+}
+
+.report-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.report-field__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.report-field__req {
+  color: var(--color-primary);
+}
+
+.report-field__hint {
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.report-field__control {
+  display: block;
+  margin-top: var(--spacing-1);
+}
+
+.report-form__textarea {
+  min-height: 6.5rem;
+}
+
+.report-location {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.report-location__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.report-location__btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.report-location__btn:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--shadow-focus);
+}
+
+.report-location__link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--color-error);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.report-upload {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-1);
+  min-height: 5.5rem;
+  padding: var(--spacing-4);
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.report-upload:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.report-upload:focus-within {
+  outline: 2px solid transparent;
+  box-shadow: var(--shadow-focus);
+}
+
+.report-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.report-upload__icon {
+  color: var(--color-primary);
+}
+
+.report-upload__text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.report-form__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-1);
+}
+
+.report-form__actions > button,
+.report-form__actions .rk-button {
+  width: 100%;
+}
+
+.report-form__note {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 640px) {
+  .section--report {
+    padding-top: var(--spacing-4);
+  }
+
+  .report-hero__title {
+    font-size: var(--font-size-3xl);
+  }
+
+  .report-form {
+    padding: var(--spacing-5);
+    gap: var(--spacing-5);
+  }
+}
+
+@media (max-width: 600px) {
+  .report-form__actions {
+    position: sticky;
+    bottom: var(--spacing-3);
+    z-index: 2;
+    padding-top: var(--spacing-2);
+    background: linear-gradient(to top, var(--color-surface) 70%, transparent);
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Legacy public form pieces (still used by done state / attachments)
  * ----------------------------------------------------------------------- */
 .feedback-form {
   display: flex;

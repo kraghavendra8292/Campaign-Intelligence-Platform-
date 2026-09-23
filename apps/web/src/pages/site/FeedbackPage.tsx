@@ -1,9 +1,8 @@
-import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ISSUE_LIMITS, SUBMISSION_TYPES, type SubmissionType } from '@rk/types';
-import { Button } from '@rk/ui';
+import { ISSUE_LIMITS } from '@rk/types';
+import { Button, Icon } from '@rk/ui';
 import { useSite } from '../../features/site/SiteContext';
-import { usePublicQuery } from '../../features/site/usePublicQuery';
 import { useSeo } from '../../features/site/useSeo';
 import {
   readQrReferrer,
@@ -11,75 +10,29 @@ import {
   useIssueSubmission,
   type UploadedAttachment,
 } from '../../features/site/useIssueSubmission';
-import type { StringKey } from '../../i18n/strings';
+import { SiteBackBar } from '../../components/site/SiteBackBar';
 
 /**
- * The public feedback and issue form.
+ * Public “Report an issue” form — issue only, four blocks.
  *
- * Designed for the person it is actually for: somebody on a phone, standing
- * next to a broken drain, who has never used this site before and has no
- * account. Every decision below follows from that.
- *
- *  - SEVEN SHORT SECTIONS rather than one long form, so the page never looks
- *    like paperwork.
- *  - ONLY FOUR REQUIRED FIELDS. Location, photos and contact details are all
- *    optional, and the form says so rather than making people guess.
- *  - ANONYMOUS BY DEFAULT. Giving a name is an opt-in, and the consent tick
- *    appears only once there is something to consent to.
- *  - ENTERED DATA SURVIVES A VALIDATION ERROR. Nothing is cleared; the server's
- *    message is shown beside the field that caused it.
- *  - GEOLOCATION IS NEVER REQUESTED AUTOMATICALLY. The browser prompt appears
- *    only after a deliberate tap on "Use my current location".
+ * Built for someone on a phone next to the problem: short title, explanation,
+ * where it is, optional photos. No account, anonymous by default, no type picker.
  */
 
-const CATEGORIES_QUERY = /* GraphQL */ `
-  query PublicIssueCategories($input: PublicSiteInput) {
-    publicIssueCategories(input: $input) {
-      key
-      label
-    }
-  }
-`;
-
-interface CategoryOption {
-  key: string;
-  label: string;
-}
-
 interface FormState {
-  type: SubmissionType;
   title: string;
   description: string;
-  categoryKey: string;
-  ward: string;
-  locality: string;
-  area: string;
   addressDescription: string;
   latitude: number | null;
   longitude: number | null;
-  isAnonymous: boolean;
-  contactName: string;
-  contactPhone: string;
-  contactEmail: string;
-  consentGiven: boolean;
 }
 
 const EMPTY: FormState = {
-  type: 'ISSUE',
   title: '',
   description: '',
-  categoryKey: '',
-  ward: '',
-  locality: '',
-  area: '',
   addressDescription: '',
   latitude: null,
   longitude: null,
-  isAnonymous: true,
-  contactName: '',
-  contactPhone: '',
-  contactEmail: '',
-  consentGiven: false,
 };
 
 export function FeedbackPage() {
@@ -99,20 +52,10 @@ export function FeedbackPage() {
     path: '/feedback',
   });
 
-  const { state: categoryState } = usePublicQuery<{
-    publicIssueCategories: CategoryOption[];
-  }>(CATEGORIES_QUERY);
-
-  const categories = useMemo(
-    () => (categoryState.status === 'success' ? categoryState.data.publicIssueCategories : []),
-    [categoryState],
-  );
-
   function set<K extends keyof FormState>(key: K, value: FormState[K]): void {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  /** The server's field-specific message, shown beside the input it concerns. */
   const fieldError = (field: string): string | null =>
     submitState.status === 'error' && submitState.field === field ? submitState.message : null;
 
@@ -128,8 +71,6 @@ export function FeedbackPage() {
         setAttachments((current) => [...current, uploaded]);
       }
     } catch (error) {
-      // A failed upload must never block the submission: the words are worth
-      // more than the picture.
       setUploadError(error instanceof Error ? error.message : t('feedback.uploadFailed'));
     } finally {
       setUploading(false);
@@ -137,13 +78,6 @@ export function FeedbackPage() {
     }
   }
 
-  /**
-   * Reads the device location, and only when asked.
-   *
-   * `getCurrentPosition` is called from this click handler and nowhere else, so
-   * the browser's permission prompt is always the direct result of a deliberate
-   * tap. Nothing is watched, and nothing is read on page load.
-   */
   function useCurrentLocation(): void {
     setLocationError(null);
 
@@ -167,49 +101,42 @@ export function FeedbackPage() {
 
     await submit({
       organizationSlug,
-      type: form.type,
+      type: 'ISSUE',
       title: form.title,
       description: form.description,
-      categoryKey: form.categoryKey || null,
-      ward: form.ward || null,
-      locality: form.locality || null,
-      area: form.area || null,
+      categoryKey: null,
+      ward: null,
+      locality: null,
+      area: null,
       addressDescription: form.addressDescription || null,
       latitude: form.latitude,
       longitude: form.longitude,
-      isAnonymous: form.isAnonymous,
-      contactName: form.isAnonymous ? null : form.contactName || null,
-      contactPhone: form.isAnonymous ? null : form.contactPhone || null,
-      contactEmail: form.isAnonymous ? null : form.contactEmail || null,
-      consentGiven: form.consentGiven,
-      // Attribution only, and only if this visitor arrived through a printed
-      // code. It says which poster worked, never anything about them.
+      isAnonymous: true,
+      contactName: null,
+      contactPhone: null,
+      contactEmail: null,
+      consentGiven: false,
       qrCode: readQrReferrer(),
       attachments: attachments.map((file) => ({ id: file.id, claimToken: file.claimToken })),
     });
   }
 
-  // --- Confirmation --------------------------------------------------------
   if (submitState.status === 'done') {
     const receipt = submitState.receipt;
 
     return (
-      <div className="section">
+      <div className="section section--report">
         <div className="section__inner section__inner--narrow">
+          <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
           <div className="feedback-done" role="status">
             <span className="feedback-done__mark" aria-hidden="true">
               ✓
             </span>
             <h1 className="feedback-done__title">{t('feedback.done.title')}</h1>
-
             <p className="feedback-done__label">{t('feedback.done.reference')}</p>
             <p className="feedback-done__reference">{receipt.referenceNumber}</p>
             <p className="feedback-done__save">{t('feedback.done.save')}</p>
-
-            <p className="feedback-done__note">
-              {receipt.contactProvided ? t('feedback.done.contact') : t('feedback.done.anonymous')}
-            </p>
-
+            <p className="feedback-done__note">{t('feedback.done.anonymous')}</p>
             <div className="feedback-done__actions">
               <Link to="/track">
                 <Button variant="primary">{t('feedback.done.track')}</Button>
@@ -236,212 +163,150 @@ export function FeedbackPage() {
     submitState.status === 'error' && submitState.field === null ? submitState.message : null;
 
   return (
-    <div className="section">
+    <div className="section section--report">
       <div className="section__inner section__inner--narrow">
-        <header className="section-header">
-          <div>
-            <h1 className="section-header__title">{t('feedback.title')}</h1>
-            <p className="section-header__subtitle">{t('feedback.intro')}</p>
-          </div>
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
+
+        <header className="report-hero">
+          <p className="report-hero__eyebrow">{t('feedback.type.ISSUE')}</p>
+          <h1 className="report-hero__title">{t('feedback.title')}</h1>
+          <p className="report-hero__subtitle">{t('feedback.intro')}</p>
         </header>
 
-        <form className="feedback-form" onSubmit={handleSubmit} noValidate>
+        <form className="report-form" onSubmit={handleSubmit} noValidate>
           {generalError ? (
             <p className="feedback-form__error" role="alert">
               {generalError}
             </p>
           ) : null}
 
-          {/* --- 1. Type ------------------------------------------------- */}
-          <fieldset className="feedback-section">
-            <legend className="feedback-section__legend">{t('feedback.stepType')}</legend>
-            <div className="feedback-types">
-              {SUBMISSION_TYPES.map((type) => (
-                <label
-                  key={type}
-                  className={`feedback-type${form.type === type ? ' feedback-type--active' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="type"
-                    value={type}
-                    checked={form.type === type}
-                    onChange={() => set('type', type)}
-                  />
-                  <span className="feedback-type__label">
-                    {t(`feedback.type.${type}` as StringKey)}
-                  </span>
-                  <span className="feedback-type__hint">
-                    {t(`feedback.type.${type}.hint` as StringKey)}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {/* --- 2. Details ---------------------------------------------- */}
-          <fieldset className="feedback-section">
-            <legend className="feedback-section__legend">{t('feedback.stepDetails')}</legend>
-
-            <label className="feedback-field">
-              <span className="feedback-field__label">
-                {t('feedback.field.title')} <span aria-hidden="true">*</span>
+          <label className="report-field" htmlFor="report-title">
+            <span className="report-field__label">
+              {t('feedback.field.title')} <span className="report-field__req" aria-hidden="true">*</span>
+            </span>
+            <span className="report-field__hint" id="report-title-hint">
+              {t('feedback.field.titleHint')}
+            </span>
+            <input
+              id="report-title"
+              className="rk-input"
+              type="text"
+              required
+              maxLength={ISSUE_LIMITS.titleMax}
+              value={form.title}
+              aria-describedby="report-title-hint"
+              aria-invalid={fieldError('title') !== null}
+              onChange={(event) => set('title', event.target.value)}
+            />
+            {fieldError('title') ? (
+              <span className="feedback-field__error" role="alert">
+                {fieldError('title')}
               </span>
-              <span className="feedback-field__hint">{t('feedback.field.titleHint')}</span>
-              <input
-                className="rk-input"
-                type="text"
-                required
-                maxLength={ISSUE_LIMITS.titleMax}
-                value={form.title}
-                aria-invalid={fieldError('title') !== null}
-                onChange={(event) => set('title', event.target.value)}
-              />
-              {fieldError('title') ? (
-                <span className="feedback-field__error" role="alert">
-                  {fieldError('title')}
-                </span>
-              ) : null}
-            </label>
+            ) : null}
+          </label>
 
-            <label className="feedback-field">
-              <span className="feedback-field__label">
-                {t('feedback.field.description')} <span aria-hidden="true">*</span>
+          <label className="report-field" htmlFor="report-explanation">
+            <span className="report-field__label">
+              {t('feedback.field.description')}{' '}
+              <span className="report-field__req" aria-hidden="true">*</span>
+            </span>
+            <span className="report-field__hint" id="report-explanation-hint">
+              {t('feedback.field.descriptionHint')}
+            </span>
+            <textarea
+              id="report-explanation"
+              className="rk-textarea report-form__textarea"
+              rows={4}
+              required
+              maxLength={ISSUE_LIMITS.descriptionMax}
+              value={form.description}
+              aria-describedby="report-explanation-hint"
+              aria-invalid={fieldError('description') !== null}
+              onChange={(event) => set('description', event.target.value)}
+            />
+            {fieldError('description') ? (
+              <span className="feedback-field__error" role="alert">
+                {fieldError('description')}
               </span>
-              <span className="feedback-field__hint">{t('feedback.field.descriptionHint')}</span>
-              <textarea
-                className="rk-textarea"
-                rows={6}
-                required
-                maxLength={ISSUE_LIMITS.descriptionMax}
-                value={form.description}
-                aria-invalid={fieldError('description') !== null}
-                onChange={(event) => set('description', event.target.value)}
-              />
-              {fieldError('description') ? (
-                <span className="feedback-field__error" role="alert">
-                  {fieldError('description')}
-                </span>
-              ) : null}
+            ) : null}
+          </label>
+
+          <div className="report-field">
+            <label className="report-field__label" htmlFor="report-where">
+              {t('feedback.stepLocation')}
             </label>
-
-            <label className="feedback-field">
-              <span className="feedback-field__label">{t('feedback.field.category')}</span>
-              <span className="feedback-field__hint">{t('feedback.field.categoryHint')}</span>
-              <select
-                className="rk-select__control"
-                value={form.categoryKey}
-                onChange={(event) => set('categoryKey', event.target.value)}
-              >
-                <option value="">—</option>
-                {categories.map((category) => (
-                  <option key={category.key} value={category.key}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-              {fieldError('categoryKey') ? (
-                <span className="feedback-field__error" role="alert">
-                  {fieldError('categoryKey')}
-                </span>
-              ) : null}
-            </label>
-          </fieldset>
-
-          {/* --- 3. Location --------------------------------------------- */}
-          <fieldset className="feedback-section">
-            <legend className="feedback-section__legend">{t('feedback.stepLocation')}</legend>
-            <p className="feedback-section__note">{t('feedback.location.optional')}</p>
-
-            <div className="feedback-grid">
-              <label className="feedback-field">
-                <span className="feedback-field__label">{t('feedback.field.ward')}</span>
-                <input
-                  className="rk-input"
-                  type="text"
-                  value={form.ward}
-                  onChange={(event) => set('ward', event.target.value)}
-                />
-              </label>
-
-              <label className="feedback-field">
-                <span className="feedback-field__label">{t('feedback.field.locality')}</span>
-                <input
-                  className="rk-input"
-                  type="text"
-                  value={form.locality}
-                  onChange={(event) => set('locality', event.target.value)}
-                />
-              </label>
-            </div>
-
-            <label className="feedback-field">
-              <span className="feedback-field__label">{t('feedback.field.address')}</span>
-              <span className="feedback-field__hint">{t('feedback.field.addressHint')}</span>
-              <input
-                className="rk-input"
-                type="text"
-                value={form.addressDescription}
-                onChange={(event) => set('addressDescription', event.target.value)}
-              />
-            </label>
-
-            <div className="feedback-location">
+            <span className="report-field__hint" id="report-where-hint">
+              {t('feedback.location.optional')}
+            </span>
+            <input
+              id="report-where"
+              className="rk-input"
+              type="text"
+              placeholder={t('feedback.field.addressHint')}
+              value={form.addressDescription}
+              aria-describedby="report-where-hint"
+              onChange={(event) => set('addressDescription', event.target.value)}
+            />
+            <div className="report-location">
               {form.latitude !== null && form.longitude !== null ? (
                 <>
                   <span className="feedback-location__added">{t('feedback.location.added')}</span>
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
+                    className="report-location__link"
                     onClick={() => {
                       set('latitude', null);
                       set('longitude', null);
                     }}
                   >
                     {t('feedback.location.remove')}
-                  </Button>
+                  </button>
                 </>
               ) : (
-                <Button type="button" variant="secondary" size="sm" onClick={useCurrentLocation}>
+                <button type="button" className="report-location__btn" onClick={useCurrentLocation}>
+                  <Icon name="target" size={1} />
                   {t('feedback.location.use')}
-                </Button>
+                </button>
               )}
             </div>
-
             {locationError ? (
               <p className="feedback-field__error" role="alert">
                 {locationError}
               </p>
             ) : null}
+          </div>
 
-            <p className="feedback-section__note">{t('feedback.location.note')}</p>
-          </fieldset>
-
-          {/* --- 4. Photo ------------------------------------------------ */}
-          <fieldset className="feedback-section">
-            <legend className="feedback-section__legend">{t('feedback.stepPhoto')}</legend>
-
-            <label className="feedback-field">
-              <span className="feedback-field__label">{t('feedback.field.photo')}</span>
-              <span className="feedback-field__hint">{t('feedback.field.photoHint')}</span>
+          <div className="report-field">
+            <span className="report-field__label" id="report-photos-label">
+              {t('feedback.stepPhoto')}
+            </span>
+            <span className="report-field__hint" id="report-photos-hint">
+              {t('feedback.field.photoHint')}
+            </span>
+            <label className="report-upload" htmlFor="report-photos">
               <input
+                id="report-photos"
                 ref={fileInput}
-                className="rk-input"
                 type="file"
                 accept="image/jpeg,image/png,image/webp,application/pdf"
                 multiple
                 disabled={uploading || attachments.length >= ISSUE_LIMITS.maxAttachments}
+                aria-labelledby="report-photos-label"
+                aria-describedby="report-photos-hint"
                 onChange={(event) => void handleFiles(event.target.files)}
               />
+              <span className="report-upload__icon" aria-hidden="true">
+                <Icon name="images" size={1.25} />
+              </span>
+              <span className="report-upload__text">
+                {uploading ? t('feedback.submitting') : t('feedback.field.photo')}
+              </span>
             </label>
-
             {uploadError ? (
               <p className="feedback-field__error" role="alert">
                 {uploadError}
               </p>
             ) : null}
-
             {attachments.length > 0 ? (
               <ul className="feedback-attachments">
                 {attachments.map((file) => (
@@ -460,109 +325,13 @@ export function FeedbackPage() {
                 ))}
               </ul>
             ) : null}
-          </fieldset>
+          </div>
 
-          {/* --- 5 & 6. Contact and consent ------------------------------ */}
-          <fieldset className="feedback-section">
-            <legend className="feedback-section__legend">{t('feedback.stepContact')}</legend>
-
-            <label className="feedback-checkbox">
-              <input
-                type="checkbox"
-                checked={form.isAnonymous}
-                onChange={(event) => {
-                  set('isAnonymous', event.target.checked);
-                  // Consent only means something while there are details to
-                  // consent to, so it resets with the choice.
-                  if (event.target.checked) set('consentGiven', false);
-                }}
-              />
-              <span>
-                <span className="feedback-checkbox__label">{t('feedback.anonymous.label')}</span>
-                <span className="feedback-field__hint">{t('feedback.anonymous.hint')}</span>
-              </span>
-            </label>
-
-            {form.isAnonymous ? null : (
-              <>
-                <p className="feedback-section__note">{t('feedback.contact.hint')}</p>
-
-                <label className="feedback-field">
-                  <span className="feedback-field__label">{t('feedback.field.name')}</span>
-                  <input
-                    className="rk-input"
-                    type="text"
-                    autoComplete="name"
-                    value={form.contactName}
-                    onChange={(event) => set('contactName', event.target.value)}
-                  />
-                </label>
-
-                <div className="feedback-grid">
-                  <label className="feedback-field">
-                    <span className="feedback-field__label">{t('feedback.field.phone')}</span>
-                    <input
-                      className="rk-input"
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      value={form.contactPhone}
-                      aria-invalid={fieldError('contactPhone') !== null}
-                      onChange={(event) => set('contactPhone', event.target.value)}
-                    />
-                    {fieldError('contactPhone') ? (
-                      <span className="feedback-field__error" role="alert">
-                        {fieldError('contactPhone')}
-                      </span>
-                    ) : null}
-                  </label>
-
-                  <label className="feedback-field">
-                    <span className="feedback-field__label">{t('feedback.field.email')}</span>
-                    <input
-                      className="rk-input"
-                      type="email"
-                      inputMode="email"
-                      autoComplete="email"
-                      value={form.contactEmail}
-                      aria-invalid={fieldError('contactEmail') !== null}
-                      onChange={(event) => set('contactEmail', event.target.value)}
-                    />
-                    {fieldError('contactEmail') ? (
-                      <span className="feedback-field__error" role="alert">
-                        {fieldError('contactEmail')}
-                      </span>
-                    ) : null}
-                  </label>
-                </div>
-
-                <label className="feedback-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={form.consentGiven}
-                    aria-invalid={fieldError('consentGiven') !== null}
-                    onChange={(event) => set('consentGiven', event.target.checked)}
-                  />
-                  <span>
-                    <span className="feedback-checkbox__label">{t('feedback.consent.label')}</span>
-                    <span className="feedback-field__hint">{t('feedback.consent.note')}</span>
-                  </span>
-                </label>
-
-                {fieldError('consentGiven') ? (
-                  <p className="feedback-field__error" role="alert">
-                    {fieldError('consentGiven')}
-                  </p>
-                ) : null}
-              </>
-            )}
-          </fieldset>
-
-          {/* --- 7. Submit ------------------------------------------------ */}
-          <div className="feedback-form__actions">
+          <div className="report-form__actions">
             <Button type="submit" variant="primary" size="lg" isLoading={submitting}>
               {submitting ? t('feedback.submitting') : t('feedback.submit')}
             </Button>
+            <p className="report-form__note">{t('feedback.formNote')}</p>
           </div>
         </form>
       </div>

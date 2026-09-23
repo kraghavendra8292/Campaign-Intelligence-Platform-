@@ -1,7 +1,6 @@
-import { useCallback, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CONTENT_CATEGORIES, type ContentCategory } from '@rk/types';
-import { Button, Input } from '@rk/ui';
+import type { ContentCategory } from '@rk/types';
 import { useSite } from '../../features/site/SiteContext';
 import { usePublicQuery } from '../../features/site/usePublicQuery';
 import { useSeo } from '../../features/site/useSeo';
@@ -19,18 +18,25 @@ import type {
   ProjectCard as ProjectCardData,
 } from '../../features/site/types';
 import { AchievementCard, EventCard, NewsCard, ProjectCard } from '../../components/site/cards';
+import { SiteBackBar } from '../../components/site/SiteBackBar';
+import {
+  CategoryChips,
+  FilterChip,
+  FilterPanel,
+  FilterSearch,
+  FilterSegment,
+} from '../../components/site/ListingFilters';
 import {
   LoadMore,
   QueryBoundary,
   SectionHeader,
   SiteEmptyState,
 } from '../../components/site/states';
-import type { StringKey } from '../../i18n/strings';
 
 /**
  * Listing pages: work, achievements, news and events.
  *
- * They share one shape - filter bar, responsive card grid, "load more" - so
+ * They share one shape - filter panel, responsive card grid, "load more" - so
  * they share one implementation. The alternative, four near-identical files,
  * drifts: a fix to the empty state or the pagination announcement lands in one
  * and not the others.
@@ -47,70 +53,8 @@ function useCursorPagination() {
   return { cursors, reset, push, pageSize: 12 * (cursors.length + 1) };
 }
 
-function CategoryFilter({
-  value,
-  onChange,
-}: {
-  value: ContentCategory | null;
-  onChange: (next: ContentCategory | null) => void;
-}) {
-  const { t } = useSite();
-
-  return (
-    <div className="filter-bar__chips" role="group" aria-label={t('filter.category')}>
-      <button
-        type="button"
-        className={`filter-chip${value === null ? ' filter-chip--active' : ''}`}
-        aria-pressed={value === null}
-        onClick={() => onChange(null)}
-      >
-        {t('filter.all')}
-      </button>
-      {CONTENT_CATEGORIES.map((category) => (
-        <button
-          key={category}
-          type="button"
-          className={`filter-chip${value === category ? ' filter-chip--active' : ''}`}
-          aria-pressed={value === category}
-          onClick={() => onChange(category)}
-        >
-          {t(`category.${category}` as StringKey)}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function SearchField({ initial, onSubmit }: { initial: string; onSubmit: (term: string) => void }) {
-  const { t } = useSite();
-  const [value, setValue] = useState(initial);
-
-  return (
-    <form
-      className="filter-bar__search"
-      role="search"
-      onSubmit={(event: FormEvent) => {
-        event.preventDefault();
-        onSubmit(value.trim());
-      }}
-    >
-      <Input
-        id="listing-search"
-        type="search"
-        value={value}
-        placeholder={t('filter.searchPlaceholder')}
-        aria-label={t('filter.search')}
-        onChange={(event) => setValue(event.target.value)}
-      />
-      <Button type="submit" variant="secondary">
-        {t('filter.search')}
-      </Button>
-    </form>
-  );
-}
-
 // ---------------------------------------------------------------------------
-// Work
+// Work (legacy Phase 3 listing — routes use WorksPage)
 // ---------------------------------------------------------------------------
 
 export function WorkPage() {
@@ -141,10 +85,26 @@ export function WorkPage() {
   return (
     <div className="section">
       <div className="section__inner">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <SectionHeader title={t('section.work')} subtitle={t('section.workSubtitle')} />
 
-        <div className="filter-bar">
-          <CategoryFilter
+        <FilterPanel
+          showClear={Boolean(category || search)}
+          onClear={() => updateFilter(new URLSearchParams())}
+        >
+          <FilterSearch
+            id="legacy-work-search"
+            initial={search}
+            placeholder={t('filter.searchPlaceholder')}
+            ariaLabel={t('filter.search')}
+            onSubmit={(term) => {
+              const updated = new URLSearchParams(params);
+              if (term) updated.set('q', term);
+              else updated.delete('q');
+              updateFilter(updated);
+            }}
+          />
+          <CategoryChips
             value={category}
             onChange={(next) => {
               const updated = new URLSearchParams(params);
@@ -153,16 +113,7 @@ export function WorkPage() {
               updateFilter(updated);
             }}
           />
-          <SearchField
-            initial={search}
-            onSubmit={(term) => {
-              const updated = new URLSearchParams(params);
-              if (term) updated.set('q', term);
-              else updated.delete('q');
-              updateFilter(updated);
-            }}
-          />
-        </div>
+        </FilterPanel>
 
         <QueryBoundary
           state={state}
@@ -221,13 +172,33 @@ export function AchievementsPage() {
   return (
     <div className="section">
       <div className="section__inner">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <SectionHeader
           title={t('section.achievements')}
           subtitle={t('section.achievementsSubtitle')}
         />
 
-        <div className="filter-bar">
-          <CategoryFilter
+        <FilterPanel
+          showClear={Boolean(category || search)}
+          onClear={() => {
+            reset();
+            setParams(new URLSearchParams(), { replace: true });
+          }}
+        >
+          <FilterSearch
+            id="achievements-search"
+            initial={search}
+            placeholder={t('filter.searchPlaceholder')}
+            ariaLabel={t('filter.search')}
+            onSubmit={(term) => {
+              const updated = new URLSearchParams(params);
+              if (term) updated.set('q', term);
+              else updated.delete('q');
+              reset();
+              setParams(updated, { replace: true });
+            }}
+          />
+          <CategoryChips
             value={category}
             onChange={(next) => {
               const updated = new URLSearchParams(params);
@@ -237,17 +208,7 @@ export function AchievementsPage() {
               setParams(updated, { replace: true });
             }}
           />
-          <SearchField
-            initial={search}
-            onSubmit={(term) => {
-              const updated = new URLSearchParams(params);
-              if (term) updated.set('q', term);
-              else updated.delete('q');
-              reset();
-              setParams(updated, { replace: true });
-            }}
-          />
-        </div>
+        </FilterPanel>
 
         <QueryBoundary
           state={state}
@@ -301,11 +262,21 @@ export function NewsPage() {
   return (
     <div className="section">
       <div className="section__inner">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <SectionHeader title={t('section.news')} subtitle={t('section.newsSubtitle')} />
 
-        <div className="filter-bar">
-          <SearchField
+        <FilterPanel
+          showClear={Boolean(search)}
+          onClear={() => {
+            reset();
+            setParams(new URLSearchParams(), { replace: true });
+          }}
+        >
+          <FilterSearch
+            id="news-search"
             initial={search}
+            placeholder={t('filter.searchPlaceholder')}
+            ariaLabel={t('filter.search')}
             onSubmit={(term) => {
               const updated = new URLSearchParams(params);
               if (term) updated.set('q', term);
@@ -314,7 +285,7 @@ export function NewsPage() {
               setParams(updated, { replace: true });
             }}
           />
-        </div>
+        </FilterPanel>
 
         <QueryBoundary
           state={state}
@@ -368,14 +339,19 @@ export function EventsPage() {
   return (
     <div className="section">
       <div className="section__inner">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <SectionHeader title={t('section.events')} subtitle={t('section.eventsSubtitle')} />
 
-        <div className="filter-bar">
-          <div className="filter-bar__chips" role="group" aria-label={t('filter.upcoming')}>
-            <button
-              type="button"
-              className={`filter-chip${upcomingOnly ? ' filter-chip--active' : ''}`}
-              aria-pressed={upcomingOnly}
+        <FilterPanel
+          showClear={!upcomingOnly}
+          onClear={() => {
+            reset();
+            setParams(new URLSearchParams(), { replace: true });
+          }}
+        >
+          <FilterSegment label={t('filter.timingLabel')}>
+            <FilterChip
+              active={upcomingOnly}
               onClick={() => {
                 const updated = new URLSearchParams(params);
                 updated.delete('past');
@@ -384,11 +360,9 @@ export function EventsPage() {
               }}
             >
               {t('status.UPCOMING')}
-            </button>
-            <button
-              type="button"
-              className={`filter-chip${!upcomingOnly ? ' filter-chip--active' : ''}`}
-              aria-pressed={!upcomingOnly}
+            </FilterChip>
+            <FilterChip
+              active={!upcomingOnly}
               onClick={() => {
                 const updated = new URLSearchParams(params);
                 updated.set('past', '1');
@@ -397,9 +371,9 @@ export function EventsPage() {
               }}
             >
               {t('filter.all')}
-            </button>
-          </div>
-        </div>
+            </FilterChip>
+          </FilterSegment>
+        </FilterPanel>
 
         <QueryBoundary
           state={state}

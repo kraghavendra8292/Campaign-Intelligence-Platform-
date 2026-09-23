@@ -25,6 +25,7 @@ import type {
   VisionContent,
 } from '../../features/site/types';
 import { SiteImage } from '../../components/site/SiteImage';
+import { SiteBackBar } from '../../components/site/SiteBackBar';
 import { CategoryBadge } from '../../components/site/StatusBadge';
 import {
   AchievementCard,
@@ -66,6 +67,8 @@ export function AboutPage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
+
         <QueryBoundary
           state={state}
           refetch={refetch}
@@ -166,6 +169,17 @@ export function VisionPage() {
     <QueryBoundary state={state} refetch={refetch}>
       {(data) => (
         <>
+          <div className="section section--back-only">
+            <div className="section__inner">
+              <SiteBackBar
+                fallbackTo="/"
+                backLabel={t('nav.backHome')}
+                listTo="/"
+                listLabel={t('nav.home')}
+              />
+            </div>
+          </div>
+
           {data.publicVision ? (
             <section className="hero hero--compact">
               <div className="hero__inner">
@@ -223,6 +237,7 @@ export function GalleryPage() {
   return (
     <div className="section">
       <div className="section__inner">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <SectionHeader title={t('nav.gallery')} />
 
         <QueryBoundary
@@ -336,6 +351,7 @@ export function ContactPage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <SectionHeader title={t('contact.title')} />
 
         <QueryBoundary state={state} refetch={refetch}>
@@ -477,6 +493,7 @@ export function SearchPage() {
   return (
     <div className="section">
       <div className="section__inner">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <SectionHeader title={t('search.title')} />
 
         <form
@@ -594,6 +611,7 @@ export function PrivacyPage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <h1 className="detail__title">{t('footer.privacy')}</h1>
 
         <div className="rich-text">
@@ -635,6 +653,7 @@ export function TermsPage() {
   return (
     <div className="section">
       <div className="section__inner section__inner--narrow">
+        <SiteBackBar fallbackTo="/" backLabel={t('nav.backHome')} listTo="/" listLabel={t('nav.home')} />
         <h1 className="detail__title">{t('footer.terms')}</h1>
 
         <div className="rich-text">

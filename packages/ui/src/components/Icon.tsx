@@ -44,6 +44,9 @@ export const ICON_NAMES = [
   'sparkles',
   'shieldCheck',
   'contactCard',
+  'checkCircle',
+  'clock',
+  'building',
 ] as const;
 export type IconName = (typeof ICON_NAMES)[number];
 
@@ -84,6 +87,9 @@ const PATHS: Record<IconName, string> = {
     'M12 3.5 19 6.3V12c0 4.3-2.9 7.3-7 8.5-4.1-1.2-7-4.2-7-8.5V6.3zM9 12.2l2.2 2.2 3.8-4',
   contactCard:
     'M4 5.5h16v13H4zM9.5 11.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4M6.5 16c0-1.7 1.3-3 3-3s3 1.3 3 3M15 10.5h3M15 13.5h3',
+  checkCircle: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M8.5 12.2l2.3 2.3 4.7-5',
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5.5l3.5 2',
+  building: 'M4 20h16M6 20V7l6-3 6 3v13M10 10h.01M14 10h.01M10 14h.01M14 14h.01M11 20v-3h2v3',
 };
 
 export interface IconProps {

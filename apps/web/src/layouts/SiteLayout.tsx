@@ -7,6 +7,7 @@ import { usePublicQuery } from '../features/site/usePublicQuery';
 import { SITE_QUERY } from '../features/site/queries';
 import { useQrReferrerCapture } from '../features/site/useIssueSubmission';
 import { MobileNavDrawer } from '../components/site/MobileNavDrawer';
+import { SiteFeedbackPrompt } from '../components/site/SiteFeedbackPrompt';
 import { PRIMARY_NAV_ITEMS } from '../config/siteNav';
 import type { PublicOrganization } from '../features/site/types';
 
@@ -48,8 +49,8 @@ export function SiteLayout() {
    */
   useQrReferrerCapture();
 
-  const { state } = usePublicQuery<{ publicSite: PublicOrganization }>(SITE_QUERY);
-  const organization = state.status === 'success' ? state.data.publicSite : null;
+  // Keep the public site query warm so org-scoped pages share a cached shell response.
+  usePublicQuery<{ publicSite: PublicOrganization }>(SITE_QUERY);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -92,7 +93,18 @@ export function SiteLayout() {
     return () => query.removeEventListener('change', onChange);
   }, [menuOpen]);
 
-  const siteName = organization?.name ?? 'RK Campaign';
+  // New pages should open at the top. Work-detail feed URL sync opts out via
+  // `state.preserveScroll` so scrolling through works does not jump.
+  useEffect(() => {
+    const state = location.state as { preserveScroll?: boolean } | null;
+    if (state?.preserveScroll) return;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [location.pathname, location.key, location.state]);
+
+  const brandLabel = t('home.identity');
+  const brandName = t('home.identityName');
+  const brandRole = t('home.identityRole');
 
   return (
     <div className="site">
@@ -102,11 +114,14 @@ export function SiteLayout() {
 
       <header className="site-header">
         <div className="site-header__inner">
-          <Link to="/" className="site-brand" aria-label={siteName}>
+          <Link to="/" className="site-brand" aria-label={brandLabel}>
             <span className="site-brand__mark" aria-hidden="true">
-              RK
+              <VidhanaSoudhaIcon />
             </span>
-            <span className="site-brand__name">{siteName}</span>
+            <span className="site-brand__text">
+              <span className="site-brand__name">{brandName}</span>
+              <span className="site-brand__role">{brandRole}</span>
+            </span>
           </Link>
 
           <nav className="site-nav site-nav--desktop" aria-label={t('nav.primary')}>
@@ -166,7 +181,7 @@ export function SiteLayout() {
         id={MOBILE_NAV_ID}
         open={menuOpen}
         onClose={closeMenu}
-        siteName={siteName}
+        siteName={brandLabel}
         toggleRef={toggleRef}
       />
 
@@ -174,23 +189,29 @@ export function SiteLayout() {
         <Outlet />
       </main>
 
-      <SiteFooter siteName={siteName} />
+      <SiteFeedbackPrompt />
+
+      <SiteFooter />
     </div>
   );
 }
 
-function SiteFooter({ siteName }: { siteName: string }) {
+function SiteFooter() {
   const { t } = useSite();
   const year = new Date().getFullYear();
+  const brandLabel = t('home.identity');
+  const brandName = t('home.identityName');
+  const brandRole = t('home.identityRole');
 
   return (
     <footer className="site-footer">
       <div className="site-footer__inner">
         <div className="site-footer__brand">
           <span className="site-brand__mark" aria-hidden="true">
-            RK
+            <VidhanaSoudhaIcon />
           </span>
-          <p className="site-footer__name">{siteName}</p>
+          <p className="site-footer__name">{brandName}</p>
+          <p className="site-footer__role">{brandRole}</p>
           <p className="site-footer__note">{t('footer.demoNotice')}</p>
         </div>
 
@@ -213,9 +234,46 @@ function SiteFooter({ siteName }: { siteName: string }) {
 
       <div className="site-footer__bottom">
         <p>
-          © {year} {siteName}. {t('footer.rights')}
+          © {year} {brandLabel}. {t('footer.rights')}
         </p>
       </div>
     </footer>
+  );
+}
+
+/** Simplified Vidhana Soudha silhouette for the site brand mark. */
+function VidhanaSoudhaIcon() {
+  return (
+    <svg
+      className="site-brand__icon"
+      viewBox="0 0 48 48"
+      width="28"
+      height="28"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      focusable="false"
+      aria-hidden="true"
+    >
+      {/* Central dome + finial */}
+      <circle cx="24" cy="8.5" r="1.4" />
+      <path d="M24 5.5c0 0 0-1.5 0-1.5M22.8 10.2c.4-.7 1.2-1.1 2.2-1.1s1.8.4 2.2 1.1c.3.5-.1 1.1-.7 1.1h-3c-.6 0-1-.6-.7-1.1Z" />
+      <path d="M18 12.5h12l1.5 3.5H16.5L18 12.5Z" />
+      {/* Upper attic */}
+      <rect x="14" y="16" width="20" height="3.5" rx="0.6" />
+      {/* Main colonnade body */}
+      <rect x="11" y="20" width="26" height="16" rx="0.8" />
+      {/* Columns */}
+      <rect x="14" y="21.5" width="2.2" height="13" rx="0.4" opacity="0.35" />
+      <rect x="18.6" y="21.5" width="2.2" height="13" rx="0.4" opacity="0.35" />
+      <rect x="23.2" y="21.5" width="2.2" height="13" rx="0.4" opacity="0.35" />
+      <rect x="27.8" y="21.5" width="2.2" height="13" rx="0.4" opacity="0.35" />
+      <rect x="32.4" y="21.5" width="2.2" height="13" rx="0.4" opacity="0.35" />
+      {/* Side wings */}
+      <rect x="5" y="24" width="6" height="12" rx="0.6" />
+      <rect x="37" y="24" width="6" height="12" rx="0.6" />
+      {/* Base plinth */}
+      <rect x="3.5" y="36" width="41" height="3" rx="0.5" />
+      <rect x="2" y="39.5" width="44" height="3" rx="0.6" />
+    </svg>
   );
 }
