@@ -105,12 +105,12 @@ export function SiteHomePage() {
 
             <div className="hero__actions">
               <Link to="/feedback">
-                <Button variant="primary" size="lg">
+                <Button variant="primary" size="md">
                   {t('opinion.title')}
                 </Button>
               </Link>
               <Link to="/work">
-                <Button variant="secondary" size="lg">
+                <Button variant="secondary" size="md">
                   {t('section.work')}
                 </Button>
               </Link>

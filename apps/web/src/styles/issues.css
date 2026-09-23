@@ -33,10 +33,10 @@
 
 .report-hero__title {
   margin: 0;
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-tight);
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .report-hero__subtitle {
@@ -279,7 +279,7 @@
   }
 
   .report-hero__title {
-    font-size: var(--font-size-3xl);
+    font-size: var(--font-size-2xl);
   }
 
   .report-form {
@@ -548,8 +548,8 @@
 }
 
 .feedback-done__title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
 }
 
 .feedback-done__label {
