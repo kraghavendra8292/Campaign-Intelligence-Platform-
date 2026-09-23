@@ -54,12 +54,6 @@ const MANAGER_PERMISSIONS = [
 /** Can see the backlog; cannot see the citizen, the notes or the files. */
 const RESTRICTED_PERMISSIONS = ['ISSUE_READ'];
 
-const CATEGORIES = [
-  { key: 'ROADS', label: 'Roads' },
-  { key: 'WATER', label: 'Water supply' },
-  { key: 'DRAINAGE', label: 'Drainage' },
-];
-
 function issueRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'iss-1',
@@ -174,76 +168,40 @@ function renderAdmin(
 // ---------------------------------------------------------------------------
 
 describe('public feedback form', () => {
-  it('renders every section with only four required fields', async () => {
-    renderPublic('/feedback', {
-      PublicIssueCategories: { publicIssueCategories: CATEGORIES },
-    });
+  it('renders a compact issue-only form with four fields', async () => {
+    renderPublic('/feedback');
 
     expect(
       await screen.findByRole('heading', {
-        name: /Share your feedback or report an issue/i,
+        name: /^Report an issue$/i,
         level: 1,
       }),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByRole('group', { name: /What would you like to share/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /Tell us about it/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /Where is it/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /Add a photo/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /Your contact details/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/What is the issue/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Explanation/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Where$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Photos$/i)).toBeInTheDocument();
 
-    // Location and contact are optional, and the form says so rather than
-    // leaving somebody to guess which fields they can skip.
-    expect(screen.getByText(/All location details are optional/i)).toBeInTheDocument();
-  });
-
-  it('offers all four submission types', async () => {
-    renderPublic('/feedback', {
-      PublicIssueCategories: { publicIssueCategories: CATEGORIES },
-    });
-
-    await screen.findByRole('group', { name: /What would you like to share/i });
-
-    // The accessible name is the label plus its hint run together, so each
-    // type is matched on its opening words rather than exactly.
-    for (const label of [/^Feedback/, /^Report an issue/, /^Suggestion/, /^Complaint/]) {
-      expect(screen.getByRole('radio', { name: label })).toBeInTheDocument();
-    }
-  });
-
-  it('loads categories from the server rather than hard-coding them', async () => {
-    const mock = renderPublic('/feedback', {
-      PublicIssueCategories: { publicIssueCategories: CATEGORIES },
-    });
-
-    expect(await screen.findByRole('option', { name: 'Drainage' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Water supply' })).toBeInTheDocument();
-    expect(mock.operations()).toContain('PublicIssueCategories');
-  });
-
-  it('is anonymous by default and hides the contact fields until asked', async () => {
-    renderPublic('/feedback', { PublicIssueCategories: { publicIssueCategories: CATEGORIES } });
-
-    const anonymous = await screen.findByRole('checkbox', {
-      name: /Submit without giving my details/i,
-    });
-    expect(anonymous).toBeChecked();
-
-    // Nothing to fill in, and nothing to consent to.
+    // No type picker, categories, or contact clutter on this page.
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Phone number/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: /I agree/i })).not.toBeInTheDocument();
-
-    await userEvent.click(anonymous);
-
-    expect(await screen.findByLabelText(/Phone number/i)).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /I agree/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Share a thought about our work/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Optional — add a landmark/i)).toBeInTheDocument();
   });
 
-  it('submits an anonymous report and never sends contact fields', async () => {
+  it('does not offer feedback, suggestion, or complaint types', async () => {
+    renderPublic('/feedback');
+
+    await screen.findByRole('heading', { name: /^Report an issue$/i, level: 1 });
+
+    expect(screen.queryByRole('radio', { name: /^Feedback/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /^Suggestion/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /^Complaint/ })).not.toBeInTheDocument();
+  });
+
+  it('submits an anonymous issue report and never sends contact fields', async () => {
     const mock = renderPublic('/feedback', {
-      PublicIssueCategories: { publicIssueCategories: CATEGORIES },
       SubmitIssue: {
         submitIssue: {
           referenceNumber: 'ISS-2026-7F3K9XQ2',
@@ -254,17 +212,16 @@ describe('public feedback form', () => {
       },
     });
 
-    await screen.findByRole('group', { name: /What would you like to share/i });
+    await screen.findByLabelText(/What is the issue/i);
 
-    await userEvent.type(screen.getByLabelText(/Short title/i), 'Blocked drain');
+    await userEvent.type(screen.getByLabelText(/What is the issue/i), 'Blocked drain');
     await userEvent.type(
-      screen.getByLabelText(/Describe it/i),
+      screen.getByLabelText(/^Explanation/i),
       'The drain behind the market has been blocked for several days.',
     );
-    await userEvent.selectOptions(screen.getByLabelText(/What is this about/i), 'DRAINAGE');
-    await userEvent.type(screen.getByLabelText(/^Ward/i), 'Ward 12');
+    await userEvent.type(screen.getByLabelText(/^Where$/i), 'Near the market');
 
-    await userEvent.click(screen.getByRole('button', { name: /^Send$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Send report/i }));
 
     await waitFor(() => {
       expect(mock.variablesFor('SubmitIssue')).toBeDefined();
@@ -272,8 +229,8 @@ describe('public feedback form', () => {
 
     const input = (mock.variablesFor('SubmitIssue') as { input: Record<string, unknown> }).input;
     expect(input.title).toBe('Blocked drain');
-    expect(input.categoryKey).toBe('DRAINAGE');
-    expect(input.ward).toBe('Ward 12');
+    expect(input.type).toBe('ISSUE');
+    expect(input.addressDescription).toBe('Near the market');
     expect(input.isAnonymous).toBe(true);
     expect(input.contactName).toBeNull();
     expect(input.contactPhone).toBeNull();
@@ -282,7 +239,6 @@ describe('public feedback form', () => {
 
   it('shows the reference number prominently on success', async () => {
     renderPublic('/feedback', {
-      PublicIssueCategories: { publicIssueCategories: CATEGORIES },
       SubmitIssue: {
         submitIssue: {
           referenceNumber: 'ISS-2026-7F3K9XQ2',
@@ -293,37 +249,34 @@ describe('public feedback form', () => {
       },
     });
 
-    await screen.findByRole('group', { name: /What would you like to share/i });
-    await userEvent.type(screen.getByLabelText(/Short title/i), 'Blocked drain');
-    await userEvent.type(screen.getByLabelText(/Describe it/i), 'A long enough description here.');
-    await userEvent.click(screen.getByRole('button', { name: /^Send$/i }));
+    await screen.findByLabelText(/What is the issue/i);
+    await userEvent.type(screen.getByLabelText(/What is the issue/i), 'Blocked drain');
+    await userEvent.type(screen.getByLabelText(/^Explanation/i), 'A long enough description here.');
+    await userEvent.click(screen.getByRole('button', { name: /Send report/i }));
 
     expect(await screen.findByText('ISS-2026-7F3K9XQ2')).toBeInTheDocument();
-    expect(screen.getByText(/Thank you for sharing this/i)).toBeInTheDocument();
+    expect(screen.getByText(/Thank you — your report was received/i)).toBeInTheDocument();
     expect(screen.getByText(/Please save this reference number/i)).toBeInTheDocument();
-    // Anonymous, so the page says the team cannot reply rather than implying
-    // somebody will be in touch.
     expect(screen.getByText(/cannot reply directly/i)).toBeInTheDocument();
   });
 
   it('keeps what the citizen typed when the server rejects a field', async () => {
     renderPublic('/feedback', {
-      PublicIssueCategories: { publicIssueCategories: CATEGORIES },
       SubmitIssue: graphqlError('VALIDATION_ERROR', 'Please add a little more detail.'),
     });
 
-    await screen.findByRole('group', { name: /What would you like to share/i });
+    await screen.findByLabelText(/What is the issue/i);
 
-    await userEvent.type(screen.getByLabelText(/Short title/i), 'A title worth keeping');
-    await userEvent.type(screen.getByLabelText(/Describe it/i), 'Too short');
-    await userEvent.click(screen.getByRole('button', { name: /^Send$/i }));
+    await userEvent.type(screen.getByLabelText(/What is the issue/i), 'A title worth keeping');
+    await userEvent.type(screen.getByLabelText(/^Explanation/i), 'Too short');
+    await userEvent.click(screen.getByRole('button', { name: /Send report/i }));
 
     expect(await screen.findByText('Please add a little more detail.')).toBeInTheDocument();
 
     // Losing twenty minutes of typing to one validation error is how a citizen
     // gives up and never reports anything again.
-    expect(screen.getByLabelText(/Short title/i)).toHaveValue('A title worth keeping');
-    expect(screen.getByLabelText(/Describe it/i)).toHaveValue('Too short');
+    expect(screen.getByLabelText(/What is the issue/i)).toHaveValue('A title worth keeping');
+    expect(screen.getByLabelText(/^Explanation/i)).toHaveValue('Too short');
   });
 
   it('never asks the browser for a location without a deliberate tap', async () => {
@@ -333,8 +286,8 @@ describe('public feedback form', () => {
       geolocation: { getCurrentPosition, watchPosition: vi.fn(), clearWatch: vi.fn() },
     });
 
-    renderPublic('/feedback', { PublicIssueCategories: { publicIssueCategories: CATEGORIES } });
-    await screen.findByRole('group', { name: /Where is it/i });
+    renderPublic('/feedback');
+    await screen.findByLabelText(/^Where$/i);
 
     // Rendering the page must never trigger the permission prompt.
     expect(getCurrentPosition).not.toHaveBeenCalled();
@@ -347,7 +300,6 @@ describe('public feedback form', () => {
     window.sessionStorage.setItem('rk.qr.referrer', 'RK-QR-7F3K9XQ2');
 
     const mock = renderPublic('/feedback', {
-      PublicIssueCategories: { publicIssueCategories: CATEGORIES },
       SubmitIssue: {
         submitIssue: {
           referenceNumber: 'ISS-2026-AAAAAAAA',
@@ -358,10 +310,10 @@ describe('public feedback form', () => {
       },
     });
 
-    await screen.findByRole('group', { name: /What would you like to share/i });
-    await userEvent.type(screen.getByLabelText(/Short title/i), 'From a poster');
-    await userEvent.type(screen.getByLabelText(/Describe it/i), 'A long enough description here.');
-    await userEvent.click(screen.getByRole('button', { name: /^Send$/i }));
+    await screen.findByLabelText(/What is the issue/i);
+    await userEvent.type(screen.getByLabelText(/What is the issue/i), 'From a poster');
+    await userEvent.type(screen.getByLabelText(/^Explanation/i), 'A long enough description here.');
+    await userEvent.click(screen.getByRole('button', { name: /Send report/i }));
 
     await waitFor(() => {
       expect(mock.variablesFor('SubmitIssue')).toBeDefined();
