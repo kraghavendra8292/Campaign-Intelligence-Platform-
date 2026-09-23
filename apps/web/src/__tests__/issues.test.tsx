@@ -6,6 +6,7 @@ import { routes } from '../routes/routes';
 import { AuthProvider } from '../features/auth/AuthProvider';
 import { graphqlError, installGraphQLMock, type Responder } from '../test/graphqlMock';
 import { SITE } from '../test/siteFixtures';
+import * as reverseGeocodeModule from '../lib/reverseGeocode';
 
 /**
  * Phase 5 - citizen feedback and the issue console.
@@ -67,6 +68,9 @@ function issueRow(overrides: Record<string, unknown> = {}) {
     ward: 'Ward 12',
     locality: 'Side Lane',
     area: 'North District',
+    addressDescription: null,
+    latitude: null,
+    longitude: null,
     isAnonymous: false,
     contactProvided: true,
     contactVisible: true,
@@ -294,6 +298,71 @@ describe('public feedback form', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Use my current location/i }));
     expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the resolved address after the citizen shares their current location', async () => {
+    const getCurrentPosition = vi.fn((success: PositionCallback) => {
+      success({
+        coords: {
+          latitude: 15.334521,
+          longitude: 76.421088,
+          accuracy: 12,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null,
+        },
+        timestamp: Date.now(),
+      } as GeolocationPosition);
+    });
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      geolocation: { getCurrentPosition, watchPosition: vi.fn(), clearWatch: vi.fn() },
+    });
+    vi.spyOn(reverseGeocodeModule, 'reverseGeocode').mockResolvedValue({
+      address: 'MG Road, Temple, Serilingampally, Gachibowli, Ranga Reddy, Hyderabad, 500032',
+    });
+
+    const mock = renderPublic('/feedback', {
+      SubmitIssue: {
+        submitIssue: {
+          referenceNumber: 'ISS-2026-LOCAT001',
+          type: 'ISSUE',
+          submittedAt: '2026-02-01T10:00:00.000Z',
+          contactProvided: false,
+        },
+      },
+    });
+
+    await screen.findByLabelText(/^Where$/i);
+    await userEvent.click(screen.getByRole('button', { name: /Use my current location/i }));
+
+    expect(await screen.findByText(/Current location added/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /MG Road, Temple, Serilingampally, Gachibowli, Ranga Reddy, Hyderabad, 500032/i,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/15\.334521, 76\.421088/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Where$/i)).toHaveValue(
+      'MG Road, Temple, Serilingampally, Gachibowli, Ranga Reddy, Hyderabad, 500032',
+    );
+
+    await userEvent.type(screen.getByLabelText(/What is the issue/i), 'Blocked drain');
+    await userEvent.type(screen.getByLabelText(/^Explanation/i), 'A long enough description here.');
+    await userEvent.click(screen.getByRole('button', { name: /Send report/i }));
+
+    await waitFor(() => {
+      expect(mock.variablesFor('SubmitIssue')).toBeDefined();
+    });
+
+    const input = (mock.variablesFor('SubmitIssue') as { input: Record<string, unknown> }).input;
+    expect(input.latitude).toBe(15.334521);
+    expect(input.longitude).toBe(76.421088);
+    expect(input.addressDescription).toBe(
+      'MG Road, Temple, Serilingampally, Gachibowli, Ranga Reddy, Hyderabad, 500032',
+    );
+    expect(input.type).toBe('ISSUE');
   });
 
   it('carries the QR code that brought the visitor, and only that', async () => {

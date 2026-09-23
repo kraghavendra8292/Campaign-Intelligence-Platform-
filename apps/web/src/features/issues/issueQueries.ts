@@ -20,6 +20,9 @@ const ISSUE_FIELDS = /* GraphQL */ `
     ward
     locality
     area
+    addressDescription
+    latitude
+    longitude
     isAnonymous
     contactProvided
     contactVisible
@@ -61,9 +64,6 @@ export const ISSUE_DETAIL_QUERY = /* GraphQL */ `
     issue(id: $id) {
       ...IssueFields
       description
-      addressDescription
-      latitude
-      longitude
       consentGiven
       consentAt
       resolvedAt
@@ -294,6 +294,9 @@ export interface IssueRow {
   ward: string | null;
   locality: string | null;
   area: string | null;
+  addressDescription: string | null;
+  latitude: number | null;
+  longitude: number | null;
   isAnonymous: boolean;
   contactProvided: boolean;
   contactVisible: boolean;
@@ -310,9 +313,6 @@ export interface IssueRow {
 
 export interface IssueDetailRow extends IssueRow {
   description: string;
-  addressDescription: string | null;
-  latitude: number | null;
-  longitude: number | null;
   consentGiven: boolean;
   consentAt: string | null;
   resolvedAt: string | null;

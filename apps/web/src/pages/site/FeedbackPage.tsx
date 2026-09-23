@@ -11,6 +11,7 @@ import {
   type UploadedAttachment,
 } from '../../features/site/useIssueSubmission';
 import { SiteBackBar } from '../../components/site/SiteBackBar';
+import { reverseGeocode } from '../../lib/reverseGeocode';
 
 /**
  * Public “Report an issue” form — issue only, four blocks.
@@ -25,6 +26,7 @@ interface FormState {
   addressDescription: string;
   latitude: number | null;
   longitude: number | null;
+  resolvedAddress: string | null;
 }
 
 const EMPTY: FormState = {
@@ -33,10 +35,11 @@ const EMPTY: FormState = {
   addressDescription: '',
   latitude: null,
   longitude: null,
+  resolvedAddress: null,
 };
 
 export function FeedbackPage() {
-  const { t, organizationSlug } = useSite();
+  const { t, organizationSlug, locale } = useSite();
   const { state: submitState, submit, reset } = useIssueSubmission();
 
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -44,6 +47,7 @@ export function FeedbackPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [resolvingAddress, setResolvingAddress] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useSeo({
@@ -88,8 +92,31 @@ export function FeedbackPage() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        set('latitude', Number(position.coords.latitude.toFixed(6)));
-        set('longitude', Number(position.coords.longitude.toFixed(6)));
+        const latitude = Number(position.coords.latitude.toFixed(6));
+        const longitude = Number(position.coords.longitude.toFixed(6));
+
+        setForm((current) => ({
+          ...current,
+          latitude,
+          longitude,
+          resolvedAddress: null,
+        }));
+        setResolvingAddress(true);
+
+        void reverseGeocode(latitude, longitude, locale).then((result) => {
+          setResolvingAddress(false);
+          if (!result) return;
+
+          setForm((current) => ({
+            ...current,
+            resolvedAddress: result.address,
+            // Fill the landmark field when the citizen has not typed one yet,
+            // so the readable address is what staff see in the inbox.
+            addressDescription: current.addressDescription.trim()
+              ? current.addressDescription
+              : result.address,
+          }));
+        });
       },
       () => setLocationError(t('feedback.location.denied')),
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 0 },
@@ -98,6 +125,9 @@ export function FeedbackPage() {
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
+
+    const landmark =
+      form.addressDescription.trim() || form.resolvedAddress?.trim() || null;
 
     await submit({
       organizationSlug,
@@ -108,7 +138,7 @@ export function FeedbackPage() {
       ward: null,
       locality: null,
       area: null,
-      addressDescription: form.addressDescription || null,
+      addressDescription: landmark,
       latitude: form.latitude,
       longitude: form.longitude,
       isAnonymous: true,
@@ -249,19 +279,53 @@ export function FeedbackPage() {
             />
             <div className="report-location">
               {form.latitude !== null && form.longitude !== null ? (
-                <>
-                  <span className="feedback-location__added">{t('feedback.location.added')}</span>
-                  <button
-                    type="button"
-                    className="report-location__link"
-                    onClick={() => {
-                      set('latitude', null);
-                      set('longitude', null);
-                    }}
-                  >
-                    {t('feedback.location.remove')}
-                  </button>
-                </>
+                <div className="report-location__card" role="status">
+                  <div className="report-location__card-head">
+                    <Icon name="target" size={1} />
+                    <span className="report-location__card-title">{t('feedback.location.added')}</span>
+                  </div>
+                  {resolvingAddress ? (
+                    <p className="report-location__address report-location__address--pending">
+                      {t('feedback.location.resolving')}
+                    </p>
+                  ) : form.resolvedAddress ? (
+                    <p className="report-location__address">{form.resolvedAddress}</p>
+                  ) : (
+                    <p className="report-location__address report-location__address--muted">
+                      {t('feedback.location.addressUnavailable')}
+                    </p>
+                  )}
+                  <p className="report-location__coords">
+                    <span className="report-location__coord-label">{t('feedback.location.coordinates')}</span>
+                    <span className="report-location__coord-value mono">
+                      {form.latitude.toFixed(6)}, {form.longitude.toFixed(6)}
+                    </span>
+                  </p>
+                  <div className="report-location__card-actions">
+                    <a
+                      className="report-location__map-link"
+                      href={`https://www.openstreetmap.org/?mlat=${form.latitude}&mlon=${form.longitude}#map=17/${form.latitude}/${form.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('feedback.location.viewMap')}
+                    </a>
+                    <button
+                      type="button"
+                      className="report-location__link"
+                      onClick={() => {
+                        setForm((current) => ({
+                          ...current,
+                          latitude: null,
+                          longitude: null,
+                          resolvedAddress: null,
+                        }));
+                      }}
+                    >
+                      {t('feedback.location.remove')}
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <button type="button" className="report-location__btn" onClick={useCurrentLocation}>
                   <Icon name="target" size={1} />

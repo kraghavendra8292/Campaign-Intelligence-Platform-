@@ -247,7 +247,11 @@ const en = {
 
   'feedback.location.optional': 'Optional — add a landmark or use your current location.',
   'feedback.location.use': 'Use my current location',
-  'feedback.location.added': 'Location added',
+  'feedback.location.added': 'Current location added',
+  'feedback.location.resolving': 'Looking up address…',
+  'feedback.location.addressUnavailable': 'Address could not be found. Coordinates are still saved.',
+  'feedback.location.coordinates': 'Coordinates',
+  'feedback.location.viewMap': 'View on map',
   'feedback.location.remove': 'Remove location',
   'feedback.location.denied': 'We could not get your location. You can type the details instead.',
   'feedback.location.note':
@@ -708,7 +712,12 @@ const kn: Partial<Record<StringKey, string>> = {
   'feedback.field.photoHint': 'JPG, PNG ಅಥವಾ WebP 5 MB ವರೆಗೆ. ಐಚ್ಛಿಕ — ಗರಿಷ್ಠ 5 ಕಡತಗಳು.',
   'feedback.location.optional': 'ಐಚ್ಛಿಕ — ಗುರುತು ಸೇರಿಸಿ ಅಥವಾ ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ.',
   'feedback.location.use': 'ನನ್ನ ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ',
-  'feedback.location.added': 'ಸ್ಥಳ ಸೇರಿಸಲಾಗಿದೆ',
+  'feedback.location.added': 'ಪ್ರಸ್ತುತ ಸ್ಥಳ ಸೇರಿಸಲಾಗಿದೆ',
+  'feedback.location.resolving': 'ವಿಳಾಸ ಹುಡುಕಲಾಗುತ್ತಿದೆ…',
+  'feedback.location.addressUnavailable':
+    'ವಿಳಾಸ ಸಿಗಲಿಲ್ಲ. ನಿರ್ದೇಶಾಂಕಗಳು ಉಳಿಸಲಾಗುತ್ತವೆ.',
+  'feedback.location.coordinates': 'ನಿರ್ದೇಶಾಂಕಗಳು',
+  'feedback.location.viewMap': 'ನಕ್ಷೆಯಲ್ಲಿ ನೋಡಿ',
   'feedback.location.remove': 'ಸ್ಥಳ ತೆಗೆದುಹಾಕಿ',
   'feedback.location.denied':
     'ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಬದಲಿಗೆ ನೀವು ವಿವರಗಳನ್ನು ಬರೆಯಬಹುದು.',

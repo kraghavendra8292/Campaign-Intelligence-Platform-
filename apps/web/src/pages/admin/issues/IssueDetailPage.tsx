@@ -227,9 +227,18 @@ export function IssueDetailPage() {
                       <div>
                         <dt>Coordinates</dt>
                         <dd>
-                          {issue.latitude !== null && issue.longitude !== null
-                            ? `${issue.latitude}, ${issue.longitude}`
-                            : 'Not shared'}
+                          {issue.latitude !== null && issue.longitude !== null ? (
+                            <a
+                              className="mono"
+                              href={`https://www.openstreetmap.org/?mlat=${issue.latitude}&mlon=${issue.longitude}#map=17/${issue.latitude}/${issue.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {issue.latitude}, {issue.longitude}
+                            </a>
+                          ) : (
+                            'Not shared'
+                          )}
                         </dd>
                       </div>
                       <div>

@@ -425,7 +425,13 @@ export function IssuesPage() {
                     key: 'location',
                     header: 'Location',
                     secondary: true,
-                    render: (row) => row.ward ?? row.locality ?? '—',
+                    render: (row) =>
+                      row.addressDescription ??
+                      row.ward ??
+                      row.locality ??
+                      (row.latitude !== null && row.longitude !== null
+                        ? `${row.latitude}, ${row.longitude}`
+                        : '—'),
                   },
                   {
                     key: 'source',
