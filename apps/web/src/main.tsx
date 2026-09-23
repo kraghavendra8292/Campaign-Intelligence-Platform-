@@ -11,7 +11,7 @@ import '@rk/design-tokens/tokens.css';
 import '@rk/ui/styles.css';
 import './styles/global.css';
 import './styles/site.css';
-import './styles/work.css';
+// work.css and issues.css load with their routes so the homepage shell stays lean.
 
 import { App } from './App';
 

@@ -79,8 +79,9 @@ export function OpinionPulseWidget() {
       refetch={refetch}
       emptyMessage="No opinions submitted yet."
       isEmpty={(data) =>
-        data.siteFeedbackDashboardOverview.current.total === 0 &&
-        data.siteFeedbackDashboardOverview.overall.total === 0
+        !data?.siteFeedbackDashboardOverview ||
+        (data.siteFeedbackDashboardOverview.current.total === 0 &&
+          data.siteFeedbackDashboardOverview.overall.total === 0)
       }
       action={
         <Link to="/admin/issues/opinions">

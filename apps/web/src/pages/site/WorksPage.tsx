@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { ContentCategory } from '@rk/types';
 import { Button } from '@rk/ui';
+import '../../styles/work.css';
 import { useSite } from '../../features/site/SiteContext';
 import { useSeo } from '../../features/site/useSeo';
 import { usePublicQuery } from '../../features/site/usePublicQuery';

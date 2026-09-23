@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -46,6 +47,11 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   selectOrganization: (organizationId: string) => Promise<void>;
+  /**
+   * Restores a session from the refresh cookie.
+   * Public pages skip this on boot; `/admin` and `/login` call it when needed.
+   */
+  ensureSession: () => Promise<boolean>;
   /** Advisory only - the API is authoritative. */
   can: (permission: Permission) => boolean;
 }
@@ -102,48 +108,75 @@ const LOGOUT_MUTATION = /* GraphQL */ `
   }
 `;
 
+function needsSessionOnBoot(pathname: string): boolean {
+  return pathname.startsWith('/admin') || pathname === '/login';
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<AuthStatus>('initialising');
+  const [status, setStatus] = useState<AuthStatus>(() =>
+    typeof window !== 'undefined' && needsSessionOnBoot(window.location.pathname)
+      ? 'initialising'
+      : 'anonymous',
+  );
   const [viewer, setViewer] = useState<Viewer | null>(null);
+  const restoreInFlight = useRef<Promise<boolean> | null>(null);
+  const viewerRef = useRef<Viewer | null>(null);
+  viewerRef.current = viewer;
 
   /**
-   * Restores a session on load.
+   * Restores a session from the HttpOnly refresh cookie.
    *
-   * The access token lives only in memory, so a reload always starts without
-   * one. The HttpOnly refresh cookie is what survives, so the sequence is
-   * refresh-then-fetch-viewer.
+   * Public pages skip this on first paint so a 2G visitor does not wait on an
+   * auth round-trip they will never use. Console routes call it explicitly.
    */
-  useEffect(() => {
-    let cancelled = false;
+  const ensureSession = useCallback(async (): Promise<boolean> => {
+    if (tokenStore.get() && viewerRef.current) {
+      setStatus('authenticated');
+      return true;
+    }
 
-    void (async () => {
-      const refreshed = await refreshAccessToken();
+    if (restoreInFlight.current) {
+      return restoreInFlight.current;
+    }
 
-      if (!refreshed) {
-        if (!cancelled) setStatus('anonymous');
-        return;
-      }
+    setStatus('initialising');
 
+    restoreInFlight.current = (async () => {
       try {
+        const refreshed = await refreshAccessToken();
+
+        if (!refreshed) {
+          setStatus('anonymous');
+          return false;
+        }
+
         const data = await graphqlRequest<{ me: Viewer | null }>(ME_QUERY);
-        if (cancelled) return;
 
         if (data.me) {
           applyViewer(data.me);
           setViewer(data.me);
           setStatus('authenticated');
-        } else {
-          setStatus('anonymous');
+          return true;
         }
+
+        setStatus('anonymous');
+        return false;
       } catch {
-        if (!cancelled) setStatus('anonymous');
+        setStatus('anonymous');
+        return false;
+      } finally {
+        restoreInFlight.current = null;
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return restoreInFlight.current;
   }, []);
+
+  useEffect(() => {
+    if (needsSessionOnBoot(window.location.pathname)) {
+      void ensureSession();
+    }
+  }, [ensureSession]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const data = await graphqlRequest<{
@@ -186,8 +219,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AuthState>(
-    () => ({ status, viewer, signIn, signOut, selectOrganization, can }),
-    [status, viewer, signIn, signOut, selectOrganization, can],
+    () => ({ status, viewer, signIn, signOut, selectOrganization, ensureSession, can }),
+    [status, viewer, signIn, signOut, selectOrganization, ensureSession, can],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -9,7 +9,7 @@ import react from '@vitejs/plugin-react';
  * output, so Vite compiles them as part of this app. That keeps the monorepo
  * free of a package build-ordering step.
  */
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
 
   server: {
@@ -24,9 +24,27 @@ export default defineConfig({
 
   build: {
     outDir: 'dist',
-    sourcemap: true,
-    // Fail the build rather than silently shipping an oversized bundle.
-    chunkSizeWarningLimit: 600,
+    // Source maps stay local for debugging; do not ship large .map files to
+    // citizens on mobile data.
+    sourcemap: mode === 'development' ? true : 'hidden',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 400,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/react-router')) {
+            return 'router';
+          }
+          if (id.includes('/packages/ui/') || id.includes('\\packages\\ui\\')) {
+            return 'ui';
+          }
+          return undefined;
+        },
+      },
+    },
   },
 
   test: {
@@ -51,4 +69,4 @@ export default defineConfig({
       VITE_DEFAULT_LOCALE: 'en',
     },
   },
-});
+}));

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { StringKey } from '../../i18n/strings';
+import '../../styles/work.css';
 import { useSite } from '../../features/site/SiteContext';
 import { useSeo } from '../../features/site/useSeo';
 import { usePublicQuery } from '../../features/site/usePublicQuery';

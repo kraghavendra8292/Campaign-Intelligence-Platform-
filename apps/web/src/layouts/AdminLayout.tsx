@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Button, Icon } from '@rk/ui';
 import { useAuth } from '../features/auth/AuthProvider';
@@ -7,8 +7,6 @@ import { AdminLanguageSelect } from '../components/admin/AdminLanguageSelect';
 import { AdminI18nProvider, useAdminI18n } from '../features/admin/AdminI18nContext';
 import { useMediaQuery } from '../lib/useMediaQuery';
 import { loadConsoleStyles } from '../styles/loadConsoleStyles';
-
-loadConsoleStyles();
 
 /**
  * Shell for the authenticated campaign console.
@@ -28,6 +26,10 @@ const SIDEBAR_ID = 'admin-sidebar';
  * routed page below read one language from one place.
  */
 export function AdminLayout() {
+  useEffect(() => {
+    loadConsoleStyles();
+  }, []);
+
   return (
     <AdminI18nProvider>
       <AdminConsole />

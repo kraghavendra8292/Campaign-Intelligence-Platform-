@@ -1,15 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Icon } from '@rk/ui';
+import { Icon, LoadingState } from '@rk/ui';
 import { LOCALES, type Locale } from '@rk/types';
 import { useSite } from '../features/site/SiteContext';
-import { usePublicQuery } from '../features/site/usePublicQuery';
-import { SITE_QUERY } from '../features/site/queries';
 import { useQrReferrerCapture } from '../features/site/useIssueSubmission';
 import { MobileNavDrawer } from '../components/site/MobileNavDrawer';
 import { SiteFeedbackPrompt } from '../components/site/SiteFeedbackPrompt';
 import { PRIMARY_NAV_ITEMS } from '../config/siteNav';
-import type { PublicOrganization } from '../features/site/types';
 
 /**
  * Public website shell.
@@ -48,9 +45,6 @@ export function SiteLayout() {
    * about the person who scanned it.
    */
   useQrReferrerCapture();
-
-  // Keep the public site query warm so org-scoped pages share a cached shell response.
-  usePublicQuery<{ publicSite: PublicOrganization }>(SITE_QUERY);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -186,7 +180,17 @@ export function SiteLayout() {
       />
 
       <main id="main-content" className="site-main">
-        <Outlet />
+        <Suspense
+          fallback={
+            <div className="section">
+              <div className="section__inner">
+                <LoadingState title={t('loading.generic')} />
+              </div>
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </main>
 
       <SiteFeedbackPrompt />

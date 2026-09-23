@@ -58,13 +58,12 @@ describe('Kannada-first default', () => {
       </AuthProvider>,
     );
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'kn');
 
     // The labels that used to sit in English on a Kannada page.
     expect(await screen.findByText('ಮುಖ್ಯ ವಿಷಯಕ್ಕೆ ಹೋಗಿ')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'ನಮ್ಮ ಕಾರ್ಯಗಳು' })).toBeInTheDocument();
-    expect(screen.getByText('ಕ್ಷೇತ್ರದಾದ್ಯಂತ ಅಭಿವೃದ್ಧಿ ಯೋಜನೆಗಳು.')).toBeInTheDocument();
     // Scoped to the cards: several of these labels also appear in the
     // navigation, which is itself proof the translation reaches both.
     const quickActions = within(document.querySelector('.quick-actions') as HTMLElement);
@@ -72,7 +71,7 @@ describe('Kannada-first default', () => {
     expect(quickActions.getByText('ಸಾಧನೆಗಳು')).toBeInTheDocument();
     expect(quickActions.getByText('ಸುದ್ದಿಗಳು')).toBeInTheDocument();
     expect(quickActions.getByText('ಕಾರ್ಯಕ್ರಮಗಳು')).toBeInTheDocument();
-    expect(quickActions.getByText('ಅಭಿಪ್ರಾಯ ಹಂಚಿಕೊಳ್ಳಿ')).toBeInTheDocument();
+    expect(quickActions.getByText('ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ')).toBeInTheDocument();
 
     // And the document says so, which is what selects Kannada type metrics and
     // tells a screen reader how to pronounce the page.

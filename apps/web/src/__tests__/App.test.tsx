@@ -45,7 +45,9 @@ describe('App routes', () => {
     renderAt('/');
 
     expect(await screen.findByText('Skip to main content')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Demo Campaign' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /J\. N\. Ganesh, MLA, Kampli Constituency/i }),
+    ).toBeInTheDocument();
   });
 
   it('redirects /admin to the login page when unauthenticated', async () => {

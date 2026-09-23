@@ -54,7 +54,7 @@ describe('public site - homepage', () => {
     renderAt('/');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' }),
+      await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' }),
     ).toBeInTheDocument();
 
     // Shell.
@@ -88,7 +88,7 @@ describe('public site - homepage', () => {
 
     // The hero still renders, falling back to the organisation name.
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Demo Campaign' }),
+      await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' }),
     ).toBeInTheDocument();
 
     // Empty sections are omitted rather than shown as bare headings.
@@ -125,7 +125,7 @@ describe('public site - tenant and locale', () => {
     const mock = mockSite({ Homepage: HOMEPAGE });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     const publicCalls = mock.calls.filter((call) => call.operation !== 'Refresh');
     expect(publicCalls.length).toBeGreaterThan(0);
@@ -145,7 +145,7 @@ describe('public site - tenant and locale', () => {
     const mock = mockSite({ Homepage: HOMEPAGE });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'kn');
 
@@ -306,7 +306,7 @@ describe('public site - navigation', () => {
     mockSite({ Homepage: HOMEPAGE });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     expect(toggle()).toHaveAttribute('aria-expanded', 'false');
     expect(drawer()).toHaveAttribute('data-open', 'false');
@@ -321,7 +321,7 @@ describe('public site - navigation', () => {
     mockSite({ Homepage: HOMEPAGE });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
     const panel = await openMenu();
 
     expect(toggle()).toHaveAttribute('aria-expanded', 'true');
@@ -340,7 +340,7 @@ describe('public site - navigation', () => {
     mockSite({ Homepage: HOMEPAGE });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
     const panel = await openMenu();
 
     await userEvent.click(within(panel).getByRole('button', { name: /close/i }));
@@ -354,7 +354,7 @@ describe('public site - navigation', () => {
     mockSite({ Homepage: HOMEPAGE });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
     const panel = await openMenu();
 
     await userEvent.keyboard('{Escape}');
@@ -367,7 +367,7 @@ describe('public site - navigation', () => {
     mockSite({ Homepage: HOMEPAGE });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
     const panel = await openMenu();
 
     const scrim = panel.querySelector('.site-drawer__scrim');
@@ -380,7 +380,7 @@ describe('public site - navigation', () => {
     mockSite({ Homepage: HOMEPAGE, Projects: projectsPage() });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     const toggleButton = toggle();
     await userEvent.click(toggleButton);
@@ -402,7 +402,7 @@ describe('public site - navigation', () => {
     mockSite({ Homepage: HOMEPAGE });
     renderAt('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
     const panel = await openMenu();
 
     // Every primary destination, plus the gallery the desktop bar has no room

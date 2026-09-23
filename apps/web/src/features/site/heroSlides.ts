@@ -20,9 +20,23 @@ export interface HeroSlide {
 
 /**
  * More than this and the later slides are never seen before a visitor scrolls
- * on, so they would be bytes spent on nothing.
+ * on, so they would be bytes spent on nothing. On Save-Data / 2G we keep only
+ * the cover photograph.
  */
-const MAX_SLIDES = 10;
+const MAX_SLIDES = 5;
+const MAX_SLIDES_SLOW = 1;
+
+function maxSlidesForConnection(): number {
+  if (typeof navigator === 'undefined') return MAX_SLIDES;
+  const connection = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (connection?.saveData) return MAX_SLIDES_SLOW;
+  if (connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g') {
+    return MAX_SLIDES_SLOW;
+  }
+  return MAX_SLIDES;
+}
 
 /**
  * Portraits are anchored to the top of the frame.
@@ -73,6 +87,8 @@ export function buildHeroSlides({
   const slides: HeroSlide[] = [];
   const seen = new Set<string>();
 
+  const limit = maxSlidesForConnection();
+
   for (const candidate of candidates) {
     const { image } = candidate;
     // The same asset is often both the cover and an album cover; showing it
@@ -86,7 +102,7 @@ export function buildHeroSlides({
       focus: focusFor(image),
     });
 
-    if (slides.length === MAX_SLIDES) break;
+    if (slides.length === limit) break;
   }
 
   return slides;

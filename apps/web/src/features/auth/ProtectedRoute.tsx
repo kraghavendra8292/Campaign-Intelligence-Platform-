@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { Permission } from '@rk/types';
 import { LoadingState } from '@rk/ui';
@@ -15,12 +16,35 @@ export interface ProtectedRouteProps {
  * independently authorised by the API, so a user who bypasses this guard sees
  * an empty shell and a string of authorization errors - not somebody else's
  * records. Treating it as a security boundary would be the classic mistake.
+ *
+ * Session restore is deferred on the public site. When the visitor reaches
+ * `/admin` after browsing anonymously, we try the refresh cookie once before
+ * sending them to login.
  */
 export function ProtectedRoute({ requirePermission }: ProtectedRouteProps) {
-  const { status, can } = useAuth();
+  const { status, can, ensureSession } = useAuth();
   const location = useLocation();
+  const [restoreAttempted, setRestoreAttempted] = useState(status !== 'anonymous');
 
-  if (status === 'initialising') {
+  useEffect(() => {
+    if (status === 'authenticated') {
+      setRestoreAttempted(true);
+      return;
+    }
+    if (status === 'initialising') return;
+    if (restoreAttempted) return;
+
+    let cancelled = false;
+    void ensureSession().finally(() => {
+      if (!cancelled) setRestoreAttempted(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, ensureSession, restoreAttempted]);
+
+  if (status === 'initialising' || (status === 'anonymous' && !restoreAttempted)) {
     return <LoadingState title="Checking your session" />;
   }
 

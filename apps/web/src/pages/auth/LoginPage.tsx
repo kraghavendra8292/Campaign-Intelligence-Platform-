@@ -1,10 +1,8 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Button, Card, CardBody, CardHeader, ErrorState, Field, Input } from '@rk/ui';
+import { Button, Card, CardBody, CardHeader, ErrorState, Field, Input, LoadingState } from '@rk/ui';
 import { ApiError, useAuth } from '../../features/auth/AuthProvider';
 import { loadConsoleStyles } from '../../styles/loadConsoleStyles';
-
-loadConsoleStyles();
 
 interface LocationState {
   from?: string;
@@ -29,10 +27,22 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    loadConsoleStyles();
+  }, []);
+
   const destination = (location.state as LocationState | null)?.from ?? '/admin';
 
   if (status === 'authenticated') {
     return <Navigate to={destination} replace />;
+  }
+
+  if (status === 'initialising') {
+    return (
+      <div className="auth-page">
+        <LoadingState title="Checking your session" />
+      </div>
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {

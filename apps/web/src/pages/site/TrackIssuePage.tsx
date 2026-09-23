@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@rk/ui';
+import '../../styles/issues.css';
 import { ApiError, graphqlRequest } from '../../features/auth/authClient';
 import {
   PUBLIC_TIMELINE_QUERY,

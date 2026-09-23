@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+﻿import { describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -122,9 +122,9 @@ describe('hero slideshow - rendering', () => {
 
     // The hero content is the same content either way - only its frame changed.
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' }),
+      await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /see our work/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Your opinion/i })).toBeInTheDocument();
   });
 
   it('offers no controls when there is only one photograph', async () => {
@@ -133,7 +133,7 @@ describe('hero slideshow - rendering', () => {
     mockSite({ Homepage: HOMEPAGE });
     renderHome();
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     expect(screen.queryByRole('button', { name: /next slide/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /pause slideshow/i })).not.toBeInTheDocument();
@@ -144,7 +144,7 @@ describe('hero slideshow - rendering', () => {
     mockSite({ Homepage: EMPTY_HOMEPAGE });
     renderHome();
 
-    await screen.findByRole('heading', { level: 1, name: 'Demo Campaign' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
     expect(document.querySelector('.hero-carousel')).toBeNull();
     expect(document.querySelector('.hero')).not.toBeNull();
   });
@@ -153,7 +153,7 @@ describe('hero slideshow - rendering', () => {
     mockSite({ Homepage: HOMEPAGE_WITH_COVERS });
     renderHome();
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
     expect(activeIndex()).toBe(0);
 
     await userEvent.click(screen.getByRole('button', { name: /next slide/i }));
@@ -167,7 +167,7 @@ describe('hero slideshow - rendering', () => {
     mockSite({ Homepage: HOMEPAGE_WITH_COVERS });
     renderHome();
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     await userEvent.click(screen.getByRole('button', { name: /previous slide/i }));
     await waitFor(() => expect(activeIndex()).toBe(slides().length - 1));
@@ -177,7 +177,7 @@ describe('hero slideshow - rendering', () => {
     mockSite({ Homepage: HOMEPAGE_WITH_COVERS });
     renderHome();
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     await userEvent.click(screen.getByRole('button', { name: 'Go to slide 3' }));
     await waitFor(() => expect(activeIndex()).toBe(2));
@@ -187,7 +187,7 @@ describe('hero slideshow - rendering', () => {
     mockSite({ Homepage: HOMEPAGE_WITH_COVERS });
     renderHome();
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     const next = screen.getByRole('button', { name: /next slide/i });
     next.focus();
@@ -203,7 +203,7 @@ describe('hero slideshow - rendering', () => {
     mockSite({ Homepage: HOMEPAGE_WITH_COVERS });
     renderHome();
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     await userEvent.click(screen.getByRole('button', { name: /pause slideshow/i }));
     expect(await screen.findByRole('button', { name: /play slideshow/i })).toBeInTheDocument();
@@ -252,7 +252,7 @@ describe('hero slideshow - rendering', () => {
     mockSite({ Homepage: { ...HOMEPAGE, publicPhotoAlbums: albums } });
     renderHome();
 
-    await screen.findByRole('heading', { level: 1, name: 'A Demo Vision Headline' });
+    await screen.findByRole('heading', { level: 1, name: 'Our constituency, our pride' });
 
     const carousel = document.querySelector('.hero-carousel') as HTMLElement;
     const images = within(carousel).getAllByRole('img', { hidden: true });

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button, Icon, type IconName } from '@rk/ui';
+import '../../styles/work.css';
 import { useSite } from '../../features/site/SiteContext';
 import { usePublicQuery } from '../../features/site/usePublicQuery';
 import { useSeo } from '../../features/site/useSeo';
@@ -151,7 +152,14 @@ export function SiteHomePage() {
                 {QUICK_ACTIONS.map((action) => (
                   <Link key={action.to} className="quick-action quick-action--visual" to={action.to}>
                     <span className="quick-action__media">
-                      <img src={action.image} alt="" loading="lazy" decoding="async" />
+                      <img
+                        src={action.image}
+                        alt=""
+                        width={480}
+                        height={320}
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </span>
                     <span className="quick-action__label">{t(action.labelKey)}</span>
                   </Link>

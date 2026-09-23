@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ISSUE_LIMITS } from '@rk/types';
 import { Button, Icon } from '@rk/ui';
+import '../../styles/issues.css';
 import { useSite } from '../../features/site/SiteContext';
 import { useSeo } from '../../features/site/useSeo';
 import {
