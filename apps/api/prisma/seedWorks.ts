@@ -1418,6 +1418,252 @@ const WORKS: readonly WorkDefinition[] = [
       locationName: 'ಹಂದಿಹಾಳು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
     },
   },
+
+  // --- Additional school classrooms (9 works: 6 completed, 2 in progress, 1 sanctioned;
+  //     Shridharagadde ₹37.48L rooms+water already seeded above — skipped) ---
+  {
+    slug: 'somasamudra-ghps-j1-rooms-wall',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: lakh(61.89),
+    spent: spentNinetyPercent(lakh(61.89)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 340,
+    completionDaysAgo: 40,
+    imagePrefix: 'somasamudra-school-rooms',
+    areaEn: 'Somasamudra, Kampli Constituency',
+    areaKn: 'ಸೋಮಸಮುದ್ರ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Four J1 classrooms and protection wall — Somasamudra GHPS',
+      shortDescription:
+        'Four J1-model classrooms and a protection wall at Somasamudra Government Higher Primary School — ₹61.89 lakh.',
+      locationName: 'Somasamudra Government Higher Primary School',
+    },
+    kn: {
+      title: '4 J1 ಕೊಠಡಿಗಳು ಮತ್ತು ರಕ್ಷಣಾ ಗೋಡೆ — ಸೋಮಸಮುದ್ರ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+      shortDescription:
+        'ಸೋಮಸಮುದ್ರ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆಯಲ್ಲಿ 4 J1 ಮಾದರಿ ಕೊಠಡಿಗಳು ಮತ್ತು ರಕ್ಷಣಾ ಗೋಡೆಗೆ ₹61.89 ಲಕ್ಷ.',
+      locationName: 'ಸೋಮಸಮುದ್ರ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'bailuru-govt-high-school-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: lakh(47.83),
+    spent: spentNinetyPercent(lakh(47.83)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 310,
+    completionDaysAgo: 38,
+    imagePrefix: 'bailuru-govt-high-school',
+    areaEn: 'Bailuru, Kampli Constituency',
+    areaKn: 'ಬೈಲೂರು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Two new classrooms — Bailuru Government High School',
+      shortDescription:
+        'Two new classrooms at Bailuru Government High School — ₹47.83 lakh.',
+      locationName: 'Bailuru Government High School',
+    },
+    kn: {
+      title: '2 ಹೊಸ ಕೊಠಡಿಗಳು — ಬೈಲೂರು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
+      shortDescription:
+        'ಬೈಲೂರು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆಯಲ್ಲಿ 2 ಹೊಸ ಕೊಠಡಿಗಳಿಗೆ ₹47.83 ಲಕ್ಷ.',
+      locationName: 'ಬೈಲೂರು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'shridharagadde-ghps-j1-rooms',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: lakh(43.01),
+    spent: spentNinetyPercent(lakh(43.01)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 300,
+    completionDaysAgo: 36,
+    imagePrefix: 'shridharagadde-j1-rooms',
+    areaEn: 'Shridharagadde, Kampli Constituency',
+    areaKn: 'ಶ್ರೀಧರಗಡ್ಡೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Three J1 classrooms — Shridharagadde GHPS',
+      shortDescription:
+        'Three J1-model classrooms at Shridharagadde Government Higher Primary School — ₹43.01 lakh.',
+      locationName: 'Shridharagadde Government Higher Primary School',
+    },
+    kn: {
+      title: '3 J1 ಕೊಠಡಿಗಳು — ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+      shortDescription:
+        'ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆಯಲ್ಲಿ 3 J1 ಮಾದರಿ ಕೊಠಡಿಗಳಿಗೆ ₹43.01 ಲಕ್ಷ.',
+      locationName: 'ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'kappagallu-govt-high-school-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: lakh(43),
+    spent: spentNinetyPercent(lakh(43)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 290,
+    completionDaysAgo: 34,
+    imagePrefix: 'kappagallu-school-rooms',
+    areaEn: 'Kappagallu, Kampli Constituency',
+    areaKn: 'ಕಪ್ಪಗಲ್ಲು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'New classrooms — Kappagallu Government High School',
+      shortDescription:
+        'New classrooms at Kappagallu Government High School — ₹43 lakh.',
+      locationName: 'Kappagallu Government High School',
+    },
+    kn: {
+      title: 'ಹೊಸ ಕೊಠಡಿಗಳು — ಕಪ್ಪಗಲ್ಲು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
+      shortDescription:
+        'ಕಪ್ಪಗಲ್ಲು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆಯ ಹೊಸ ಕೊಠಡಿಗಳಿಗೆ ₹43 ಲಕ್ಷ.',
+      locationName: 'ಕಪ್ಪಗಲ್ಲು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'genikehalu-school-two-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: lakh(36),
+    spent: spentNinetyPercent(lakh(36)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 280,
+    completionDaysAgo: 32,
+    imagePrefix: 'genikehalu-school-rooms',
+    areaEn: 'Genikehalu, Kampli Constituency',
+    areaKn: 'ಗೆಣಿಕೆಹಾಳು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Two new school classrooms — Genikehalu',
+      shortDescription:
+        'Two new school classrooms in Genikehalu village — ₹36 lakh.',
+      locationName: 'Genikehalu village school',
+    },
+    kn: {
+      title: '2 ಹೊಸ ಶಾಲಾ ಕೊಠಡಿಗಳು — ಗೆಣಿಕೆಹಾಳು',
+      shortDescription:
+        'ಗೆಣಿಕೆಹಾಳು ಗ್ರಾಮದಲ್ಲಿ 2 ಹೊಸ ಶಾಲಾ ಕೊಠಡಿಗಳಿಗೆ ₹36 ಲಕ್ಷ.',
+      locationName: 'ಗೆಣಿಕೆಹಾಳು ಗ್ರಾಮದ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'guttiganuru-school-two-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: lakh(36),
+    spent: spentNinetyPercent(lakh(36)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 270,
+    completionDaysAgo: 30,
+    imagePrefix: 'guttiganuru-school-rooms',
+    areaEn: 'Guttiganuru, Kampli Constituency',
+    areaKn: 'ಗುತ್ತಿಗನೂರು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Two new school classrooms — Guttiganuru',
+      shortDescription:
+        'Two new school classrooms in Guttiganuru village — ₹36 lakh.',
+      locationName: 'Guttiganuru village school',
+    },
+    kn: {
+      title: '2 ಹೊಸ ಶಾಲಾ ಕೊಠಡಿಗಳು — ಗುತ್ತಿಗನೂರು',
+      shortDescription:
+        'ಗುತ್ತಿಗನೂರು ಗ್ರಾಮದಲ್ಲಿ 2 ಹೊಸ ಶಾಲಾ ಕೊಠಡಿಗಳಿಗೆ ₹36 ಲಕ್ಷ.',
+      locationName: 'ಗುತ್ತಿಗನೂರು ಗ್ರಾಮದ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'jalibenchi-school-two-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: lakh(33.06),
+    spent: spentNinetyPercent(lakh(33.06)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 120,
+    completionDaysAgo: null,
+    imagePrefix: 'jalibenchi-school-rooms',
+    areaEn: 'Jalibenchi, Kampli Constituency',
+    areaKn: 'ಜಾಲಿಬೆಂಚಿ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Two classrooms — Jalibenchi school',
+      shortDescription:
+        'Two classrooms at Jalibenchi school — ₹33.06 lakh.',
+      locationName: 'Jalibenchi school',
+    },
+    kn: {
+      title: '2 ಕೊಠಡಿಗಳು — ಜಾಲಿಬೆಂಚಿ ಶಾಲೆ',
+      shortDescription:
+        'ಜಾಲಿಬೆಂಚಿ ಶಾಲೆಯಲ್ಲಿ 2 ಕೊಠಡಿಗಳಿಗೆ ₹33.06 ಲಕ್ಷ.',
+      locationName: 'ಜಾಲಿಬೆಂಚಿ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'metti-shivapura-school-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: lakh(28.7),
+    spent: spentNinetyPercent(lakh(28.7)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 90,
+    completionDaysAgo: null,
+    imagePrefix: 'metti-shivapura-school-rooms',
+    areaEn: 'Metti–Shivapura, Kampli Constituency',
+    areaKn: 'ಮೆಟ್ಟಿ–ಶಿವಪುರ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'New school classrooms — Metti–Shivapura',
+      shortDescription:
+        'New school classrooms in Metti–Shivapura village — ₹28.70 lakh.',
+      locationName: 'Metti–Shivapura village school',
+    },
+    kn: {
+      title: 'ಹೊಸ ಶಾಲಾ ಕೊಠಡಿಗಳು — ಮೆಟ್ಟಿ–ಶಿವಪುರ',
+      shortDescription:
+        'ಮೆಟ್ಟಿ–ಶಿವಪುರ ಗ್ರಾಮದಲ್ಲಿ ಹೊಸ ಶಾಲಾ ಕೊಠಡಿಗಳಿಗೆ ₹28.70 ಲಕ್ಷ.',
+      locationName: 'ಮೆಟ್ಟಿ–ಶಿವಪುರ ಗ್ರಾಮದ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'genikehalu-ghps-new-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: lakh(28.69),
+    spent: null,
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'genikehalu-ghps-rooms',
+    areaEn: 'Genikehalu, Kampli Constituency',
+    areaKn: 'ಗೆಣಿಕೆಹಾಳು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'New classrooms — Genikehalu Government Higher Primary School',
+      shortDescription:
+        'New classrooms at Genikehalu Government Higher Primary School — ₹28.69 lakh sanctioned.',
+      locationName: 'Genikehalu Government Higher Primary School',
+    },
+    kn: {
+      title: 'ಹೊಸ ಕೊಠಡಿಗಳು — ಗೆಣಿಕೆಹಾಳು ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+      shortDescription:
+        'ಗೆಣಿಕೆಹಾಳು ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆಯಲ್ಲಿ ಹೊಸ ಕೊಠಡಿಗಳಿಗೆ ₹28.69 ಲಕ್ಷ.',
+      locationName: 'ಗೆಣಿಕೆಹಾಳು ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+    },
+  },
 ];
 
 async function uploadImage(
