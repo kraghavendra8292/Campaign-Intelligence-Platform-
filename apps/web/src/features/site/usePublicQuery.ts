@@ -72,6 +72,9 @@ export function usePublicQuery<T>(
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted || latestKey.current !== key) return;
+        // A superseded request can surface as AbortError after the signal flip;
+        // never paint that as a user-facing failure.
+        if (error instanceof DOMException && error.name === 'AbortError') return;
 
         if (error instanceof ApiError) {
           setSettled({

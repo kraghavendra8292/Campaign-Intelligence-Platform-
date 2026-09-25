@@ -106,7 +106,7 @@ describe('public works listing', () => {
 
     // Scoped to the BADGE, not the filter chips - both carry these words, and
     // an unscoped match would pass even if the card were mislabelled.
-    expect(screen.getByTitle('Planned. Work has not started.')).toHaveTextContent('Proposed');
+    expect(screen.getByTitle('Sanctioned. Work has not started yet.')).toHaveTextContent('Sanctioned');
     expect(screen.queryByTitle('Work is reported as finished.')).not.toBeInTheDocument();
   });
 
@@ -199,7 +199,7 @@ describe('public transparency page', () => {
     // database behind it.
     expect(screen.getByText('Verified works')).toBeInTheDocument();
     expect(screen.getByText('Ongoing works')).toBeInTheDocument();
-    expect(screen.getByText('Proposed works')).toBeInTheDocument();
+    expect(screen.getByText('Sanctioned works')).toBeInTheDocument();
   });
 
   it('renders evidence coverage from the database figure', async () => {

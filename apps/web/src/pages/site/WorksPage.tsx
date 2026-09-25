@@ -29,7 +29,7 @@ import { SiteImage } from '../../components/site/SiteImage';
 import { VerificationBadge, WorkStatusBadge } from '../../components/work/VerificationBadge';
 import { EvidenceGallery } from '../../components/work/EvidenceGallery';
 import type { StringKey } from '../../i18n/strings';
-import { formatCount, formatCurrency, formatDate } from '../../lib/format';
+import { formatCurrency, formatDate } from '../../lib/format';
 
 /**
  * The public works listing and detail.
@@ -67,17 +67,24 @@ export function WorksPage() {
   useSeo({ title: t('section.work'), description: t('section.workSubtitle'), path: '/work' });
 
   const variables = useMemo(
-    () => ({
-      filter: {
+    () => {
+      const filter: Record<string, unknown> = {
         first: 12 * (cursors.length + 1),
-        category,
-        workStatus,
-        area: area || null,
-        year: yearParam ? Number(yearParam) : null,
-        verifiedOnly: verifiedOnly || null,
-        search: search || null,
-      },
-    }),
+      };
+      // Omit null/empty filter fields. Sending explicit nulls for enums (and
+      // similar) has tripped intermittent GraphQL validation failures in the
+      // public works listing after filter changes.
+      if (category) filter.category = category;
+      if (workStatus) filter.workStatus = workStatus;
+      if (area) filter.area = area;
+      if (yearParam) {
+        const year = Number(yearParam);
+        if (Number.isFinite(year)) filter.year = year;
+      }
+      if (verifiedOnly) filter.verifiedOnly = true;
+      if (search.trim()) filter.search = search.trim();
+      return { filter };
+    },
     [cursors.length, category, workStatus, area, yearParam, verifiedOnly, search],
   );
 
@@ -506,7 +513,6 @@ function WorkDetailArticle({
           }
         />
         <Fact label={t('work.route')} value={item.locationName ?? item.area ?? null} />
-        <Fact label={t('work.beneficiaries')} value={formatCount(item.beneficiaryCount)} />
       </dl>
 
       <dl className="work-detail__facts">

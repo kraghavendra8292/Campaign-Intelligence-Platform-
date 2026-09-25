@@ -20,7 +20,7 @@ import { SiteImage } from '../../components/site/SiteImage';
 import { SiteBackBar } from '../../components/site/SiteBackBar';
 import { CategoryBadge, StatusBadge, VerifiedBadge } from '../../components/site/StatusBadge';
 import { QueryBoundary, RichText } from '../../components/site/states';
-import { formatCount, formatCurrency, formatDate, formatDateRange } from '../../lib/format';
+import { formatCurrency, formatDate, formatDateRange } from '../../lib/format';
 
 /**
  * Detail pages for projects, achievements, news and events.
@@ -116,10 +116,6 @@ export function ProjectDetailPage() {
                   <Fact
                     label={t('label.cost')}
                     value={formatCurrency(item.costAmount, item.costCurrency)}
-                  />
-                  <Fact
-                    label={t('label.beneficiaries')}
-                    value={formatCount(item.beneficiaryCount)}
                   />
                 </dl>
 

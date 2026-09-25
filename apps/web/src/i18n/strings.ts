@@ -24,11 +24,11 @@ const en = {
   // outside endorsement, and 'Proposed' must never read as something built.
   'transparency.title': 'Transparency',
   'transparency.subtitle':
-    'What has been done, what is under way and what is proposed - with the records behind each claim.',
+    'What has been done, what is under way and what is sanctioned - with the records behind each claim.',
   'transparency.verified': 'Verified works',
   'transparency.verifiedHint': 'Checked against supporting evidence by this campaign.',
   'transparency.ongoing': 'Ongoing works',
-  'transparency.proposed': 'Proposed works',
+  'transparency.proposed': 'Sanctioned works',
   'transparency.areas': 'Areas covered',
   'transparency.coverage': 'Evidence coverage',
   'transparency.coverageNote':
@@ -42,7 +42,7 @@ const en = {
 
   'work.statusCompleted': 'Completed',
   'work.statusOngoing': 'Ongoing',
-  'work.statusProposed': 'Proposed',
+  'work.statusProposed': 'Sanctioned',
   'work.filterStatus': 'Filter by status',
   'work.verifiedOnly': 'Verified only',
   'work.searchLabel': 'Search works',
@@ -380,7 +380,7 @@ const en = {
   'status.IN_REVIEW': 'In review',
   'status.PUBLISHED': 'Published',
   'status.ARCHIVED': 'Archived',
-  'status.PLANNED': 'Planned',
+  'status.PLANNED': 'Sanctioned',
   'status.IN_PROGRESS': 'In progress',
   'status.COMPLETED': 'Completed',
   'status.ON_HOLD': 'On hold',
@@ -426,7 +426,7 @@ const kn: Partial<Record<StringKey, string>> = {
   'transparency.title': 'ಪಾರದರ್ಶಕತೆ',
   'transparency.verified': 'ದೃಢೀಕೃತ ಕಾಮಗಾರಿಗಳು',
   'transparency.ongoing': 'ಪ್ರಗತಿಯಲ್ಲಿರುವ ಕಾಮಗಾರಿಗಳು',
-  'transparency.proposed': 'ಪ್ರಸ್ತಾವಿತ ಕಾಮಗಾರಿಗಳು',
+  'transparency.proposed': 'ಮಂಜೂರಾದ ಕಾಮಗಾರಿಗಳು',
   'transparency.areas': 'ಒಳಗೊಂಡ ಪ್ರದೇಶಗಳು',
   'transparency.coverage': 'ದಾಖಲೆ ವ್ಯಾಪ್ತಿ',
   'transparency.byCategory': 'ವಿಭಾಗವಾರು ಕಾಮಗಾರಿ',
@@ -435,7 +435,7 @@ const kn: Partial<Record<StringKey, string>> = {
 
   'work.statusCompleted': 'ಪೂರ್ಣಗೊಂಡಿದೆ',
   'work.statusOngoing': 'ಪ್ರಗತಿಯಲ್ಲಿದೆ',
-  'work.statusProposed': 'ಪ್ರಸ್ತಾವಿತ',
+  'work.statusProposed': 'ಮಂಜೂರಾಗಿದೆ',
   'work.verifiedOnly': 'ದೃಢೀಕೃತ ಮಾತ್ರ',
   'work.area': 'ಪ್ರದೇಶ',
   'work.location': 'ಸ್ಥಳ',
@@ -699,7 +699,7 @@ const kn: Partial<Record<StringKey, string>> = {
   'status.IN_REVIEW': 'ಪರಿಶೀಲನೆಯಲ್ಲಿ',
   'status.PUBLISHED': 'ಪ್ರಕಟಿಸಲಾಗಿದೆ',
   'status.ARCHIVED': 'ಸಂಗ್ರಹಿಸಲಾಗಿದೆ',
-  'status.PLANNED': 'ಯೋಜಿಸಲಾಗಿದೆ',
+  'status.PLANNED': 'ಮಂಜೂರಾಗಿದೆ',
   'status.IN_PROGRESS': 'ಪ್ರಗತಿಯಲ್ಲಿದೆ',
   'status.COMPLETED': 'ಪೂರ್ಣಗೊಂಡಿದೆ',
   'status.ON_HOLD': 'ತಡೆಹಿಡಿಯಲಾಗಿದೆ',
@@ -804,7 +804,7 @@ const kn: Partial<Record<StringKey, string>> = {
   'nav.back': 'ಹಿಂದೆ',
   'nav.backHome': 'ಮುಖಪುಟಕ್ಕೆ ಹಿಂತಿರುಗಿ',
   'transparency.subtitle':
-    'ಏನು ಮಾಡಲಾಗಿದೆ, ಏನು ನಡೆಯುತ್ತಿದೆ ಮತ್ತು ಏನು ಪ್ರಸ್ತಾಪಿಸಲಾಗಿದೆ - ಪ್ರತಿ ಹೇಳಿಕೆಯ ಹಿಂದಿನ ದಾಖಲೆಗಳೊಂದಿಗೆ.',
+    'ಏನು ಮಾಡಲಾಗಿದೆ, ಏನು ನಡೆಯುತ್ತಿದೆ ಮತ್ತು ಏನು ಮಂಜೂರಾಗಿದೆ - ಪ್ರತಿ ಹೇಳಿಕೆಯ ಹಿಂದಿನ ದಾಖಲೆಗಳೊಂದಿಗೆ.',
   'transparency.verifiedHint': 'ಈ ಪ್ರಚಾರ ತಂಡವು ಪೂರಕ ದಾಖಲೆಗಳ ಆಧಾರದ ಮೇಲೆ ಪರಿಶೀಲಿಸಿದೆ.',
   'transparency.coverageNote':
     'ಪ್ರಕಟಿಸಲಾದ {published} ಕಾರ್ಯಗಳಲ್ಲಿ {evidenced} ಕಾರ್ಯಗಳಿಗೆ ನೀವು ತೆರೆದು ನೋಡಬಹುದಾದ ಕನಿಷ್ಠ ಒಂದು ಪೂರಕ ದಾಖಲೆ ಇದೆ.',

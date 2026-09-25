@@ -1,5 +1,6 @@
 import type { VerificationStatus } from '@rk/types';
 import type { PublicWorkStatus } from '../../features/work/workQueries';
+import { useSite } from '../../features/site/SiteContext';
 
 /**
  * The public verification badge.
@@ -47,7 +48,7 @@ export function VerificationBadge({
 }
 
 /**
- * The work-status badge: proposed, ongoing or completed.
+ * The work-status badge: sanctioned, ongoing or completed.
  *
  * Always rendered, and visually distinct from the verification badge, because
  * conflating them is the specific misreading this phase has to prevent. A
@@ -55,20 +56,21 @@ export function VerificationBadge({
  * a COMPLETED work WITH one is a claim somebody checked. Those must not look
  * alike at a glance on a phone.
  *
- * PROPOSED carries the strongest treatment for the same reason: a proposal
- * skimmed quickly must never be mistaken for something that was built.
+ * PROPOSED (shown as Sanctioned) carries the strongest treatment for the same
+ * reason: a sanction skimmed quickly must never be mistaken for something built.
  */
 export function WorkStatusBadge({ status }: { status: PublicWorkStatus | null }) {
+  const { t } = useSite();
   if (!status) return null;
 
   const labels: Record<PublicWorkStatus, string> = {
-    PROPOSED: 'Proposed',
-    ONGOING: 'Ongoing',
-    COMPLETED: 'Completed',
+    PROPOSED: t('work.statusProposed'),
+    ONGOING: t('work.statusOngoing'),
+    COMPLETED: t('work.statusCompleted'),
   };
 
   const hints: Record<PublicWorkStatus, string> = {
-    PROPOSED: 'Planned. Work has not started.',
+    PROPOSED: 'Sanctioned. Work has not started yet.',
     ONGOING: 'Work is under way and not yet finished.',
     COMPLETED: 'Work is reported as finished.',
   };
