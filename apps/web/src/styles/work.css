@@ -170,7 +170,8 @@
   letter-spacing: -0.02em;
 }
 
-.work-feed__sentinel {
+.work-feed__sentinel,
+.works-scroll-sentinel {
   height: 1px;
 }
 

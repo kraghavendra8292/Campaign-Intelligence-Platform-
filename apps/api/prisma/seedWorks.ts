@@ -99,7 +99,7 @@ function explanationEn(body: string, spent: number | null, budget: number): stri
     spent === null
       ? `<p><strong>Sanctioned budget:</strong> ₹${budget.toLocaleString('en-IN')}.</p>`
       : `<p><strong>Approved budget:</strong> ₹${budget.toLocaleString('en-IN')}. <strong>Amount spent:</strong> ₹${spent.toLocaleString('en-IN')}.</p>`;
-  return `<!--spent:${spent ?? 0}--><p>${body}</p>${spentLine}<p><em>Photographs are AI-generated illustrations of the stretch type — not on-site photos of this package.</em></p>`;
+  return `<!--spent:${spent ?? 0}--><p>${body}</p>${spentLine}`;
 }
 
 function explanationKn(body: string, spent: number | null, budget: number): string {
@@ -107,12 +107,12 @@ function explanationKn(body: string, spent: number | null, budget: number): stri
     spent === null
       ? `<p><strong>ಮಂಜೂರಾದ ಅನುದಾನ:</strong> ₹${budget.toLocaleString('en-IN')}.</p>`
       : `<p><strong>ಅನುಮೋದಿತ ಬಜೆಟ್:</strong> ₹${budget.toLocaleString('en-IN')}. <strong>ಖರ್ಚು ಮೊತ್ತ:</strong> ₹${spent.toLocaleString('en-IN')}.</p>`;
-  return `<!--spent:${spent ?? 0}--><p>${body}</p>${spentLine}<p><em>ಛಾಯಾಚಿತ್ರಗಳು AI ಮೂಲಕ ರಚಿಸಿದ ವಿವರಣಾತ್ಮಕ ಚಿತ್ರಗಳು — ಈ ಕಾಮಗಾರಿಯ ನಿಜವಾದ ಸ್ಥಳ ಛಾಯಾಚಿತ್ರಗಳಲ್ಲ.</em></p>`;
+  return `<!--spent:${spent ?? 0}--><p>${body}</p>${spentLine}`;
 }
 
 /**
- * Status split (as requested): 6 completed, 2 in progress, 2 sanctioned (PLANNED).
- * Assignment by package size / listing order unless you ask to reshuffle.
+ * Status split per batch of ten (as requested): 6 completed, 2 in progress,
+ * 2 sanctioned (PLANNED). Assignment by listing order within each batch.
  */
 const WORKS: readonly WorkDefinition[] = [
   {
@@ -384,6 +384,274 @@ const WORKS: readonly WorkDefinition[] = [
       locationName: 'ಯಲ್ಲಾಪುರ → ಶ್ರೀರಾಮರಂಗಾಪುರ',
     },
   },
+  // --- Batch 2 (10 more PWD road packages) ---
+  {
+    slug: 'devasamudra-javaku-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(4.727),
+    spent: spentNinetyPercent(crore(4.727)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 380,
+    completionDaysAgo: 45,
+    imagePrefix: 'devasamudra-javaku',
+    areaEn: 'Devasamudra–Javaku',
+    areaKn: 'ದೇವಸಮುದ್ರ–ಜವಕು',
+    en: {
+      title: 'Devasamudra to Javaku road development',
+      shortDescription:
+        'Road development from Devasamudra to Javaku — ₹4.727 crore sanctioned.',
+      locationName: 'Devasamudra → Javaku',
+    },
+    kn: {
+      title: 'ದೇವಸಮುದ್ರ–ಜವಕು ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription: 'ದೇವಸಮುದ್ರದಿಂದ ಜವಕು ವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹4.727 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ದೇವಸಮುದ್ರ → ಜವಕು',
+    },
+  },
+  {
+    slug: 'madile-somasamudra-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(4.171),
+    spent: spentNinetyPercent(crore(4.171)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 370,
+    completionDaysAgo: 42,
+    imagePrefix: 'madile-somasamudra',
+    areaEn: 'Madile–Somasamudra',
+    areaKn: 'ಮದಿಲೆ–ಸೋಮಸಮುದ್ರ',
+    en: {
+      title: 'Madile to Somasamudra road development',
+      shortDescription:
+        'Road development from Madile to Somasamudra — ₹4.171 crore sanctioned.',
+      locationName: 'Madile → Somasamudra',
+    },
+    kn: {
+      title: 'ಮದಿಲೆ–ಸೋಮಸಮುದ್ರ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription: 'ಮದಿಲೆಯಿಂದ ಸೋಮಸಮುದ್ರವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹4.171 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಮದಿಲೆ → ಸೋಮಸಮುದ್ರ',
+    },
+  },
+  {
+    slug: 'bekkajayiganur-sugar-factory-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(4),
+    spent: spentNinetyPercent(crore(4)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 360,
+    completionDaysAgo: 38,
+    imagePrefix: 'bekkajayiganur',
+    areaEn: 'Bekkajayiganur — sugar factory road',
+    areaKn: 'ಬೆಕ್ಕಜಾಯಿಗನೂರು — ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ರಸ್ತೆ',
+    en: {
+      title: 'Bekkajayiganur to sugar factory road development',
+      shortDescription:
+        'Road development from Bekkajayiganur village to the sugar factory — ₹4 crore sanctioned.',
+      locationName: 'Bekkajayiganur → sugar factory',
+    },
+    kn: {
+      title: 'ಬೆಕ್ಕಜಾಯಿಗನೂರು–ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಬೆಕ್ಕಜಾಯಿಗನೂರು ಗ್ರಾಮದಿಂದ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆಯವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹4 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಬೆಕ್ಕಜಾಯಿಗನೂರು → ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ',
+    },
+  },
+  {
+    slug: 'metri-sriramarangapur-chavuku-jeeriganur-gonalu-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(4),
+    spent: spentNinetyPercent(crore(4)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 350,
+    completionDaysAgo: 35,
+    imagePrefix: 'metri-gonalu',
+    areaEn: 'Metri–Sriramarangapur–Chavuku–Jeeriganur–Gonalu',
+    areaKn: 'ಮೆಟ್ರಿ–ಶ್ರೀರಾಮರಂಗಾಪುರ–ಚೌಕು–ಜೀರಿಗನೂರು–ಗೋನಾಳು',
+    en: {
+      title: 'Metri–Gonalu corridor road (km 4.50–7.50)',
+      shortDescription:
+        'Road development on the Metri–Sriramarangapur–Chavuku–Jeeriganur–Gonalu road from km 4.50 to 7.50 — ₹4 crore sanctioned.',
+      locationName: 'Metri–Gonalu road, km 4.50 → 7.50',
+    },
+    kn: {
+      title: 'ಮೆಟ್ರಿ–ಗೋನಾಳು ರಸ್ತೆ (ಕಿ.ಮೀ. 4.50–7.50)',
+      shortDescription:
+        'ಮೆಟ್ರಿ–ಶ್ರೀರಾಮರಂಗಾಪುರ–ಚೌಕು–ಜೀರಿಗನೂರು–ಗೋನಾಳು ರಸ್ತೆಯ ಕಿ.ಮೀ. 4.50ರಿಂದ 7.50ರವರೆಗೆ ಅಭಿವೃದ್ಧಿಗೆ ₹4 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಮೆಟ್ರಿ–ಗೋನಾಳು ರಸ್ತೆ, ಕಿ.ಮೀ. 4.50 → 7.50',
+    },
+  },
+  {
+    slug: 'orvai-orvai-cross-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(4),
+    spent: spentNinetyPercent(crore(4)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 340,
+    completionDaysAgo: 32,
+    imagePrefix: 'orvai-cross',
+    areaEn: 'Orvai, Kurugodu taluk',
+    areaKn: 'ಓರ್ವಾಯಿ, ಕುರುಗೋಡು ತಾಲೂಕು',
+    en: {
+      title: 'Orvai village to Orvai Cross road development',
+      shortDescription:
+        'Road development from Orvai village to Orvai Cross in Kurugodu taluk — ₹4 crore sanctioned.',
+      locationName: 'Orvai village → Orvai Cross',
+    },
+    kn: {
+      title: 'ಓರ್ವಾಯಿ–ಓರ್ವಾಯಿ ಕ್ರಾಸ್ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಕುರುಗೋಡು ತಾಲೂಕಿನ ಓರ್ವಾಯಿ ಗ್ರಾಮದಿಂದ ಓರ್ವಾಯಿ ಕ್ರಾಸ್‌ವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹4 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಓರ್ವಾಯಿ ಗ್ರಾಮ → ಓರ್ವಾಯಿ ಕ್ರಾಸ್',
+    },
+  },
+  {
+    slug: 'muddapur-cross-hosakampli-new-bus-stand-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(4),
+    spent: spentNinetyPercent(crore(4)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 330,
+    completionDaysAgo: 28,
+    imagePrefix: 'hosakampli-bus',
+    areaEn: 'Kampli town — Hosakampli new bus stand',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ — ಹೊಸಕಂಪ್ಲಿ ಹೊಸ ಬಸ್ ನಿಲ್ದಾಣ',
+    en: {
+      title: 'Muddapur Cross to Hosakampli new bus stand road',
+      shortDescription:
+        'Road development from No. 10 Muddapur Cross to the Hosakampli new bus stand — ₹4 crore sanctioned.',
+      locationName: 'No. 10 Muddapur Cross → Hosakampli new bus stand',
+    },
+    kn: {
+      title: 'ಮುದ್ದಾಪುರ ಕ್ರಾಸ್–ಹೊಸಕಂಪ್ಲಿ ಹೊಸ ಬಸ್ ನಿಲ್ದಾಣ ರಸ್ತೆ',
+      shortDescription:
+        'ನಂ.10 ಮುದ್ದಾಪುರ ಕ್ರಾಸ್‌ನಿಂದ ಹೊಸಕಂಪ್ಲಿ ಹೊಸ ಬಸ್‌ ನಿಲ್ದಾಣದವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹4 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ನಂ.10 ಮುದ್ದಾಪುರ ಕ್ರಾಸ್ → ಹೊಸಕಂಪ್ಲಿ ಹೊಸ ಬಸ್ ನಿಲ್ದಾಣ',
+    },
+  },
+  {
+    slug: 'devasamudra-chikkajayiganur-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: crore(4.9),
+    spent: spentNinetyPercent(crore(4.9)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 95,
+    completionDaysAgo: null,
+    imagePrefix: 'devasamudra-chikka',
+    areaEn: 'Devasamudra–Chikkajayiganur, Kampli taluk',
+    areaKn: 'ದೇವಸಮುದ್ರ–ಚಿಕ್ಕಜಾಯಿಗನೂರು, ಕಂಪ್ಲಿ ತಾಲೂಕು',
+    en: {
+      title: 'Devasamudra to Chikkajayiganur road development',
+      shortDescription:
+        'Road development from Devasamudra to Chikkajayiganur in Kampli taluk — ₹4.90 crore sanctioned; work is under way.',
+      locationName: 'Devasamudra → Chikkajayiganur',
+    },
+    kn: {
+      title: 'ದೇವಸಮುದ್ರ–ಚಿಕ್ಕಜಾಯಿಗನೂರು ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿ ತಾಲೂಕಿನ ದೇವಸಮುದ್ರದಿಂದ ಚಿಕ್ಕಜಾಯಿಗನೂರುವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹4.90 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ — ಕಾಮಗಾರಿ ಪ್ರಗತಿಯಲ್ಲಿದೆ.',
+      locationName: 'ದೇವಸಮುದ್ರ → ಚಿಕ್ಕಜಾಯಿಗನೂರು',
+    },
+  },
+  {
+    slug: 'gangavathi-bridge-new-bus-stand-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: crore(3),
+    spent: spentNinetyPercent(crore(3)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 85,
+    completionDaysAgo: null,
+    imagePrefix: 'gangavathi-bridge',
+    areaEn: 'Kampli town — Gangavathi Bridge to new bus stand',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ — ಗಂಗಾವತಿ ಬ್ರಿಡ್ಜ್–ಹೊಸ ಬಸ್ ನಿಲ್ದಾಣ',
+    en: {
+      title: 'Gangavathi Bridge to new bus stand road',
+      shortDescription:
+        'Road development in Kampli town from Gangavathi Bridge to the new bus stand — ₹3 crore sanctioned; work is under way.',
+      locationName: 'Gangavathi Bridge → new bus stand',
+    },
+    kn: {
+      title: 'ಗಂಗಾವತಿ ಬ್ರಿಡ್ಜ್–ಹೊಸ ಬಸ್ ನಿಲ್ದಾಣ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿ ಪಟ್ಟಣದ ಗಂಗಾವತಿ ಬ್ರಿಡ್ಜ್‌ನಿಂದ ಹೊಸ ಬಸ್‌ ನಿಲ್ದಾಣದವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹3 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ — ಕಾಮಗಾರಿ ಪ್ರಗತಿಯಲ್ಲಿದೆ.',
+      locationName: 'ಗಂಗಾವತಿ ಬ್ರಿಡ್ಜ್ → ಹೊಸ ಬಸ್ ನಿಲ್ದಾಣ',
+    },
+  },
+  {
+    slug: 'koluru-korlagundi-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: crore(3.2101),
+    spent: null,
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'koluru-korlagundi',
+    areaEn: 'Koluru–Korlagundi',
+    areaKn: 'ಕೋಳೂರು–ಕೊರ್ಲಗುಂದಿ',
+    en: {
+      title: 'Koluru to Korlagundi road development',
+      shortDescription:
+        'Road development from Koluru village to Korlagundi — ₹3.2101 crore sanctioned.',
+      locationName: 'Koluru → Korlagundi',
+    },
+    kn: {
+      title: 'ಕೋಳೂರು–ಕೊರ್ಲಗುಂದಿ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription: 'ಕೋಳೂರು ಗ್ರಾಮದಿಂದ ಕೊರ್ಲಗುಂದಿವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹3.2101 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಕೋಳೂರು → ಕೊರ್ಲಗುಂದಿ',
+    },
+  },
+  {
+    slug: 'kuditini-sh132-guttiganur-orvai-cross-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: crore(2.52),
+    spent: null,
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'kuditini-guttiganur',
+    areaEn: 'Kuditini SH-132 — Guttiganur–Orvai Cross',
+    areaKn: 'ಕುಡಿತಿನಿ SH-132 — ಗುತ್ತಿಗನೂರು–ಓರ್ವಾಯಿ ಕ್ರಾಸ್',
+    en: {
+      title: 'Kuditini SH-132 to Guttiganur–Orvai Cross road',
+      shortDescription:
+        'Road development from Kuditini SH-132 to Guttiganur–Orvai Cross — ₹2.52 crore sanctioned.',
+      locationName: 'Kuditini SH-132 → Guttiganur–Orvai Cross',
+    },
+    kn: {
+      title: 'ಕುಡಿತಿನಿ SH-132–ಗುತ್ತಿಗನೂರು–ಓರ್ವಾಯಿ ಕ್ರಾಸ್ ರಸ್ತೆ',
+      shortDescription:
+        'ಕುಡಿತಿನಿ SH-132ರಿಂದ ಗುತ್ತಿಗನೂರು–ಓರ್ವಾಯಿ ಕ್ರಾಸ್‌ವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹2.52 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಕುಡಿತಿನಿ SH-132 → ಗುತ್ತಿಗನೂರು–ಓರ್ವಾಯಿ ಕ್ರಾಸ್',
+    },
+  },
 ];
 
 async function uploadImage(
@@ -509,7 +777,7 @@ async function createLocaleProject(
 }
 
 /**
- * Deletes every project row, then seeds the ten Kampli PWD road works (EN + KN)
+ * Deletes every project row, then seeds the Kampli PWD road works (EN + KN)
  * with AI cover / before / after images for each organisation.
  */
 export async function replaceDemoWorks(prisma: Prisma, orgs: readonly DemoOrgRef[]): Promise<void> {
@@ -546,7 +814,7 @@ export async function replaceDemoWorks(prisma: Prisma, orgs: readonly DemoOrgRef
           ...work.en,
           area: work.areaEn,
           descriptionHtml: explanationEn(
-            `${work.en.shortDescription} Compare the before and after photographs below.`,
+            `${work.en.shortDescription} Compare the before and after photographs above.`,
             work.spent,
             work.budget,
           ),
@@ -565,7 +833,7 @@ export async function replaceDemoWorks(prisma: Prisma, orgs: readonly DemoOrgRef
           ...work.kn,
           area: work.areaKn,
           descriptionHtml: explanationKn(
-            `${work.kn.shortDescription} ಕೆಳಗಿನ ಮೊದಲು ಮತ್ತು ನಂತರದ ಛಾಯಾಚಿತ್ರಗಳನ್ನು ಹೋಲಿಸಬಹುದು.`,
+            `${work.kn.shortDescription} ಮೇಲಿನ ಮೊದಲು ಮತ್ತು ನಂತರದ ಛಾಯಾಚಿತ್ರಗಳನ್ನು ಹೋಲಿಸಬಹುದು.`,
             work.spent,
             work.budget,
           ),

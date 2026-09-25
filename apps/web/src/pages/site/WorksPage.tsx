@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { ContentCategory } from '@rk/types';
-import { Button } from '@rk/ui';
 import '../../styles/work.css';
 import { useSite } from '../../features/site/SiteContext';
 import { useSeo } from '../../features/site/useSeo';
@@ -14,7 +13,13 @@ import {
   type PublicWorkDetail,
   type PublicWorkStatus,
 } from '../../features/work/workQueries';
-import { QueryBoundary, SectionHeader } from '../../components/site/states';
+import {
+  QueryBoundary,
+  SectionHeader,
+  SiteEmptyState,
+  SiteErrorState,
+  SiteLoadingState,
+} from '../../components/site/states';
 import { SiteBackBar } from '../../components/site/SiteBackBar';
 import {
   CategorySelect,
@@ -55,7 +60,14 @@ const STATUS_FILTERS: Array<{ value: PublicWorkStatus | null; key: StringKey }> 
 export function WorksPage() {
   const { t } = useSite();
   const [params, setParams] = useSearchParams();
-  const [cursors, setCursors] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [listing, setListing] = useState<{
+    nodes: PublicWorkCard[];
+    totalCount: number;
+    hasMore: boolean;
+  } | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadingMoreRef = useRef(false);
 
   const category = (params.get('category') as ContentCategory | null) ?? null;
   const workStatus = (params.get('status') as PublicWorkStatus | null) ?? null;
@@ -66,27 +78,24 @@ export function WorksPage() {
 
   useSeo({ title: t('section.work'), description: t('section.workSubtitle'), path: '/work' });
 
-  const variables = useMemo(
-    () => {
-      const filter: Record<string, unknown> = {
-        first: 12 * (cursors.length + 1),
-      };
-      // Omit null/empty filter fields. Sending explicit nulls for enums (and
-      // similar) has tripped intermittent GraphQL validation failures in the
-      // public works listing after filter changes.
-      if (category) filter.category = category;
-      if (workStatus) filter.workStatus = workStatus;
-      if (area) filter.area = area;
-      if (yearParam) {
-        const year = Number(yearParam);
-        if (Number.isFinite(year)) filter.year = year;
-      }
-      if (verifiedOnly) filter.verifiedOnly = true;
-      if (search.trim()) filter.search = search.trim();
-      return { filter };
-    },
-    [cursors.length, category, workStatus, area, yearParam, verifiedOnly, search],
-  );
+  const variables = useMemo(() => {
+    const filter: Record<string, unknown> = {
+      first: 12 * page,
+    };
+    // Omit null/empty filter fields. Sending explicit nulls for enums (and
+    // similar) has tripped intermittent GraphQL validation failures in the
+    // public works listing after filter changes.
+    if (category) filter.category = category;
+    if (workStatus) filter.workStatus = workStatus;
+    if (area) filter.area = area;
+    if (yearParam) {
+      const year = Number(yearParam);
+      if (Number.isFinite(year)) filter.year = year;
+    }
+    if (verifiedOnly) filter.verifiedOnly = true;
+    if (search.trim()) filter.search = search.trim();
+    return { filter };
+  }, [page, category, workStatus, area, yearParam, verifiedOnly, search]);
 
   const { state, refetch } = usePublicQuery<{
     publicWorks: {
@@ -97,11 +106,54 @@ export function WorksPage() {
     };
   }>(PUBLIC_WORKS_QUERY, variables);
 
+  // Keep the previous page of cards on screen while the next page loads —
+  // QueryBoundary would otherwise flash a full-page skeleton on every scroll.
+  const successWorks = state.status === 'success' ? state.data.publicWorks : null;
+  useEffect(() => {
+    if (!successWorks) return;
+    setListing({
+      nodes: successWorks.nodes,
+      totalCount: successWorks.totalCount,
+      hasMore: successWorks.hasMore,
+    });
+    loadingMoreRef.current = false;
+  }, [successWorks]);
+
+  useEffect(() => {
+    if (state.status === 'error') loadingMoreRef.current = false;
+  }, [state.status]);
+
+  const isInitialLoad = page === 1 && state.status === 'loading' && !listing;
+  const hasMore = listing?.hasMore ?? false;
+
+  // Infinite scroll: load the next page as soon as the sentinel is visible.
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore || typeof IntersectionObserver !== 'function') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        if (loadingMoreRef.current || state.status === 'loading') return;
+        loadingMoreRef.current = true;
+        setPage((current) => current + 1);
+      },
+      { rootMargin: '0px', threshold: 0 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, state.status, page, listing?.nodes.length]);
+
+  const resetListing = () => {
+    setListing(null);
+    setPage(1);
+  };
+
   const setFilter = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
     else next.delete(key);
-    setCursors([]);
+    resetListing();
     // Filters live in the URL, so a narrowed view is a shareable link - the
     // Phase 7 rule, applied to the public site.
     setParams(next, { replace: true });
@@ -117,7 +169,7 @@ export function WorksPage() {
           compact
           showClear={Boolean(category || workStatus || verifiedOnly || search || area || yearParam)}
           onClear={() => {
-            setCursors([]);
+            resetListing();
             setParams(new URLSearchParams(), { replace: true });
           }}
         >
@@ -159,40 +211,35 @@ export function WorksPage() {
           </FilterInlineRow>
         </FilterPanel>
 
-        <QueryBoundary
-          state={state}
-          refetch={refetch}
-          isEmpty={(data) => data.publicWorks.nodes.length === 0}
-          emptyKey="empty.projects"
-        >
-          {(data) => (
-            <>
-              <p className="filter-panel__count">
-                {t('work.showing')
-                  .replace('{shown}', String(data.publicWorks.nodes.length))
-                  .replace('{total}', String(data.publicWorks.totalCount))}
-              </p>
+        {isInitialLoad ? <SiteLoadingState /> : null}
 
-              <div className="card-grid card-grid--3">
-                {data.publicWorks.nodes.map((work) => (
-                  <WorkCard key={work.id} work={work} />
-                ))}
-              </div>
+        {state.status === 'error' && !listing ? (
+          <SiteErrorState message={state.message} onRetry={refetch} />
+        ) : null}
 
-              {data.publicWorks.hasMore ? (
-                <div className="load-more">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setCursors((all) => [...all, data.publicWorks.endCursor ?? ''])}
-                  >
-                    {t('pagination.loadMore')}
-                  </Button>
-                </div>
-              ) : null}
-            </>
-          )}
-        </QueryBoundary>
+        {listing && listing.nodes.length === 0 && state.status === 'success' ? (
+          <SiteEmptyState messageKey="empty.projects" />
+        ) : null}
+
+        {listing && listing.nodes.length > 0 ? (
+          <>
+            <p className="filter-panel__count">
+              {t('work.showing')
+                .replace('{shown}', String(listing.nodes.length))
+                .replace('{total}', String(listing.totalCount))}
+            </p>
+
+            <div className="card-grid card-grid--3">
+              {listing.nodes.map((work) => (
+                <WorkCard key={work.id} work={work} />
+              ))}
+            </div>
+
+            {listing.hasMore ? (
+              <div ref={sentinelRef} className="works-scroll-sentinel" aria-hidden="true" />
+            ) : null}
+          </>
+        ) : null}
       </div>
     </div>
   );
@@ -622,10 +669,6 @@ function WorkDetailArticle({
       ) : null}
 
       <EvidenceGallery evidence={item.evidence} heading={t('work.evidence')} />
-
-      {item.evidence.length === 0 ? (
-        <p className="work-detail__no-evidence">{t('work.noEvidence')}</p>
-      ) : null}
     </article>
   );
 }
