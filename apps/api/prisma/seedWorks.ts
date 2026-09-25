@@ -1,5 +1,5 @@
 /**
- * Kampli constituency road works seed (PWD / major road packages).
+ * Kampli constituency works seed (roads, water & irrigation, education).
  *
  * Budget figures are as provided for MLA-linked sanctions and works.
  * Cover / before / after photographs are AI-generated illustrations so the
@@ -60,7 +60,7 @@ interface WorkLocaleCopy {
 
 interface WorkDefinition {
   slug: string;
-  category: 'INFRASTRUCTURE';
+  category: 'INFRASTRUCTURE' | 'WATER' | 'EDUCATION';
   projectStatus: 'COMPLETED' | 'IN_PROGRESS' | 'PLANNED';
   featured: boolean;
   /** Sanctioned / approved budget in INR (whole rupees). */
@@ -81,6 +81,10 @@ interface WorkDefinition {
 
 function crore(n: number): number {
   return Math.round(n * 10_000_000);
+}
+
+function lakh(n: number): number {
+  return Math.round(n * 100_000);
 }
 
 function spentNinetyPercent(budget: number): number {
@@ -111,8 +115,9 @@ function explanationKn(body: string, spent: number | null, budget: number): stri
 }
 
 /**
- * Status split per batch of ten (as requested): 6 completed, 2 in progress,
- * 2 sanctioned (PLANNED). Assignment by listing order within each batch.
+ * Road batch: status split of ten (6 completed, 2 in progress, 2 sanctioned).
+ * Water / irrigation batch: all completed and featured (per request).
+ * Shridharagadde school is listed twice (WATER + EDUCATION) with shared media.
  */
 const WORKS: readonly WorkDefinition[] = [
   {
@@ -923,6 +928,224 @@ const WORKS: readonly WorkDefinition[] = [
       locationName: 'ಕುರುಗೋಡು ಭಾಗದ ರಸ್ತೆ ಮಾರ್ಗ',
     },
   },
+
+  // --- Water & irrigation (all completed + featured) ---
+  {
+    slug: 'kanithimadapura-shridharagadde-irrigation',
+    category: 'WATER',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(87),
+    spent: spentNinetyPercent(crore(87)),
+    department: 'Drinking Water / Irrigation',
+    agency: 'Drinking Water / Irrigation',
+    startDaysAgo: 540,
+    completionDaysAgo: 75,
+    imagePrefix: 'kanithimadapura-irrigation',
+    areaEn: 'Kanithimadapura–Shridharagadde, Kampli Constituency',
+    areaKn: 'ಕಣಿತಿಮದಾಪುರ–ಶ್ರೀಧರಗಡ್ಡೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Kanithimadapura–Shridharagadde irrigation project',
+      shortDescription:
+        'Irrigation project for the Kanithimadapura–Shridharagadde area — ₹87 crore sanctioned.',
+      locationName: 'Kanithimadapura–Shridharagadde irrigation corridor',
+    },
+    kn: {
+      title: 'ಕಣಿತಿಮದಾಪುರ–ಶ್ರೀಧರಗಡ್ಡೆ ನೀರಾವರಿ ಯೋಜನೆ',
+      shortDescription:
+        'ಕಣಿತಿಮದಾಪುರ–ಶ್ರೀಧರಗಡ್ಡೆ ಭಾಗದ ನೀರಾವರಿ ಯೋಜನೆಗೆ ₹87 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಕಣಿತಿಮದಾಪುರ–ಶ್ರೀಧರಗಡ್ಡೆ ನೀರಾವರಿ ಮಾರ್ಗ',
+    },
+  },
+  {
+    slug: 'kurugodu-household-drinking-water',
+    category: 'WATER',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(79),
+    spent: spentNinetyPercent(crore(79)),
+    department: 'Drinking Water / Irrigation',
+    agency: 'Drinking Water / Irrigation',
+    startDaysAgo: 500,
+    completionDaysAgo: 60,
+    imagePrefix: 'kurugodu-drinking-water',
+    areaEn: 'Kurugodu town, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Kurugodu household drinking water supply',
+      shortDescription:
+        'Drinking water supply scheme to every house in Kurugodu town — estimated cost ₹79 crore.',
+      locationName: 'Kurugodu town water supply network',
+    },
+    kn: {
+      title: 'ಕುರುಗೋಡು ಮನೆಗೆ ಕುಡಿಯುವ ನೀರು ಸರಬರಾಜು',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದ ಪ್ರತಿಯೊಂದು ಮನೆಗೆ ಕುಡಿಯುವ ನೀರು ಸರಬರಾಜು ಮಾಡುವ ಯೋಜನೆಗೆ ₹79 ಕೋಟಿ ಅಂದಾಜು ವೆಚ್ಚ.',
+      locationName: 'ಕುರುಗೋಡು ಪಟ್ಟಣ ನೀರು ಸರಬರಾಜು ಜಾಲ',
+    },
+  },
+  {
+    slug: 'somappakere-development',
+    category: 'WATER',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(5),
+    spent: spentNinetyPercent(crore(5)),
+    department: 'Drinking Water / Irrigation',
+    agency: 'Drinking Water / Irrigation',
+    startDaysAgo: 420,
+    completionDaysAgo: 55,
+    imagePrefix: 'somappakere-development',
+    areaEn: 'Somappakere, Kampli Constituency',
+    areaKn: 'ಸೋಮಪ್ಪಕೆರೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Somappakere development works',
+      shortDescription:
+        'Development works at Somappakere tank and surrounds — estimated cost about ₹5 crore.',
+      locationName: 'Somappakere tank area',
+    },
+    kn: {
+      title: 'ಸೋಮಪ್ಪಕೆರೆ ಅಭಿವೃದ್ಧಿ ಕಾಮಗಾರಿ',
+      shortDescription:
+        'ಸೋಮಪ್ಪಕೆರೆ ಅಭಿವೃದ್ಧಿಗೆ ಸುಮಾರು ₹5 ಕೋಟಿ ಅಂದಾಜು ಮೊತ್ತದ ಕಾಮಗಾರಿ.',
+      locationName: 'ಸೋಮಪ್ಪಕೆರೆ ಕೆರೆ ಪ್ರದೇಶ',
+    },
+  },
+  {
+    slug: 'somappakere-amrut-2-development',
+    category: 'WATER',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(2.8),
+    spent: spentNinetyPercent(crore(2.8)),
+    department: 'Drinking Water / Irrigation',
+    agency: 'Drinking Water / Irrigation',
+    startDaysAgo: 380,
+    completionDaysAgo: 45,
+    imagePrefix: 'somappakere-amrut',
+    areaEn: 'Somappakere, Kampli Constituency',
+    areaKn: 'ಸೋಮಪ್ಪಕೆರೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Somappakere AMRUT 2.0 development',
+      shortDescription:
+        'Somappakere development under the AMRUT 2.0 scheme — ₹2.80 crore grant.',
+      locationName: 'Somappakere AMRUT 2.0 works',
+    },
+    kn: {
+      title: 'ಸೋಮಪ್ಪಕೆರೆ ಅಮೃತ್ 2.0 ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಸೋಮಪ್ಪಕೆರೆ ಅಮೃತ್‌ 2.0 ಯೋಜನೆಯಡಿ ಅಭಿವೃದ್ಧಿಗೆ ₹2.80 ಕೋಟಿ ಅನುದಾನ.',
+      locationName: 'ಸೋಮಪ್ಪಕೆರೆ ಅಮೃತ್ 2.0 ಕಾಮಗಾರಿ',
+    },
+  },
+  {
+    slug: 'somappakere-park-development',
+    category: 'WATER',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(1),
+    spent: spentNinetyPercent(crore(1)),
+    department: 'Drinking Water / Irrigation',
+    agency: 'Drinking Water / Irrigation',
+    startDaysAgo: 360,
+    completionDaysAgo: 40,
+    imagePrefix: 'somappakere-park',
+    areaEn: 'Somappakere, Kampli Constituency',
+    areaKn: 'ಸೋಮಪ್ಪಕೆರೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Somappakere park development',
+      shortDescription:
+        'Park development at Somappakere — ₹1 crore grant.',
+      locationName: 'Somappakere park',
+    },
+    kn: {
+      title: 'ಸೋಮಪ್ಪಕೆರೆ ಪಾರ್ಕ್ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಸೋಮಪ್ಪಕೆರೆ ಪಾರ್ಕ್‌ ಅಭಿವೃದ್ಧಿಗೆ ₹1 ಕೋಟಿ ಅನುದಾನ.',
+      locationName: 'ಸೋಮಪ್ಪಕೆರೆ ಪಾರ್ಕ್',
+    },
+  },
+  {
+    slug: 'constituency-schools-drinking-water-units',
+    category: 'WATER',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(5.3668),
+    spent: spentNinetyPercent(crore(5.3668)),
+    department: 'Drinking Water / Irrigation',
+    agency: 'Drinking Water / Irrigation',
+    startDaysAgo: 400,
+    completionDaysAgo: 50,
+    imagePrefix: 'schools-water-units',
+    areaEn: 'Kampli Constituency (156 government schools)',
+    areaKn: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ (156 ಸರ್ಕಾರಿ ಶಾಲೆಗಳು)',
+    en: {
+      title: 'Pure drinking water units in 156 government schools',
+      shortDescription:
+        'Installation of pure drinking water machines in 156 government schools across the constituency — ₹5.3668 crore.',
+      locationName: 'Government schools across Kampli Constituency',
+    },
+    kn: {
+      title: '156 ಸರ್ಕಾರಿ ಶಾಲೆಗಳಿಗೆ ಶುದ್ಧ ಕುಡಿಯುವ ನೀರಿನ ಯಂತ್ರಗಳು',
+      shortDescription:
+        'ಕ್ಷೇತ್ರದ 156 ಸರ್ಕಾರಿ ಶಾಲೆಗಳಿಗೆ ಶುದ್ಧ ಕುಡಿಯುವ ನೀರಿನ ಯಂತ್ರಗಳ ಅಳವಡಿಕೆಗೆ ₹5.3668 ಕೋಟಿ.',
+      locationName: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರದ ಸರ್ಕಾರಿ ಶಾಲೆಗಳು',
+    },
+  },
+  {
+    slug: 'shridharagadde-school-drinking-water',
+    category: 'WATER',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: lakh(37.48),
+    spent: spentNinetyPercent(lakh(37.48)),
+    department: 'Drinking Water / Irrigation',
+    agency: 'Drinking Water / Irrigation',
+    startDaysAgo: 320,
+    completionDaysAgo: 35,
+    imagePrefix: 'shridharagadde-school',
+    areaEn: 'Shridharagadde, Kampli Constituency',
+    areaKn: 'ಶ್ರೀಧರಗಡ್ಡೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Shridharagadde school — pure drinking water works',
+      shortDescription:
+        'Pure drinking water works at Shridharagadde Government Higher Primary School (with two new rooms) — ₹37.48 lakh.',
+      locationName: 'Shridharagadde Government Higher Primary School',
+    },
+    kn: {
+      title: 'ಶ್ರೀಧರಗಡ್ಡೆ ಶಾಲೆ — ಶುದ್ಧ ಕುಡಿಯುವ ನೀರಿನ ಕಾಮಗಾರಿ',
+      shortDescription:
+        'ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆಗೆ ಎರಡು ಕೊಠಡಿಗಳ ಜೊತೆಗೆ ಶುದ್ಧ ಕುಡಿಯುವ ನೀರಿನ ಕಾಮಗಾರಿಗೆ ₹37.48 ಲಕ್ಷ.',
+      locationName: 'ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'shridharagadde-school-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: lakh(37.48),
+    spent: spentNinetyPercent(lakh(37.48)),
+    department: 'Drinking Water / Irrigation',
+    agency: 'Drinking Water / Irrigation',
+    startDaysAgo: 320,
+    completionDaysAgo: 35,
+    imagePrefix: 'shridharagadde-school',
+    areaEn: 'Shridharagadde, Kampli Constituency',
+    areaKn: 'ಶ್ರೀಧರಗಡ್ಡೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Shridharagadde school — two new classrooms',
+      shortDescription:
+        'Two new classrooms plus pure drinking water works at Shridharagadde Government Higher Primary School — ₹37.48 lakh.',
+      locationName: 'Shridharagadde Government Higher Primary School',
+    },
+    kn: {
+      title: 'ಶ್ರೀಧರಗಡ್ಡೆ ಶಾಲೆ — ಎರಡು ಹೊಸ ಕೊಠಡಿಗಳು',
+      shortDescription:
+        'ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆಗೆ ಎರಡು ಕೊಠಡಿಗಳ ಜೊತೆಗೆ ಶುದ್ಧ ಕುಡಿಯುವ ನೀರಿನ ಕಾಮಗಾರಿಗೆ ₹37.48 ಲಕ್ಷ.',
+      locationName: 'ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+    },
+  },
 ];
 
 async function uploadImage(
@@ -1048,8 +1271,8 @@ async function createLocaleProject(
 }
 
 /**
- * Deletes every project row, then seeds the Kampli PWD road works (EN + KN)
- * with AI cover / before / after images for each organisation.
+ * Deletes every project row, then seeds Kampli works (roads, water, education;
+ * EN + KN) with AI cover / before / after images for each organisation.
  */
 export async function replaceDemoWorks(prisma: Prisma, orgs: readonly DemoOrgRef[]): Promise<void> {
   const deleted = await prisma.project.deleteMany({});
@@ -1116,7 +1339,7 @@ export async function replaceDemoWorks(prisma: Prisma, orgs: readonly DemoOrgRef
       });
     }
 
-    console.log(`Seeded ${WORKS.length} road works (en + kn) with media for "${org.slug}".`);
+    console.log(`Seeded ${WORKS.length} works (en + kn) with media for "${org.slug}".`);
   }
 }
 
