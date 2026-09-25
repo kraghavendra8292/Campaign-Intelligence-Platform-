@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Icon } from '@rk/ui';
 import { useSite } from '../../features/site/SiteContext';
 import { mediaUrl } from '../../features/site/media';
@@ -22,7 +22,10 @@ import type { HeroSlide } from '../../features/site/heroSlides';
  */
 
 /** Long enough to read a photograph, short enough to feel alive. */
-const AUTOPLAY_MS = 5500;
+const AUTOPLAY_MS = 6000;
+
+/** Crossfade length — long enough to read as intentional, not a glitch. */
+const TRANSITION_MS = 1000;
 
 /** Below this a gesture is a tap or a scroll, not a swipe. */
 const SWIPE_THRESHOLD_PX = 48;
@@ -42,30 +45,61 @@ export function CampaignHeroCarousel({ slides, children }: CampaignHeroCarouselP
   const [playing, setPlaying] = useState(true);
   /** Transient: a pointer is down, or a pointer/focus is resting on the hero. */
   const [held, setHeld] = useState(false);
+  /** Direction of the last step — drives enter/exit drift on the crossfade. */
+  const [direction, setDirection] = useState<'next' | 'prev'>('next');
+  /** Slide that is still fading out after an index change. */
+  const [outgoing, setOutgoing] = useState<number | null>(null);
 
   const baseId = useId();
   const dragRef = useRef<{ x: number; y: number } | null>(null);
+  const indexRef = useRef(index);
+  indexRef.current = index;
 
   /*
    * Which slides are committed to the DOM.
    *
    * Derived from the current index rather than accumulated in state: the slide
-   * being shown, the one after it, and the one before it.
+   * being shown, the one after it, the one before it, and the slide still
+   * fading out.
    *
    * The NEXT slide is mounted early so its bytes land during the autoplay
-   * interval and the transition never waits on the network. The PREVIOUS one
-   * stays mounted because it is still fading OUT - dropping it on the index
-   * change would make it vanish instead of dissolve. Everything further away is
-   * a full-bleed photograph nobody has asked to see yet.
+   * interval and the transition never waits on the network. The PREVIOUS /
+   * outgoing one stays mounted because it is still fading OUT - dropping it
+   * on the index change would make it vanish instead of dissolve. Everything
+   * further away is a full-bleed photograph nobody has asked to see yet.
    */
-  const mounted = new Set([index, (index + 1) % total, (index - 1 + total) % total]);
+  const mounted = new Set(
+    [index, (index + 1) % total, (index - 1 + total) % total, outgoing].filter(
+      (value): value is number => value !== null,
+    ),
+  );
 
   const step = useCallback(
     (delta: number) => {
+      setDirection(delta >= 0 ? 'next' : 'prev');
+      setOutgoing(indexRef.current);
       setIndex((current) => (current + delta + total) % total);
     },
     [total],
   );
+
+  const goTo = useCallback((position: number) => {
+    const current = indexRef.current;
+    if (position === current) return;
+    setDirection(position > current ? 'next' : 'prev');
+    setOutgoing(current);
+    setIndex(position);
+  }, []);
+
+  /*
+   * Clear the outgoing marker after the crossfade finishes so a later visit
+   * to that slide does not inherit an exit transform.
+   */
+  useEffect(() => {
+    if (outgoing === null) return;
+    const timer = window.setTimeout(() => setOutgoing(null), TRANSITION_MS);
+    return () => window.clearTimeout(timer);
+  }, [outgoing, index]);
 
   const autoplayRunning = isCarousel && playing && !held;
 
@@ -130,8 +164,16 @@ export function CampaignHeroCarousel({ slides, children }: CampaignHeroCarouselP
   return (
     <section
       className="hero-carousel"
+      data-direction={direction}
+      data-playing={autoplayRunning ? 'true' : 'false'}
       aria-roledescription={isCarousel ? 'carousel' : undefined}
       aria-label={t('hero.slideshow')}
+      style={
+        {
+          '--hero-autoplay-ms': `${AUTOPLAY_MS}ms`,
+          '--hero-transition-ms': `${TRANSITION_MS}ms`,
+        } as CSSProperties
+      }
       onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
@@ -147,6 +189,7 @@ export function CampaignHeroCarousel({ slides, children }: CampaignHeroCarouselP
             key={item.image.id}
             className="hero-carousel__slide"
             data-active={position === index}
+            data-outgoing={outgoing === position && position !== index}
             aria-hidden={position !== index}
             {...(isCarousel
               ? {
@@ -202,17 +245,21 @@ export function CampaignHeroCarousel({ slides, children }: CampaignHeroCarouselP
           </button>
 
           <div className="hero-carousel__controls">
-            <div className="hero-carousel__dots">
+            <div className="hero-carousel__dots" role="tablist" aria-label={t('hero.slideshow')}>
               {slides.map((item, position) => (
                 <button
                   key={item.image.id}
                   type="button"
                   className="hero-carousel__dot"
                   data-active={position === index}
-                  aria-current={position === index}
+                  aria-current={position === index ? 'true' : undefined}
                   aria-label={t('hero.goToSlide', { index: position + 1 })}
-                  onClick={() => setIndex(position)}
-                />
+                  onClick={() => goTo(position)}
+                >
+                  {position === index ? (
+                    <span key={`progress-${index}`} className="hero-carousel__dot-fill" aria-hidden="true" />
+                  ) : null}
+                </button>
               ))}
             </div>
 

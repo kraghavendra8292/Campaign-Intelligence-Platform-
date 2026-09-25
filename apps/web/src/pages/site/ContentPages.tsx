@@ -167,55 +167,66 @@ export function VisionPage() {
 
   return (
     <QueryBoundary state={state} refetch={refetch}>
-      {(data) => (
-        <>
-          <div className="section section--back-only">
-            <div className="section__inner">
-              <SiteBackBar
-                fallbackTo="/"
-                backLabel={t('nav.backHome')}
-                listTo="/"
-                listLabel={t('nav.home')}
-              />
-            </div>
-          </div>
+      {(data) => {
+        const priorities = data.publicPriorities;
+        const headline = data.publicVision?.headline ?? t('section.vision');
+        const summary = data.publicVision?.summary ?? t('section.visionSubtitle');
 
-          {data.publicVision ? (
-            <section className="hero hero--compact">
-              <div className="hero__inner">
-                <div className="hero__content">
-                  <h1 className="hero__title">{data.publicVision.headline}</h1>
-                  {data.publicVision.summary ? (
-                    <p className="hero__subtitle">{data.publicVision.summary}</p>
-                  ) : null}
-                </div>
+        return (
+          <>
+            <div className="section section--back-only">
+              <div className="section__inner">
+                <SiteBackBar
+                  fallbackTo="/"
+                  backLabel={t('nav.backHome')}
+                  listTo="/"
+                  listLabel={t('nav.home')}
+                />
               </div>
-            </section>
-          ) : null}
-
-          <div className="section">
-            <div className="section__inner">
-              {data.publicVision?.statementHtml ? (
-                <div className="section__inner--narrow">
-                  <RichText html={data.publicVision.statementHtml} />
-                </div>
-              ) : null}
-
-              <SectionHeader title={t('section.vision')} subtitle={t('section.visionSubtitle')} />
-
-              {data.publicPriorities.length > 0 ? (
-                <div className="card-grid card-grid--3">
-                  {data.publicPriorities.map((priority) => (
-                    <PriorityCard key={priority.id} priority={priority} />
-                  ))}
-                </div>
-              ) : (
-                <SiteEmptyState messageKey="empty.priorities" />
-              )}
             </div>
-          </div>
-        </>
-      )}
+
+            <header className="vision-page__intro">
+              <div className="section__inner">
+                <p className="vision-page__eyebrow">{t('vision.eyebrow')}</p>
+                <h1 className="vision-page__title">{headline}</h1>
+                {summary ? <p className="vision-page__summary">{summary}</p> : null}
+              </div>
+            </header>
+
+            <div className="section">
+              <div className="section__inner">
+                {data.publicVision?.statementHtml ? (
+                  <div className="vision-page__statement">
+                    <RichText html={data.publicVision.statementHtml} />
+                  </div>
+                ) : null}
+
+                <SectionHeader
+                  title={t('section.priorities')}
+                  subtitle={t('section.prioritiesSubtitle')}
+                  action={
+                    priorities.length > 0 ? (
+                      <span className="vision-page__count">
+                        {t('vision.prioritiesCount', { count: priorities.length })}
+                      </span>
+                    ) : undefined
+                  }
+                />
+
+                {priorities.length > 0 ? (
+                  <div className="card-grid card-grid--3">
+                    {priorities.map((priority, i) => (
+                      <PriorityCard key={priority.id} priority={priority} index={i + 1} />
+                    ))}
+                  </div>
+                ) : (
+                  <SiteEmptyState messageKey="empty.priorities" />
+                )}
+              </div>
+            </div>
+          </>
+        );
+      }}
     </QueryBoundary>
   );
 }

@@ -182,8 +182,8 @@ export function SiteHomePage() {
                   />
                   {page.priorities.length > 0 ? (
                     <div className="card-grid card-grid--3">
-                      {page.priorities.slice(0, 6).map((priority) => (
-                        <PriorityCard key={priority.id} priority={priority} />
+                      {page.priorities.slice(0, 6).map((priority, i) => (
+                        <PriorityCard key={priority.id} priority={priority} index={i + 1} />
                       ))}
                     </div>
                   ) : (

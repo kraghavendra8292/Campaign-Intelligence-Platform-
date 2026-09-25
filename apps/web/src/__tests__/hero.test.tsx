@@ -222,7 +222,7 @@ describe('hero slideshow - rendering', () => {
       expect(activeIndex()).toBe(0);
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(6000);
+        await vi.advanceTimersByTimeAsync(6500);
       });
       expect(activeIndex()).toBe(1);
 

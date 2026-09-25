@@ -415,38 +415,54 @@ async function seedKannada(prisma: Prisma, organizationId: string, org: DemoOrg)
       title: 'ರಸ್ತೆ ಮತ್ತು ಮೂಲಸೌಕರ್ಯ',
       icon: 'road',
       category: 'INFRASTRUCTURE' as const,
+      description: 'ಪ್ರತಿ ವಾರ್ಡಿನಲ್ಲಿ ಉತ್ತಮ ರಸ್ತೆಗಳು, ಒಳಚರಂಡಿ ಮತ್ತು ಬೀದಿ ದೀಪಗಳು.',
     },
-    { slug: 'water', title: 'ನೀರು', icon: 'water', category: 'WATER' as const },
+    {
+      slug: 'water',
+      title: 'ನೀರು',
+      icon: 'water',
+      category: 'WATER' as const,
+      description: 'ವಿಶ್ವಾಸಾರ್ಹ ಕುಡಿಯುವ ನೀರು ಮತ್ತು ನಿರಂತರ ಪೂರೈಕೆ ವ್ಯವಸ್ಥೆ.',
+    },
     {
       slug: 'education',
       title: 'ಶಿಕ್ಷಣ',
       icon: 'school',
       category: 'EDUCATION' as const,
+      description: 'ಸುಸಜ್ಜಿತ ಶಾಲೆಗಳು ಮತ್ತು ವಿದ್ಯಾರ್ಥಿಗಳಿಗೆ ಬೆಂಬಲ.',
     },
     {
       slug: 'healthcare',
       title: 'ಆರೋಗ್ಯ',
       icon: 'health',
       category: 'HEALTHCARE' as const,
+      description: 'ಸುಲಭವಾಗಿ ತಲುಪುವ ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರಗಳು ಮತ್ತು ಆರೋಗ್ಯ ಶಿಬಿರಗಳು.',
     },
     {
       slug: 'employment',
       title: 'ಉದ್ಯೋಗ',
       icon: 'work',
       category: 'EMPLOYMENT' as const,
+      description: 'ಕೌಶಲ್ಯ ತರಬೇತಿ ಮತ್ತು ಸ್ಥಳೀಯ ಉದ್ಯಮಕ್ಕೆ ಬೆಂಬಲ.',
     },
   ];
 
   for (const [index, priority] of priorities.entries()) {
     await prisma.priority.upsert({
       where: { organizationId_slug_locale: { organizationId, slug: priority.slug, locale: 'kn' } },
-      update: {},
+      update: {
+        title: priority.title,
+        description: priority.description,
+        iconKey: priority.icon,
+        category: priority.category,
+        displayOrder: index,
+      },
       create: {
         organizationId,
         locale: 'kn',
         slug: priority.slug,
         title: priority.title,
-        description: 'ಡೆಮೋ ವಿವರಣೆ.',
+        description: priority.description,
         iconKey: priority.icon,
         category: priority.category,
         displayOrder: index,

@@ -23,7 +23,20 @@ import type {
  * a redundant "view details" link competing in the tab order.
  */
 
-/** Icons for priorities, keyed by the allow-listed `iconKey`. */
+/** Bundled AI photos for priorities when CMS has no `image` yet. */
+const PRIORITY_FALLBACK_IMAGES: Record<string, string> = {
+  road: '/priorities/road.webp',
+  water: '/priorities/water.webp',
+  school: '/priorities/school.webp',
+  health: '/priorities/health.webp',
+  work: '/priorities/work.webp',
+  agriculture: '/priorities/work.webp',
+  services: '/priorities/road.webp',
+  environment: '/priorities/water.webp',
+  community: '/priorities/school.webp',
+};
+
+/** Icons for priorities, keyed by the allow-listed `iconKey` (emoji fallback only). */
 const PRIORITY_ICONS: Record<string, string> = {
   road: '🛣️',
   water: '💧',
@@ -211,20 +224,75 @@ export function EventCard({ event }: { event: EventCardData }) {
   );
 }
 
-export function PriorityCard({ priority }: { priority: PriorityCardData }) {
-  const icon = priority.iconKey ? PRIORITY_ICONS[priority.iconKey] : null;
+export function PriorityCard({
+  priority,
+  index,
+}: {
+  priority: PriorityCardData;
+  /** 1-based display order for a numbered priority list. */
+  index?: number;
+}) {
+  const { t } = useSite();
+  const iconKey = priority.iconKey;
+  const fallbackSrc = iconKey ? PRIORITY_FALLBACK_IMAGES[iconKey] : null;
+  const emoji = iconKey ? PRIORITY_ICONS[iconKey] : null;
+  const worksHref = `/work?category=${encodeURIComponent(priority.category)}`;
+  const orderLabel =
+    typeof index === 'number' ? String(index).padStart(2, '0') : null;
 
   return (
     <article className="priority-card">
-      {icon ? (
-        <span className="priority-card__icon" aria-hidden="true">
-          {icon}
-        </span>
-      ) : null}
-      <h3 className="priority-card__title">{priority.title}</h3>
-      {priority.description ? (
-        <p className="priority-card__description">{priority.description}</p>
-      ) : null}
+      <Link to={worksHref} className="priority-card__link">
+        <div className="priority-card__media-wrap">
+          {priority.image ? (
+            <SiteImage
+              image={priority.image}
+              fallbackAlt={priority.title}
+              aspectRatio="4/3"
+              className="priority-card__media"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          ) : fallbackSrc ? (
+            <div className="site-image site-image--4-3 priority-card__media">
+              <img
+                src={fallbackSrc}
+                alt=""
+                width={960}
+                height={720}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          ) : (
+            <div
+              className="site-image site-image--4-3 priority-card__media site-image--placeholder"
+              aria-hidden="true"
+            >
+              <span className="priority-card__emoji">{emoji ?? '◎'}</span>
+            </div>
+          )}
+
+          {orderLabel ? (
+            <span className="priority-card__index" aria-hidden="true">
+              {orderLabel}
+            </span>
+          ) : null}
+
+          <span className="priority-card__category">
+            <CategoryBadge category={priority.category} />
+          </span>
+        </div>
+
+        <div className="priority-card__body">
+          <h3 className="priority-card__title">{priority.title}</h3>
+          {priority.description ? (
+            <p className="priority-card__description">{priority.description}</p>
+          ) : null}
+          <span className="priority-card__action" aria-hidden="true">
+            {t('priority.relatedWork')} →
+          </span>
+        </div>
+      </Link>
     </article>
   );
 }
