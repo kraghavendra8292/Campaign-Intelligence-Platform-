@@ -60,7 +60,7 @@ interface WorkLocaleCopy {
 
 interface WorkDefinition {
   slug: string;
-  category: 'INFRASTRUCTURE' | 'WATER' | 'EDUCATION';
+  category: 'INFRASTRUCTURE' | 'WATER' | 'EDUCATION' | 'PUBLIC_SERVICES';
   projectStatus: 'COMPLETED' | 'IN_PROGRESS' | 'PLANNED';
   featured: boolean;
   /** Sanctioned / approved budget in INR (whole rupees). */
@@ -1144,6 +1144,278 @@ const WORKS: readonly WorkDefinition[] = [
       shortDescription:
         'ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆಗೆ ಎರಡು ಕೊಠಡಿಗಳ ಜೊತೆಗೆ ಶುದ್ಧ ಕುಡಿಯುವ ನೀರಿನ ಕಾಮಗಾರಿಗೆ ₹37.48 ಲಕ್ಷ.',
       locationName: 'ಶ್ರೀಧರಗಡ್ಡೆ ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
+    },
+  },
+
+  // --- Education / schools & hostels (6 completed, 2 in progress, 2 sanctioned) ---
+  {
+    slug: 'constituency-137-schools-kmrc-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(110),
+    spent: spentNinetyPercent(crore(110)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 560,
+    completionDaysAgo: 80,
+    imagePrefix: 'kmrc-schools-classrooms',
+    areaEn: 'Kampli Constituency (137 schools)',
+    areaKn: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ (137 ಶಾಲೆಗಳು)',
+    en: {
+      title: 'New classrooms in 137 schools (KMRC)',
+      shortDescription:
+        'Construction of new classrooms in 137 schools across the constituency under the KMRC scheme — ₹110 crore.',
+      locationName: 'Government schools across Kampli Constituency',
+    },
+    kn: {
+      title: '137 ಶಾಲೆಗಳಿಗೆ ಹೊಸ ಕೊಠಡಿಗಳು (ಕೆಎಂಆರ್‌ಸಿ)',
+      shortDescription:
+        'ಕ್ಷೇತ್ರದ 137 ಶಾಲೆಗಳಿಗೆ ಹೊಸ ಕೊಠಡಿಗಳ ನಿರ್ಮಾಣಕ್ಕೆ ₹110 ಕೋಟಿ ಕೆಎಂಆರ್‌ಸಿ ಯೋಜನೆಯಡಿ.',
+      locationName: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರದ ಸರ್ಕಾರಿ ಶಾಲೆಗಳು',
+    },
+  },
+  {
+    slug: 'aralihalli-thanda-morarji-desai-school',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(25),
+    spent: spentNinetyPercent(crore(25)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 500,
+    completionDaysAgo: 70,
+    imagePrefix: 'aralihalli-morarji',
+    areaEn: 'Aralihalli Thanda, Kampli Constituency',
+    areaKn: 'ಅರಳಿಹಳ್ಳಿ ತಾಂಡಾ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Morarji Desai residential school — Aralihalli Thanda',
+      shortDescription:
+        'Minority Morarji Desai residential school at Aralihalli Thanda — ₹25 crore.',
+      locationName: 'Aralihalli Thanda Morarji Desai residential school',
+    },
+    kn: {
+      title: 'ಮೊರಾರ್ಜಿ ದೇಸಾಯಿ ವಸತಿ ಶಾಲೆ — ಅರಳಿಹಳ್ಳಿ ತಾಂಡಾ',
+      shortDescription:
+        'ಅರಳಿಹಳ್ಳಿ ತಾಂಡಾದಲ್ಲಿ ಅಲ್ಪಸಂಖ್ಯಾತ ಮೊರಾರ್ಜಿ ದೇಸಾಯಿ ವಸತಿ ಶಾಲೆಗೆ ₹25 ಕೋಟಿ.',
+      locationName: 'ಅರಳಿಹಳ್ಳಿ ತಾಂಡಾ ಮೊರಾರ್ಜಿ ದೇಸಾಯಿ ವಸತಿ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'bailuru-morarji-desai-school',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(25),
+    spent: spentNinetyPercent(crore(25)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 480,
+    completionDaysAgo: 65,
+    imagePrefix: 'bailuru-morarji',
+    areaEn: 'Bailuru, Kampli Constituency',
+    areaKn: 'ಬೈಲೂರು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Morarji Desai residential school — Bailuru',
+      shortDescription:
+        'Minority Morarji Desai residential school in Bailuru village — ₹25 crore.',
+      locationName: 'Bailuru Morarji Desai residential school',
+    },
+    kn: {
+      title: 'ಮೊರಾರ್ಜಿ ದೇಸಾಯಿ ವಸತಿ ಶಾಲೆ — ಬೈಲೂರು',
+      shortDescription:
+        'ಬೈಲೂರು ಗ್ರಾಮದಲ್ಲಿ ಅಲ್ಪಸಂಖ್ಯಾತ ಮೊರಾರ್ಜಿ ದೇಸಾಯಿ ವಸತಿ ಶಾಲೆಗೆ ₹25 ಕೋಟಿ.',
+      locationName: 'ಬೈಲೂರು ಮೊರಾರ್ಜಿ ದೇಸಾಯಿ ವಸತಿ ಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'minority-colonies-development',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(5),
+    spent: spentNinetyPercent(crore(5)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 420,
+    completionDaysAgo: 55,
+    imagePrefix: 'minority-colonies',
+    areaEn: 'Minority colonies, Kampli Constituency',
+    areaKn: 'ಅಲ್ಪಸಂಖ್ಯಾತರ ಕಾಲೊನಿಗಳು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Minority colonies development',
+      shortDescription:
+        'Development works in minority colonies across the constituency — ₹5 crore.',
+      locationName: 'Minority colonies, Kampli Constituency',
+    },
+    kn: {
+      title: 'ಅಲ್ಪಸಂಖ್ಯಾತರ ಕಾಲೊನಿಗಳ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಅಲ್ಪಸಂಖ್ಯಾತರ ಕಾಲೊನಿಗಳ ಅಭಿವೃದ್ಧಿಗೆ ₹5 ಕೋಟಿ.',
+      locationName: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರದ ಅಲ್ಪಸಂಖ್ಯಾತರ ಕಾಲೊನಿಗಳು',
+    },
+  },
+  {
+    slug: 'kampli-maulana-azad-school',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(5.5),
+    spent: spentNinetyPercent(crore(5.5)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 400,
+    completionDaysAgo: 50,
+    imagePrefix: 'kampli-maulana-azad',
+    areaEn: 'Kampli town, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Maulana Azad school — Kampli',
+      shortDescription:
+        'Development works for Maulana Azad school in Kampli — ₹5.50 crore.',
+      locationName: 'Maulana Azad school, Kampli',
+    },
+    kn: {
+      title: 'ಮೌಲಾನಾ ಆಜಾದ್ ಶಾಲೆ — ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿಯಲ್ಲಿ ಮೌಲಾನಾ ಆಜಾದ್‌ ಶಾಲೆಗೆ ₹5.50 ಕೋಟಿ.',
+      locationName: 'ಮೌಲಾನಾ ಆಜಾದ್ ಶಾಲೆ, ಕಂಪ್ಲಿ',
+    },
+  },
+  {
+    slug: 'minority-post-metric-boys-hostel',
+    category: 'EDUCATION',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(4),
+    spent: spentNinetyPercent(crore(4)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 380,
+    completionDaysAgo: 45,
+    imagePrefix: 'minority-boys-hostel',
+    areaEn: 'Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Minority post-metric boys hostel',
+      shortDescription:
+        'Boys hostel for minority post-metric students — ₹4 crore.',
+      locationName: 'Minority post-metric boys hostel',
+    },
+    kn: {
+      title: 'ಅಲ್ಪಸಂಖ್ಯಾತ ಮೆಟ್ರಿಕ್ ನಂತರದ ಬಾಲಕರ ವಸತಿ ನಿಲಯ',
+      shortDescription:
+        'ಅಲ್ಪಸಂಖ್ಯಾತ ಮೆಟ್ರಿಕ್‌ ನಂತರದ ವಿದ್ಯಾರ್ಥಿಗಳ ಬಾಲಕರ ವಸತಿ ನಿಲಯಕ್ಕೆ ₹4 ಕೋಟಿ.',
+      locationName: 'ಅಲ್ಪಸಂಖ್ಯಾತ ಮೆಟ್ರಿಕ್ ನಂತರದ ಬಾಲಕರ ವಸತಿ ನಿಲಯ',
+    },
+  },
+  {
+    slug: 'constituency-53-anganwadi-rooms',
+    category: 'EDUCATION',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: crore(20),
+    spent: spentNinetyPercent(crore(20)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 200,
+    completionDaysAgo: null,
+    imagePrefix: 'anganwadi-rooms',
+    areaEn: 'Kampli Constituency (53 Anganwadi centres)',
+    areaKn: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ (53 ಅಂಗನವಾಡಿ ಕೇಂದ್ರಗಳು)',
+    en: {
+      title: 'New rooms in 53 Anganwadi centres',
+      shortDescription:
+        'Construction of new rooms in 53 Anganwadi centres across the constituency — ₹20 crore.',
+      locationName: 'Anganwadi centres across Kampli Constituency',
+    },
+    kn: {
+      title: '53 ಅಂಗನವಾಡಿ ಕೇಂದ್ರಗಳಿಗೆ ಹೊಸ ಕೊಠಡಿಗಳು',
+      shortDescription:
+        '53 ಅಂಗನವಾಡಿ ಕೇಂದ್ರಗಳಿಗೆ ಹೊಸ ಕೊಠಡಿಗಳ ನಿರ್ಮಾಣಕ್ಕೆ ₹20 ಕೋಟಿ.',
+      locationName: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರದ ಅಂಗನವಾಡಿ ಕೇಂದ್ರಗಳು',
+    },
+  },
+  {
+    slug: 'errangali-school-10-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'IN_PROGRESS',
+    featured: true,
+    budget: crore(1.78),
+    spent: spentNinetyPercent(crore(1.78)),
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: 150,
+    completionDaysAgo: null,
+    imagePrefix: 'errangali-school-rooms',
+    areaEn: 'Errangali, Kampli Constituency',
+    areaKn: 'ಎರ್ರಂಗಳಿ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Ten school classrooms — Errangali',
+      shortDescription:
+        'Construction of 10 school classrooms in Errangali village — ₹1.78 crore.',
+      locationName: 'Errangali school campus',
+    },
+    kn: {
+      title: '10 ಶಾಲಾ ಕೊಠಡಿಗಳು — ಎರ್ರಂಗಳಿ',
+      shortDescription:
+        'ಎರ್ರಂಗಳಿ ಗ್ರಾಮದಲ್ಲಿ 10 ಶಾಲಾ ಕೊಠಡಿಗಳ ನಿರ್ಮಾಣಕ್ಕೆ ₹1.78 ಕೋಟಿ.',
+      locationName: 'ಎರ್ರಂಗಳಿ ಶಾಲಾ ಆವರಣ',
+    },
+  },
+  {
+    slug: 'devalapura-govt-high-school-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'PLANNED',
+    featured: true,
+    budget: crore(1.7589),
+    spent: null,
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'devalapura-school-rooms',
+    areaEn: 'Devalapura, Kampli Constituency',
+    areaKn: 'ದೇವಲಾಪುರ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Ten new classrooms — Devalapura Government High School',
+      shortDescription:
+        'Ten new classrooms at Devalapura Government High School — ₹1.7589 crore sanctioned.',
+      locationName: 'Devalapura Government High School',
+    },
+    kn: {
+      title: '10 ಹೊಸ ಕೊಠಡಿಗಳು — ದೇವಲಾಪುರ ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
+      shortDescription:
+        'ದೇವಲಾಪುರ ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆಯಲ್ಲಿ 10 ಹೊಸ ಕೊಠಡಿಗಳಿಗೆ ₹1.7589 ಕೋಟಿ.',
+      locationName: 'ದೇವಲಾಪುರ ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
+    },
+  },
+  {
+    slug: 'handihalu-govt-high-school-classrooms',
+    category: 'EDUCATION',
+    projectStatus: 'PLANNED',
+    featured: true,
+    budget: lakh(82.53),
+    spent: null,
+    department: 'Education',
+    agency: 'Education',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'handihalu-school-rooms',
+    areaEn: 'Handihalu, Kampli Constituency',
+    areaKn: 'ಹಂದಿಹಾಳು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'New classrooms — Handihalu Government High School',
+      shortDescription:
+        'New classrooms at Handihalu Government High School — ₹82.53 lakh sanctioned.',
+      locationName: 'Handihalu Government High School',
+    },
+    kn: {
+      title: 'ಹೊಸ ಕೊಠಡಿಗಳು — ಹಂದಿಹಾಳು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
+      shortDescription:
+        'ಹಂದಿಹಾಳು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆಯಲ್ಲಿ ಹೊಸ ಕೊಠಡಿಗಳಿಗೆ ₹82.53 ಲಕ್ಷ.',
+      locationName: 'ಹಂದಿಹಾಳು ಸರ್ಕಾರಿ ಪ್ರೌಢಶಾಲೆ',
     },
   },
 ];
