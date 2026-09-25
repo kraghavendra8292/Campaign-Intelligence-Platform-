@@ -336,10 +336,15 @@ export async function seedDemoContent(prisma: Prisma): Promise<void> {
       },
     });
 
-    for (const [index, platform] of ['facebook', 'x', 'youtube'].entries()) {
+    for (const [index, platform] of ['facebook', 'instagram', 'x', 'youtube'].entries()) {
       await prisma.socialLink.upsert({
         where: { organizationId_platform: { organizationId, platform } },
-        update: {},
+        update: {
+          label: `${platform} (demo)`,
+          url: `https://example.com/${org.slug}/${platform}`,
+          displayOrder: index,
+          isActive: true,
+        },
         create: {
           organizationId,
           platform,
@@ -476,17 +481,44 @@ async function seedKannada(prisma: Prisma, organizationId: string, org: DemoOrg)
 
   await prisma.newsArticle.upsert({
     where: { organizationId_slug_locale: { organizationId, slug: 'demo-update-1', locale: 'kn' } },
-    update: {},
+    update: {
+      title: 'ಡೆಮೋ ಸುದ್ದಿ: ಪ್ರಚಾರ ನವೀಕರಣ',
+      summary: 'ಕ್ಷೇತ್ರ ಅಭಿವೃದ್ಧಿ ಕೆಲಸಗಳ ಇತ್ತೀಚಿನ ನವೀಕರಣ.',
+    },
     create: {
       organizationId,
       locale: 'kn',
       slug: 'demo-update-1',
       title: 'ಡೆಮೋ ಸುದ್ದಿ: ಪ್ರಚಾರ ನವೀಕರಣ',
-      summary: 'ಡೆಮೋ ಸಾರಾಂಶ.',
+      summary: 'ಕ್ಷೇತ್ರ ಅಭಿವೃದ್ಧಿ ಕೆಲಸಗಳ ಇತ್ತೀಚಿನ ನವೀಕರಣ.',
       contentHtml: '<p>ಇದು ಡೆಮೋ ಸುದ್ದಿ ಲೇಖನ.</p>',
       category: 'PUBLIC_SERVICES' as const,
       status: 'PUBLISHED',
       publishedAt: daysAgo(20),
+    },
+  });
+
+  await prisma.contactInformation.upsert({
+    where: { organizationId_locale: { organizationId, locale: 'kn' } },
+    update: {
+      officeName: `${org.candidateKn} ಕಚೇರಿ (ಡೆಮೋ)`,
+      phone: '+91 00000 00000',
+      email: `contact@${org.slug}.example`,
+      officeHours: 'ಸೋಮ-ಶನಿ, 10:00-18:00 (ಡೆಮೋ)',
+    },
+    create: {
+      organizationId,
+      locale: 'kn',
+      officeName: `${org.candidateKn} ಕಚೇರಿ (ಡೆಮೋ)`,
+      addressLine1: '1 ಡೆಮೋ ರಸ್ತೆ',
+      city: 'ಡೆಮೋ ನಗರ',
+      state: 'ಕರ್ನಾಟಕ',
+      postalCode: '000000',
+      phone: '+91 00000 00000',
+      email: `contact@${org.slug}.example`,
+      officeHours: 'ಸೋಮ-ಶನಿ, 10:00-18:00 (ಡೆಮೋ)',
+      status: 'PUBLISHED',
+      publishedAt: daysAgo(60),
     },
   });
 }

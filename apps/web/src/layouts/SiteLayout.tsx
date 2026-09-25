@@ -3,9 +3,16 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Icon, LoadingState } from '@rk/ui';
 import { LOCALES, type Locale } from '@rk/types';
 import { useSite } from '../features/site/SiteContext';
+import { usePublicQuery } from '../features/site/usePublicQuery';
+import { CONTACT_QUERY } from '../features/site/queries';
+import type { ContactDetails, SocialLink } from '../features/site/types';
 import { useQrReferrerCapture } from '../features/site/useIssueSubmission';
 import { MobileNavDrawer } from '../components/site/MobileNavDrawer';
 import { SiteFeedbackPrompt } from '../components/site/SiteFeedbackPrompt';
+import {
+  SocialPlatformIcon,
+  socialPlatformMeta,
+} from '../components/site/SocialPlatformIcon';
 import { PRIMARY_NAV_ITEMS } from '../config/siteNav';
 
 /**
@@ -203,43 +210,90 @@ export function SiteLayout() {
 function SiteFooter() {
   const { t } = useSite();
   const year = new Date().getFullYear();
-  const brandLabel = t('home.identity');
   const brandName = t('home.identityName');
   const brandRole = t('home.identityRole');
+  const { state } = usePublicQuery<{
+    publicContactInformation: {
+      contact: ContactDetails | null;
+      socialLinks: SocialLink[];
+    };
+  }>(CONTACT_QUERY);
+
+  const contact =
+    state.status === 'success' ? state.data.publicContactInformation.contact : null;
+  const socialLinks =
+    state.status === 'success' ? state.data.publicContactInformation.socialLinks : [];
+
+  const phoneHref = contact?.phone ? `tel:${contact.phone.replace(/\s+/g, '')}` : null;
+  const emailHref = contact?.email ? `mailto:${contact.email}` : null;
 
   return (
     <footer className="site-footer">
       <div className="site-footer__inner">
         <div className="site-footer__brand">
-          <span className="site-brand__mark" aria-hidden="true">
+          <span className="site-brand__mark site-footer__mark" aria-hidden="true">
             <VidhanaSoudhaIcon />
           </span>
-          <p className="site-footer__name">{brandName}</p>
-          <p className="site-footer__role">{brandRole}</p>
-          <p className="site-footer__note">{t('footer.demoNotice')}</p>
+          <div className="site-footer__brand-text">
+            <p className="site-footer__name">{brandName}</p>
+            <p className="site-footer__role">{brandRole}</p>
+          </div>
         </div>
 
-        <nav className="site-footer__links" aria-label={t('footer.quickLinks')}>
-          <h2 className="site-footer__heading">{t('footer.quickLinks')}</h2>
+        {(phoneHref || emailHref) && (
+          <div className="site-footer__contact" aria-label={t('contact.title')}>
+            {phoneHref && contact?.phone ? (
+              <a className="site-footer__contact-link" href={phoneHref}>
+                <span className="site-footer__contact-label">{t('contact.phone')}</span>
+                <span>{contact.phone}</span>
+              </a>
+            ) : null}
+            {emailHref && contact?.email ? (
+              <a className="site-footer__contact-link" href={emailHref}>
+                <span className="site-footer__contact-label">{t('contact.email')}</span>
+                <span>{contact.email}</span>
+              </a>
+            ) : null}
+          </div>
+        )}
+
+        <nav className="site-footer__nav" aria-label={t('footer.quickLinks')}>
           <Link to="/work">{t('nav.work')}</Link>
-          <Link to="/achievements">{t('nav.achievements')}</Link>
           <Link to="/news">{t('nav.news')}</Link>
           <Link to="/events">{t('nav.events')}</Link>
           <Link to="/gallery">{t('nav.gallery')}</Link>
+          <Link to="/contact">{t('nav.contact')}</Link>
+          <Link to="/privacy">{t('footer.privacy')}</Link>
         </nav>
 
-        <nav className="site-footer__links" aria-label={t('footer.legal')}>
-          <h2 className="site-footer__heading">{t('footer.legal')}</h2>
-          <Link to="/privacy">{t('footer.privacy')}</Link>
-          <Link to="/terms">{t('footer.terms')}</Link>
-          <Link to="/contact">{t('nav.contact')}</Link>
-        </nav>
+        {socialLinks.length > 0 ? (
+          <ul className="site-footer__social" aria-label={t('contact.follow')}>
+            {socialLinks.map((link) => {
+              const { shortLabel } = socialPlatformMeta(link.platform);
+              return (
+                <li key={link.id}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={link.label ?? shortLabel}
+                    title={link.label ?? shortLabel}
+                  >
+                    <SocialPlatformIcon platform={link.platform} size={1.15} />
+                    <span className="visually-hidden">{link.label ?? shortLabel}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
       </div>
 
       <div className="site-footer__bottom">
         <p>
-          © {year} {brandLabel}. {t('footer.rights')}
+          © {year} {brandName}. {t('footer.rights')}
         </p>
+        <p className="site-footer__note">{t('footer.demoNotice')}</p>
       </div>
     </footer>
   );

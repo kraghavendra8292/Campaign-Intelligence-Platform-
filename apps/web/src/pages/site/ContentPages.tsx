@@ -28,6 +28,10 @@ import { SiteImage } from '../../components/site/SiteImage';
 import { SiteBackBar } from '../../components/site/SiteBackBar';
 import { CategoryBadge } from '../../components/site/StatusBadge';
 import {
+  SocialPlatformIcon,
+  socialPlatformMeta,
+} from '../../components/site/SocialPlatformIcon';
+import {
   AchievementCard,
   EventCard,
   NewsCard,
@@ -98,13 +102,23 @@ export function AboutPage() {
 
                     {data.publicContactInformation.socialLinks.length > 0 ? (
                       <ul className="social-list" aria-label={t('contact.follow')}>
-                        {data.publicContactInformation.socialLinks.map((link) => (
-                          <li key={link.id}>
-                            <a href={link.url} rel="noopener noreferrer nofollow" target="_blank">
-                              {link.label ?? link.platform}
-                            </a>
-                          </li>
-                        ))}
+                        {data.publicContactInformation.socialLinks.map((link) => {
+                          const { shortLabel } = socialPlatformMeta(link.platform);
+                          return (
+                            <li key={link.id}>
+                              <a
+                                href={link.url}
+                                rel="noopener noreferrer nofollow"
+                                target="_blank"
+                                aria-label={link.label ?? shortLabel}
+                                title={link.label ?? shortLabel}
+                              >
+                                <SocialPlatformIcon platform={link.platform} />
+                                <span>{link.label ?? shortLabel}</span>
+                              </a>
+                            </li>
+                          );
+                        })}
                       </ul>
                     ) : null}
                   </div>
@@ -427,13 +441,23 @@ export function ContactPage() {
                   <section className="detail__section" aria-labelledby="contact-social">
                     <h2 id="contact-social">{t('contact.follow')}</h2>
                     <ul className="social-list">
-                      {socialLinks.map((link) => (
-                        <li key={link.id}>
-                          <a href={link.url} rel="noopener noreferrer nofollow" target="_blank">
-                            {link.label ?? link.platform}
-                          </a>
-                        </li>
-                      ))}
+                      {socialLinks.map((link) => {
+                        const { shortLabel } = socialPlatformMeta(link.platform);
+                        return (
+                          <li key={link.id}>
+                            <a
+                              href={link.url}
+                              rel="noopener noreferrer nofollow"
+                              target="_blank"
+                              aria-label={link.label ?? shortLabel}
+                              title={link.label ?? shortLabel}
+                            >
+                              <SocialPlatformIcon platform={link.platform} />
+                              <span>{link.label ?? shortLabel}</span>
+                            </a>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </section>
                 ) : null}

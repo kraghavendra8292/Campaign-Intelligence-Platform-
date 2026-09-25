@@ -152,28 +152,51 @@ export function AchievementCard({ achievement }: { achievement: AchievementCardD
 
 export function NewsCard({ article }: { article: NewsCardData }) {
   const { t } = useSite();
+  const fallbackSrc = newsFallbackSrc(article.slug);
 
   return (
     <article className="content-card content-card--news">
       <Link to={`/news/${article.slug}`} className="content-card__link">
-        <SiteImage
-          image={article.coverImage}
-          fallbackAlt={article.title}
-          aspectRatio="16/9"
-          className="content-card__media"
-          sizes="(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw"
-        />
+        <div className="news-card__media-wrap">
+          {article.coverImage ? (
+            <SiteImage
+              image={article.coverImage}
+              fallbackAlt={article.title}
+              aspectRatio="16/9"
+              className="content-card__media news-card__media"
+              sizes="(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw"
+            />
+          ) : (
+            <div className="site-image site-image--16-9 content-card__media news-card__media">
+              <img
+                src={fallbackSrc}
+                alt=""
+                width={1280}
+                height={720}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          )}
 
-        <div className="content-card__body">
-          {article.publishedAt ? (
-            <time className="content-card__date" dateTime={article.publishedAt}>
-              {formatDate(article.publishedAt)}
-            </time>
-          ) : null}
+          <div className="news-card__meta">
+            <CategoryBadge category={article.category} />
+            {article.publishedAt ? (
+              <time className="news-card__date" dateTime={article.publishedAt}>
+                {formatDate(article.publishedAt)}
+              </time>
+            ) : null}
+          </div>
+        </div>
 
+        <div className="content-card__body news-card__body">
           <h3 className="content-card__title">{article.title}</h3>
 
           {article.summary ? <p className="content-card__excerpt">{article.summary}</p> : null}
+
+          {article.authorName ? (
+            <p className="news-card__author">{article.authorName}</p>
+          ) : null}
 
           <span className="content-card__action" aria-hidden="true">
             {t('card.readMore')} →
@@ -182,6 +205,15 @@ export function NewsCard({ article }: { article: NewsCardData }) {
       </Link>
     </article>
   );
+}
+
+/** Stable decorative cover when CMS has not attached a photo yet. */
+function newsFallbackSrc(slug: string): string {
+  let hash = 0;
+  for (let i = 0; i < slug.length; i += 1) {
+    hash = (hash + slug.charCodeAt(i) * (i + 1)) % 2;
+  }
+  return hash === 0 ? '/news/cover.webp' : '/news/cover-2.webp';
 }
 
 export function EventCard({ event }: { event: EventCardData }) {

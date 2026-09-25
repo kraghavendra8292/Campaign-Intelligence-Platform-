@@ -47,6 +47,12 @@ export const ICON_NAMES = [
   'checkCircle',
   'clock',
   'building',
+  // Social platforms (footer / contact).
+  'facebook',
+  'instagram',
+  'youtube',
+  'x',
+  'externalLink',
 ] as const;
 export type IconName = (typeof ICON_NAMES)[number];
 
@@ -90,6 +96,13 @@ const PATHS: Record<IconName, string> = {
   checkCircle: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M8.5 12.2l2.3 2.3 4.7-5',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5.5l3.5 2',
   building: 'M4 20h16M6 20V7l6-3 6 3v13M10 10h.01M14 10h.01M10 14h.01M14 14h.01M11 20v-3h2v3',
+  facebook: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z',
+  instagram:
+    'M7 3.5h10A3.5 3.5 0 0 1 20.5 7v10a3.5 3.5 0 0 1-3.5 3.5H7A3.5 3.5 0 0 1 3.5 17V7A3.5 3.5 0 0 1 7 3.5zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM17.5 7.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z',
+  youtube:
+    'M22.5 8.2a2.8 2.8 0 0 0-2-2C18.8 5.7 12 5.7 12 5.7s-6.8 0-8.5.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 1.5 12a29 29 0 0 0 .0 3.8 2.8 2.8 0 0 0 2 2c1.7.5 8.5.5 8.5.5s6.8 0 8.5-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 22.5 12a29 29 0 0 0 0-3.8zM10 15.2V8.8l5.5 3.2z',
+  x: 'M4.5 4.5h4.1l3.7 5.1L16.8 4.5H19.5l-5.3 6.8L19.8 19.5h-4.1l-4-5.5-4.3 5.5H4.7l5.5-7.1z',
+  externalLink: 'M10 5.5h8.5V14M18.5 5.5 10 14M6 8.5v10h10',
 };
 
 export interface IconProps {
