@@ -272,7 +272,7 @@ export const publicContentService = {
       prisma.achievement.findMany({
         where,
         select: ACHIEVEMENT_CARD_SELECT,
-        orderBy: [{ featured: 'desc' }, { achievedOn: 'desc' }, { id: 'desc' }],
+        orderBy: [{ featured: 'desc' }, { displayOrder: 'asc' }, { achievedOn: 'desc' }, { id: 'desc' }],
         take: first + 1,
         ...(args.after ? { cursor: { id: args.after }, skip: 1 } : {}),
       }),

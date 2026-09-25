@@ -177,6 +177,7 @@ export function AchievementsPage() {
           title={t('section.achievements')}
           subtitle={t('section.achievementsSubtitle')}
         />
+        <p className="achievements-highlights-label">{t('section.achievementsHighlights')}</p>
 
         <FilterPanel
           showClear={Boolean(category || search)}

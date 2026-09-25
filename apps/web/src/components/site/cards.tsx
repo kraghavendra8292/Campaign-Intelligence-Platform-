@@ -102,9 +102,10 @@ export function ProjectCard({ project }: { project: ProjectCardData }) {
 
 export function AchievementCard({ achievement }: { achievement: AchievementCardData }) {
   const { t } = useSite();
+  const { amount, body } = splitAchievementSummary(achievement.summary);
 
   return (
-    <article className="content-card">
+    <article className="content-card content-card--achievement">
       <Link to={`/achievements/${achievement.slug}`} className="content-card__link">
         <SiteImage
           image={achievement.coverImage}
@@ -120,11 +121,11 @@ export function AchievementCard({ achievement }: { achievement: AchievementCardD
             <VerifiedBadge verification={achievement.verification} />
           </div>
 
+          {amount ? <p className="content-card__amount">{amount}</p> : null}
+
           <h3 className="content-card__title">{achievement.title}</h3>
 
-          {achievement.summary ? (
-            <p className="content-card__excerpt">{achievement.summary}</p>
-          ) : null}
+          {body ? <p className="content-card__excerpt">{body}</p> : null}
 
           <dl className="content-card__meta">
             {achievement.area ? (
@@ -148,6 +149,14 @@ export function AchievementCard({ achievement }: { achievement: AchievementCardD
       </Link>
     </article>
   );
+}
+
+/** Summary seed format: "₹110 ಕೋಟಿ · short description" (en: "₹110 crore · …"). */
+function splitAchievementSummary(summary: string | null): { amount: string | null; body: string | null } {
+  if (!summary) return { amount: null, body: null };
+  const match = summary.match(/^(₹[\d.,]+\s*(?:ಕೋಟಿ|crore))\s*[·•\-—|]\s*(.+)$/i);
+  if (match) return { amount: match[1].trim(), body: match[2].trim() };
+  return { amount: null, body: summary };
 }
 
 export function NewsCard({ article }: { article: NewsCardData }) {

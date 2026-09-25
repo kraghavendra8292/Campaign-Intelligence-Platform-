@@ -1265,6 +1265,22 @@ a.quick-action:hover {
   line-height: 1.35;
 }
 
+.content-card__amount {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.achievements-highlights-label {
+  margin: 0 0 var(--spacing-4);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
 .content-card__excerpt {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -2310,6 +2326,14 @@ a.quick-action:hover {
   font-size: var(--font-size-md);
   line-height: var(--line-height-relaxed);
   color: var(--color-text-muted);
+}
+
+.detail__amount {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand);
+  line-height: 1.2;
 }
 
 .detail__date,

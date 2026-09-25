@@ -115,6 +115,7 @@ const en = {
   'vision.prioritiesCount': '{count} priorities',
   'section.achievements': 'Achievements',
   'section.achievementsSubtitle': 'Completed work and outcomes.',
+  'section.achievementsHighlights': 'Major steps in development',
   'section.news': 'Latest Updates',
   'section.newsSubtitle': 'Announcements and news.',
   'section.events': 'Upcoming Events',
@@ -561,6 +562,7 @@ const kn: Partial<Record<StringKey, string>> = {
   'vision.prioritiesCount': '{count} ಆದ್ಯತೆಗಳು',
   'section.achievements': 'ಸಾಧನೆಗಳು',
   'section.achievementsSubtitle': 'ಪೂರ್ಣಗೊಂಡ ಕಾರ್ಯಗಳು ಮತ್ತು ಫಲಿತಾಂಶಗಳು.',
+  'section.achievementsHighlights': 'ಅಭಿವೃದ್ಧಿಯ ಪ್ರಮುಖ ಹೆಜ್ಜೆಗಳು',
 
   'home.identity': 'ಜೆ.ಎನ್. ಗಣೇಶ್, ಶಾಸಕರು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
   'home.identityName': 'ಜೆ.ಎನ್. ಗಣೇಶ್',

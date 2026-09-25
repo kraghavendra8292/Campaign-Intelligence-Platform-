@@ -11,6 +11,7 @@
  * sites to prove that neither leaks into the other.
  */
 import type { PrismaClient } from '../src/generated/prisma/client';
+import { replaceDemoAchievements } from './seedAchievements';
 import { replaceDemoWorks } from './seedWorks';
 
 type Prisma = PrismaClient;
@@ -192,51 +193,8 @@ export async function seedDemoContent(prisma: Prisma): Promise<void> {
       });
     }
 
-    // Projects are seeded once after every org exists — see replaceDemoWorks below.
-
-    // --- Achievements ------------------------------------------------------
-    const achievements = [
-      {
-        slug: 'water-supply-restored',
-        title: 'Water supply restored in demo ward',
-        verified: true,
-      },
-      {
-        slug: 'street-lighting-installed',
-        title: 'Street lighting installed (demo)',
-        verified: true,
-      },
-      { slug: 'health-camp-conducted', title: 'Health camp conducted (demo)', verified: false },
-      { slug: 'school-benches-provided', title: 'School benches provided (demo)', verified: false },
-      { slug: 'drain-cleaning-drive', title: 'Drain cleaning drive (demo)', verified: false },
-    ];
-
-    for (const [index, achievement] of achievements.entries()) {
-      await prisma.achievement.upsert({
-        where: {
-          organizationId_slug_locale: { organizationId, slug: achievement.slug, locale: 'en' },
-        },
-        update: {},
-        create: {
-          organizationId,
-          locale: 'en',
-          slug: achievement.slug,
-          title: achievement.title,
-          summary: 'DEMO CONTENT. An illustrative achievement record.',
-          descriptionHtml:
-            '<p>This is <strong>demo content</strong>. Verification status here is illustrative and does not reflect any real assessment.</p>',
-          category: index % 2 === 0 ? 'WATER' : 'PUBLIC_SERVICES',
-          area: org.area,
-          achievedOn: daysAgo(150 + index * 20),
-          verification: achievement.verified ? 'VERIFIED' : 'UNVERIFIED',
-          verifiedAt: achievement.verified ? daysAgo(140 + index * 20) : null,
-          featured: index < 2,
-          displayOrder: index,
-          status: 'PUBLISHED',
-          publishedAt: daysAgo(145 + index * 20),
-        },
-      });
-    }
+    // Projects + achievements are seeded once after every org exists —
+    // see replaceDemoWorks / replaceDemoAchievements below.
 
     // --- News --------------------------------------------------------------
     for (let index = 0; index < 5; index += 1) {
@@ -363,6 +321,7 @@ export async function seedDemoContent(prisma: Prisma): Promise<void> {
   }
 
   await replaceDemoWorks(prisma, seededOrgs);
+  await replaceDemoAchievements(prisma, seededOrgs);
 }
 
 /**

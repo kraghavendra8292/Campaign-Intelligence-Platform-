@@ -238,7 +238,20 @@ export function AchievementDetailPage() {
                     <VerifiedBadge verification={item.verification} />
                   </div>
                   <h1 className="detail__title">{item.title}</h1>
-                  {item.summary ? <p className="detail__lead">{item.summary}</p> : null}
+                  {(() => {
+                    const match = item.summary?.match(
+                      /^(₹[\d.,]+\s*(?:ಕೋಟಿ|crore))\s*[·•\-—|]\s*(.+)$/i,
+                    );
+                    if (match) {
+                      return (
+                        <>
+                          <p className="detail__amount">{match[1]}</p>
+                          <p className="detail__lead">{match[2]}</p>
+                        </>
+                      );
+                    }
+                    return item.summary ? <p className="detail__lead">{item.summary}</p> : null;
+                  })()}
                 </header>
 
                 <SiteImage

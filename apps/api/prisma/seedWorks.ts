@@ -1,5 +1,5 @@
 /**
- * Kampli constituency works seed (roads, water & irrigation, education).
+ * Kampli constituency works seed (roads, water, education, health, welfare, etc.).
  *
  * Budget figures are as provided for MLA-linked sanctions and works.
  * Cover / before / after photographs are AI-generated illustrations so the
@@ -60,11 +60,18 @@ interface WorkLocaleCopy {
 
 interface WorkDefinition {
   slug: string;
-  category: 'INFRASTRUCTURE' | 'WATER' | 'EDUCATION' | 'PUBLIC_SERVICES';
+  category:
+    | 'INFRASTRUCTURE'
+    | 'WATER'
+    | 'EDUCATION'
+    | 'PUBLIC_SERVICES'
+    | 'HEALTHCARE'
+    | 'AGRICULTURE'
+    | 'ENVIRONMENT';
   projectStatus: 'COMPLETED' | 'IN_PROGRESS' | 'PLANNED';
   featured: boolean;
-  /** Sanctioned / approved budget in INR (whole rupees). */
-  budget: number;
+  /** Sanctioned / approved budget in INR (whole rupees). Null when amount not published. */
+  budget: number | null;
   /** Amount spent in INR. Null for sanctioned-only works (not started). */
   spent: number | null;
   department: string;
@@ -98,19 +105,29 @@ function daysAgo(days: number): Date {
   return date;
 }
 
-function explanationEn(body: string, spent: number | null, budget: number): string {
-  const spentLine =
-    spent === null
-      ? `<p><strong>Sanctioned budget:</strong> ₹${budget.toLocaleString('en-IN')}.</p>`
-      : `<p><strong>Approved budget:</strong> ₹${budget.toLocaleString('en-IN')}. <strong>Amount spent:</strong> ₹${spent.toLocaleString('en-IN')}.</p>`;
+function explanationEn(body: string, spent: number | null, budget: number | null): string {
+  let spentLine: string;
+  if (budget === null) {
+    spentLine =
+      '<p><strong>Sanction status:</strong> Proposal submitted / sanctioned; published budget amount not available.</p>';
+  } else if (spent === null) {
+    spentLine = `<p><strong>Sanctioned budget:</strong> ₹${budget.toLocaleString('en-IN')}.</p>`;
+  } else {
+    spentLine = `<p><strong>Approved budget:</strong> ₹${budget.toLocaleString('en-IN')}. <strong>Amount spent:</strong> ₹${spent.toLocaleString('en-IN')}.</p>`;
+  }
   return `<!--spent:${spent ?? 0}--><p>${body}</p>${spentLine}`;
 }
 
-function explanationKn(body: string, spent: number | null, budget: number): string {
-  const spentLine =
-    spent === null
-      ? `<p><strong>ಮಂಜೂರಾದ ಅನುದಾನ:</strong> ₹${budget.toLocaleString('en-IN')}.</p>`
-      : `<p><strong>ಅನುಮೋದಿತ ಬಜೆಟ್:</strong> ₹${budget.toLocaleString('en-IN')}. <strong>ಖರ್ಚು ಮೊತ್ತ:</strong> ₹${spent.toLocaleString('en-IN')}.</p>`;
+function explanationKn(body: string, spent: number | null, budget: number | null): string {
+  let spentLine: string;
+  if (budget === null) {
+    spentLine =
+      '<p><strong>ಮಂಜೂರಾತಿ ಸ್ಥಿತಿ:</strong> ಪ್ರಸ್ತಾವನೆ ಸಲ್ಲಿಸಲಾಗಿದೆ / ಮಂಜೂರಾಗಿದೆ; ಪ್ರಕಟಿತ ಬಜೆಟ್ ಮೊತ್ತ ಲಭ್ಯವಿಲ್ಲ.</p>';
+  } else if (spent === null) {
+    spentLine = `<p><strong>ಮಂಜೂರಾದ ಅನುದಾನ:</strong> ₹${budget.toLocaleString('en-IN')}.</p>`;
+  } else {
+    spentLine = `<p><strong>ಅನುಮೋದಿತ ಬಜೆಟ್:</strong> ₹${budget.toLocaleString('en-IN')}. <strong>ಖರ್ಚು ಮೊತ್ತ:</strong> ₹${spent.toLocaleString('en-IN')}.</p>`;
+  }
   return `<!--spent:${spent ?? 0}--><p>${body}</p>${spentLine}`;
 }
 
@@ -1152,7 +1169,7 @@ const WORKS: readonly WorkDefinition[] = [
     slug: 'constituency-137-schools-kmrc-classrooms',
     category: 'EDUCATION',
     projectStatus: 'COMPLETED',
-    featured: false,
+    featured: true,
     budget: crore(110),
     spent: spentNinetyPercent(crore(110)),
     department: 'Education',
@@ -1314,7 +1331,7 @@ const WORKS: readonly WorkDefinition[] = [
     slug: 'constituency-53-anganwadi-rooms',
     category: 'EDUCATION',
     projectStatus: 'IN_PROGRESS',
-    featured: false,
+    featured: true,
     budget: crore(20),
     spent: spentNinetyPercent(crore(20)),
     department: 'Education',
@@ -1664,6 +1681,836 @@ const WORKS: readonly WorkDefinition[] = [
       locationName: 'ಗೆಣಿಕೆಹಾಳು ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
     },
   },
+
+  // --- Healthcare (hospitals & PHCs) ---
+  {
+    slug: 'kampli-100-bed-public-hospital',
+    category: 'HEALTHCARE',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(20),
+    spent: spentNinetyPercent(crore(20)),
+    department: 'Health Department',
+    agency: 'Health & Family Welfare',
+    startDaysAgo: 540,
+    completionDaysAgo: 70,
+    imagePrefix: 'kampli-100-bed-hospital',
+    areaEn: 'Kampli town, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: '100-bed public hospital — Kampli',
+      shortDescription:
+        'Fully equipped 100-bed public hospital with medical equipment in Kampli town — ₹20 crore (share of the ₹40 crore Kampli–Kurugodu package).',
+      locationName: 'Public hospital, Kampli town',
+    },
+    kn: {
+      title: '100 ಹಾಸಿಗೆಗಳ ಸಾರ್ವಜನಿಕ ಆಸ್ಪತ್ರೆ — ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿ ಪಟ್ಟಣದಲ್ಲಿ 100 ಹಾಸಿಗೆಗಳ ಸುಸಜ್ಜಿತ ಸಾರ್ವಜನಿಕ ಆಸ್ಪತ್ರೆ ಹಾಗೂ ವೈದ್ಯಕೀಯ ಪೀಠೋಪಕರಣಗಳಿಗೆ ₹20 ಕೋಟಿ (ಕಂಪ್ಲಿ–ಕುರುಗೋಡು ₹40 ಕೋಟಿ ಪ್ಯಾಕೇಜ್‌ನ ಪಾಲು).',
+      locationName: 'ಸಾರ್ವಜನಿಕ ಆಸ್ಪತ್ರೆ, ಕಂಪ್ಲಿ ಪಟ್ಟಣ',
+    },
+  },
+  {
+    slug: 'kurugodu-100-bed-public-hospital',
+    category: 'HEALTHCARE',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(20),
+    spent: spentNinetyPercent(crore(20)),
+    department: 'Health Department',
+    agency: 'Health & Family Welfare',
+    startDaysAgo: 520,
+    completionDaysAgo: 65,
+    imagePrefix: 'kurugodu-100-bed-hospital',
+    areaEn: 'Kurugodu town, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: '100-bed public hospital — Kurugodu',
+      shortDescription:
+        'Fully equipped 100-bed public hospital with medical equipment in Kurugodu town — ₹20 crore (share of the ₹40 crore Kampli–Kurugodu package).',
+      locationName: 'Public hospital, Kurugodu town',
+    },
+    kn: {
+      title: '100 ಹಾಸಿಗೆಗಳ ಸಾರ್ವಜನಿಕ ಆಸ್ಪತ್ರೆ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದಲ್ಲಿ 100 ಹಾಸಿಗೆಗಳ ಸುಸಜ್ಜಿತ ಸಾರ್ವಜನಿಕ ಆಸ್ಪತ್ರೆ ಹಾಗೂ ವೈದ್ಯಕೀಯ ಪೀಠೋಪಕರಣಗಳಿಗೆ ₹20 ಕೋಟಿ (ಕಂಪ್ಲಿ–ಕುರುಗೋಡು ₹40 ಕೋಟಿ ಪ್ಯಾಕೇಜ್‌ನ ಪಾಲು).',
+      locationName: 'ಸಾರ್ವಜನಿಕ ಆಸ್ಪತ್ರೆ, ಕುರುಗೋಡು ಪಟ್ಟಣ',
+    },
+  },
+  {
+    slug: 'metti-primary-health-centre',
+    category: 'HEALTHCARE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(4.09),
+    spent: spentNinetyPercent(crore(4.09)),
+    department: 'Health Department',
+    agency: 'Health & Family Welfare',
+    startDaysAgo: 400,
+    completionDaysAgo: 55,
+    imagePrefix: 'metti-phc',
+    areaEn: 'Metti village, Kampli Constituency',
+    areaKn: 'ಮೆಟ್ಟಿ ಗ್ರಾಮ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Primary Health Centre — Metti',
+      shortDescription:
+        'Primary Health Centre works in Metti village — estimated cost ₹4.09 crore.',
+      locationName: 'Primary Health Centre, Metti',
+    },
+    kn: {
+      title: 'ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರ — ಮೆಟ್ಟಿ',
+      shortDescription:
+        'ಮೆಟ್ಟಿ ಗ್ರಾಮದಲ್ಲಿ ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರಕ್ಕೆ ₹4.09 ಕೋಟಿ ಅಂದಾಜು ವೆಚ್ಚ.',
+      locationName: 'ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರ, ಮೆಟ್ಟಿ',
+    },
+  },
+  {
+    slug: 'sriramarangapur-phc-medical-equipment',
+    category: 'HEALTHCARE',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: lakh(29.5),
+    spent: spentNinetyPercent(lakh(29.5)),
+    department: 'Health Department',
+    agency: 'Health & Family Welfare',
+    startDaysAgo: 120,
+    completionDaysAgo: null,
+    imagePrefix: 'sriramarangapur-phc-equipment',
+    areaEn: 'Sriramarangapur, Kampli Constituency',
+    areaKn: 'ಶ್ರೀರಾಮರಂಗಾಪುರ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Medical equipment — Sriramarangapur PHC',
+      shortDescription:
+        'Medical equipment for the Primary Health Centre at Sriramarangapur — ₹29.5 lakh (share of the ₹59 lakh Sriramarangapur–Orvai package).',
+      locationName: 'Primary Health Centre, Sriramarangapur',
+    },
+    kn: {
+      title: 'ವೈದ್ಯಕೀಯ ಪೀಠೋಪಕರಣಗಳು — ಶ್ರೀರಾಮರಂಗಾಪುರ ಪ್ರಾ.ಆ.ಕೇ.',
+      shortDescription:
+        'ಶ್ರೀರಾಮರಂಗಾಪುರ ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರಕ್ಕೆ ವೈದ್ಯಕೀಯ ಪೀಠೋಪಕರಣಗಳಿಗೆ ₹29.5 ಲಕ್ಷ (ಶ್ರೀರಾಮರಂಗಾಪುರ–ಓರ್ವಾಯಿ ₹59 ಲಕ್ಷ ಪ್ಯಾಕೇಜ್‌ನ ಪಾಲು).',
+      locationName: 'ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರ, ಶ್ರೀರಾಮರಂಗಾಪುರ',
+    },
+  },
+  {
+    slug: 'orvai-phc-medical-equipment',
+    category: 'HEALTHCARE',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: lakh(29.5),
+    spent: null,
+    department: 'Health Department',
+    agency: 'Health & Family Welfare',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'orvai-phc-equipment',
+    areaEn: 'Orvai, Kampli Constituency',
+    areaKn: 'ಓರ್ವಾಯಿ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Medical equipment — Orvai PHC',
+      shortDescription:
+        'Medical equipment for the Primary Health Centre at Orvai — ₹29.5 lakh sanctioned (share of the ₹59 lakh Sriramarangapur–Orvai package).',
+      locationName: 'Primary Health Centre, Orvai',
+    },
+    kn: {
+      title: 'ವೈದ್ಯಕೀಯ ಪೀಠೋಪಕರಣಗಳು — ಓರ್ವಾಯಿ ಪ್ರಾ.ಆ.ಕೇ.',
+      shortDescription:
+        'ಓರ್ವಾಯಿ ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರಕ್ಕೆ ವೈದ್ಯಕೀಯ ಪೀಠೋಪಕರಣಗಳಿಗೆ ₹29.5 ಲಕ್ಷ ಮಂಜೂರು (ಶ್ರೀರಾಮರಂಗಾಪುರ–ಓರ್ವಾಯಿ ₹59 ಲಕ್ಷ ಪ್ಯಾಕೇಜ್‌ನ ಪಾಲು).',
+      locationName: 'ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರ, ಓರ್ವಾಯಿ',
+    },
+  },
+
+  // --- Social welfare / SC-ST development ---
+  {
+    slug: 'sc-post-metric-student-hostel',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(5.5),
+    spent: spentNinetyPercent(crore(5.5)),
+    department: 'Social Welfare Department',
+    agency: 'Kalyana Karnataka Region Development Board',
+    startDaysAgo: 480,
+    completionDaysAgo: 60,
+    imagePrefix: 'sc-post-metric-hostel',
+    areaEn: 'Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'SC post-metric student hostel',
+      shortDescription:
+        'Post-metric student hostel for Scheduled Castes — ₹5.50 crore from the Kalyana Karnataka Region Development Board.',
+      locationName: 'SC post-metric student hostel',
+    },
+    kn: {
+      title: 'ಪರಿಶಿಷ್ಟ ವರ್ಗಗಳ ಮೆಟ್ರಿಕ್ ನಂತರದ ವಿದ್ಯಾರ್ಥಿ ನಿಲಯ',
+      shortDescription:
+        'ಪರಿಶಿಷ್ಟ ವರ್ಗಗಳ ಮೆಟ್ರಿಕ್‌ ನಂತರದ ವಿದ್ಯಾರ್ಥಿ ನಿಲಯಕ್ಕೆ ₹5.50 ಕೋಟಿ ಕಲ್ಯಾಣ ಕರ್ನಾಟಕ ಪ್ರದೇಶ ಅಭಿವೃದ್ಧಿ ಮಂಡಳಿಯಿಂದ.',
+      locationName: 'ಪರಿಶಿಷ್ಟ ವರ್ಗಗಳ ಮೆಟ್ರಿಕ್ ನಂತರದ ವಿದ್ಯಾರ್ಥಿ ನಿಲಯ',
+    },
+  },
+  {
+    slug: 'sc-st-colonies-electricity-infrastructure',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: crore(2),
+    spent: spentNinetyPercent(crore(2)),
+    department: 'Social Welfare Department',
+    agency: 'Social Welfare Department',
+    startDaysAgo: 180,
+    completionDaysAgo: null,
+    imagePrefix: 'sc-st-colonies-infra',
+    areaEn: 'SC/ST colonies, Kampli Constituency',
+    areaKn: 'ಪರಿಶಿಷ್ಟ ವರ್ಗಗಳ ಕಾಲೊನಿಗಳು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Electricity & infrastructure — SC/ST colonies',
+      shortDescription:
+        'Electricity and basic infrastructure works in SC/ST colonies across the constituency — ₹2 crore grant.',
+      locationName: 'SC/ST colonies, Kampli Constituency',
+    },
+    kn: {
+      title: 'ವಿದ್ಯುತ್/ಮೂಲಸೌಕರ್ಯ — ಪರಿಶಿಷ್ಟ ವರ್ಗಗಳ ಕಾಲೊನಿಗಳು',
+      shortDescription:
+        'ಕ್ಷೇತ್ರದ ವಿವಿಧ SC/ST ಕಾಲೊನಿಗಳಲ್ಲಿ ವಿದ್ಯುತ್/ಮೂಲಸೌಕರ್ಯ ಕಾಮಗಾರಿಗಳಿಗೆ ₹2 ಕೋಟಿ ಅನುದಾನ.',
+      locationName: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರದ ಪರಿಶಿಷ್ಟ ವರ್ಗಗಳ ಕಾಲೊನಿಗಳು',
+    },
+  },
+  {
+    slug: 'kampli-valmiki-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(1.5),
+    spent: spentNinetyPercent(crore(1.5)),
+    department: 'Social Welfare Department',
+    agency: 'Social Welfare Department',
+    startDaysAgo: 360,
+    completionDaysAgo: 50,
+    imagePrefix: 'kampli-valmiki-hall',
+    areaEn: 'Kampli town, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Valmiki community hall — Kampli',
+      shortDescription:
+        'Valmiki community hall in Kampli town — ₹1.50 crore.',
+      locationName: 'Valmiki community hall, Kampli',
+    },
+    kn: {
+      title: 'ವಾಲ್ಮೀಕಿ ಸಮುದಾಯ ಭವನ — ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿಯಲ್ಲಿ ವಾಲ್ಮೀಕಿ ಸಮುದಾಯ ಭವನಕ್ಕೆ ₹1.50 ಕೋಟಿ.',
+      locationName: 'ವಾಲ್ಮೀಕಿ ಸಮುದಾಯ ಭವನ, ಕಂಪ್ಲಿ',
+    },
+  },
+  {
+    slug: 'kurugodu-valmiki-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(2),
+    spent: spentNinetyPercent(crore(2)),
+    department: 'Social Welfare Department',
+    agency: 'Social Welfare Department',
+    startDaysAgo: 350,
+    completionDaysAgo: 48,
+    imagePrefix: 'kurugodu-valmiki-hall',
+    areaEn: 'Kurugodu town, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Valmiki community hall — Kurugodu',
+      shortDescription:
+        'Valmiki community hall in Kurugodu town — ₹2 crore.',
+      locationName: 'Valmiki community hall, Kurugodu',
+    },
+    kn: {
+      title: 'ವಾಲ್ಮೀಕಿ ಸಮುದಾಯ ಭವನ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದಲ್ಲಿ ವಾಲ್ಮೀಕಿ ಸಮುದಾಯ ಭವನಕ್ಕೆ ₹2 ಕೋಟಿ.',
+      locationName: 'ವಾಲ್ಮೀಕಿ ಸಮುದಾಯ ಭವನ, ಕುರುಗೋಡು',
+    },
+  },
+  {
+    slug: 'kampli-ambedkar-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(1.59),
+    spent: spentNinetyPercent(crore(1.59)),
+    department: 'Social Welfare Department',
+    agency: 'Social Welfare Department',
+    startDaysAgo: 340,
+    completionDaysAgo: 45,
+    imagePrefix: 'kampli-ambedkar-hall',
+    areaEn: 'Kampli town, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Dr. B.R. Ambedkar community hall — Kampli',
+      shortDescription:
+        'Taluk-level Dr. B.R. Ambedkar community hall in Kampli — about ₹1.59 crore.',
+      locationName: 'Dr. B.R. Ambedkar community hall, Kampli',
+    },
+    kn: {
+      title: 'ಡಾ.ಬಿ.ಆರ್. ಅಂಬೇಡ್ಕರ್ ಸಮುದಾಯ ಭವನ — ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿಯಲ್ಲಿ ತಾಲೂಕು ಮಟ್ಟದ ಡಾ.ಬಿ.ಆರ್. ಅಂಬೇಡ್ಕರ್ ಸಮುದಾಯ ಭವನಕ್ಕೆ ಸುಮಾರು ₹1.59 ಕೋಟಿ.',
+      locationName: 'ಡಾ.ಬಿ.ಆರ್. ಅಂಬೇಡ್ಕರ್ ಸಮುದಾಯ ಭವನ, ಕಂಪ್ಲಿ',
+    },
+  },
+  {
+    slug: 'kurugodu-ambedkar-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(2.9),
+    spent: spentNinetyPercent(crore(2.9)),
+    department: 'Social Welfare Department',
+    agency: 'Social Welfare Department',
+    startDaysAgo: 330,
+    completionDaysAgo: 42,
+    imagePrefix: 'kurugodu-ambedkar-hall',
+    areaEn: 'Kurugodu town, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Dr. B.R. Ambedkar community hall — Kurugodu',
+      shortDescription:
+        'Dr. B.R. Ambedkar community hall in Kurugodu — about ₹2.90 crore.',
+      locationName: 'Dr. B.R. Ambedkar community hall, Kurugodu',
+    },
+    kn: {
+      title: 'ಡಾ.ಬಿ.ಆರ್. ಅಂಬೇಡ್ಕರ್ ಸಮುದಾಯ ಭವನ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡಿನಲ್ಲಿ ಡಾ.ಬಿ.ಆರ್. ಅಂಬೇಡ್ಕರ್ ಸಮುದಾಯ ಭವನಕ್ಕೆ ಸುಮಾರು ₹2.90 ಕೋಟಿ.',
+      locationName: 'ಡಾ.ಬಿ.ಆರ್. ಅಂಬೇಡ್ಕರ್ ಸಮುದಾಯ ಭವನ, ಕುರುಗೋಡು',
+    },
+  },
+  {
+    slug: 'mosque-kabristan-development',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: crore(4),
+    spent: null,
+    department: 'Minority Welfare Department',
+    agency: 'Minority Welfare Department',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'mosque-kabristan',
+    areaEn: 'Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Mosque and kabristan development',
+      shortDescription:
+        'Development grant for mosques and kabristans across the constituency — ₹4 crore sanctioned.',
+      locationName: 'Mosques and kabristans, Kampli Constituency',
+    },
+    kn: {
+      title: 'ಮಸೀದಿ ಮತ್ತು ಖಬರಸ್ತಾನಗಳ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಮಸೀದಿ ಮತ್ತು ಖಬರಸ್ತಾನಗಳ ಅಭಿವೃದ್ಧಿಗೆ ₹4 ಕೋಟಿ ಅನುದಾನ ಮಂಜೂರು.',
+      locationName: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರದ ಮಸೀದಿ ಮತ್ತು ಖಬರಸ್ತಾನಗಳು',
+    },
+  },
+
+  // --- Backward classes welfare / community halls ---
+  {
+    slug: 'kurugodu-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: crore(2.5),
+    spent: spentNinetyPercent(crore(2.5)),
+    department: 'Backward Classes Welfare Department',
+    agency: 'Backward Classes Welfare Department',
+    startDaysAgo: 160,
+    completionDaysAgo: null,
+    imagePrefix: 'kurugodu-community-hall',
+    areaEn: 'Kurugodu town, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Community hall — Kurugodu',
+      shortDescription:
+        'Community hall in Kurugodu town — ₹2.50 crore.',
+      locationName: 'Community hall, Kurugodu town',
+    },
+    kn: {
+      title: 'ಸಮುದಾಯ ಭವನ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದಲ್ಲಿ ಒಂದು ಸಮುದಾಯ ಭವನಕ್ಕೆ ₹2.50 ಕೋಟಿ.',
+      locationName: 'ಸಮುದಾಯ ಭವನ, ಕುರುಗೋಡು ಪಟ್ಟಣ',
+    },
+  },
+  {
+    slug: 'kampli-gangamata-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(1),
+    spent: spentNinetyPercent(crore(1)),
+    department: 'Backward Classes Welfare Department',
+    agency: 'Backward Classes Welfare Department',
+    startDaysAgo: 300,
+    completionDaysAgo: 40,
+    imagePrefix: 'kampli-gangamata-hall',
+    areaEn: 'Kampli town, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Gangamata community hall — Kampli',
+      shortDescription:
+        'Gangamata community hall in Kampli town — ₹1 crore.',
+      locationName: 'Gangamata community hall, Kampli',
+    },
+    kn: {
+      title: 'ಗಂಗಮತ ಸಮುದಾಯ ಭವನ — ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿ ಪಟ್ಟಣದಲ್ಲಿ ಗಂಗಮತ ಸಮುದಾಯ ಭವನಕ್ಕೆ ₹1 ಕೋಟಿ.',
+      locationName: 'ಗಂಗಮತ ಸಮುದಾಯ ಭವನ, ಕಂಪ್ಲಿ',
+    },
+  },
+  {
+    slug: 'kurugodu-bhovi-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(2),
+    spent: spentNinetyPercent(crore(2)),
+    department: 'Backward Classes Welfare Department',
+    agency: 'Backward Classes Welfare Department',
+    startDaysAgo: 290,
+    completionDaysAgo: 38,
+    imagePrefix: 'kurugodu-bhovi-hall',
+    areaEn: 'Kurugodu town, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Bhovi community hall — Kurugodu',
+      shortDescription:
+        'Bhovi community hall in Kurugodu town — ₹2 crore.',
+      locationName: 'Bhovi community hall, Kurugodu',
+    },
+    kn: {
+      title: 'ಭೋವಿ ಸಮುದಾಯ ಭವನ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದಲ್ಲಿ ಭೋವಿ ಸಮುದಾಯ ಭವನಕ್ಕೆ ₹2 ಕೋಟಿ.',
+      locationName: 'ಭೋವಿ ಸಮುದಾಯ ಭವನ, ಕುರುಗೋಡು',
+    },
+  },
+  {
+    slug: 'kurugodu-golla-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: lakh(50),
+    spent: null,
+    department: 'Backward Classes Welfare Department',
+    agency: 'Backward Classes Welfare Department',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'kurugodu-golla-hall',
+    areaEn: 'Kurugodu town, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Golla community hall — Kurugodu',
+      shortDescription:
+        'Golla community hall in Kurugodu town — ₹50 lakh sanctioned.',
+      locationName: 'Golla community hall, Kurugodu',
+    },
+    kn: {
+      title: 'ಗೊಲ್ಲ ಸಮುದಾಯ ಭವನ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದಲ್ಲಿ ಗೊಲ್ಲ ಸಮುದಾಯ ಭವನಕ್ಕೆ ₹50 ಲಕ್ಷ ಮಂಜೂರು.',
+      locationName: 'ಗೊಲ್ಲ ಸಮುದಾಯ ಭವನ, ಕುರುಗೋಡು',
+    },
+  },
+  {
+    slug: 'kurugodu-nekar-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: lakh(50),
+    spent: null,
+    department: 'Backward Classes Welfare Department',
+    agency: 'Backward Classes Welfare Department',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'kurugodu-nekar-hall',
+    areaEn: 'Kurugodu town, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Nekar (weavers) community hall — Kurugodu',
+      shortDescription:
+        'Nekar (weavers) community hall in Kurugodu town — ₹50 lakh sanctioned.',
+      locationName: 'Nekar community hall, Kurugodu',
+    },
+    kn: {
+      title: 'ನೇಕಾರ ಸಮುದಾಯ ಭವನ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದಲ್ಲಿ ನೇಕಾರ ಸಮುದಾಯ ಭವನಕ್ಕೆ ₹50 ಲಕ್ಷ ಮಂಜೂರು.',
+      locationName: 'ನೇಕಾರ ಸಮುದಾಯ ಭವನ, ಕುರುಗೋಡು',
+    },
+  },
+
+  // --- Agriculture / APMC ---
+  {
+    slug: 'kurugodu-apmc-cc-road',
+    category: 'AGRICULTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(2.5),
+    spent: spentNinetyPercent(crore(2.5)),
+    department: 'Agriculture Marketing',
+    agency: 'APMC Kurugodu',
+    startDaysAgo: 280,
+    completionDaysAgo: 35,
+    imagePrefix: 'kurugodu-apmc-cc-road',
+    areaEn: 'Kurugodu APMC yard, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಎಪಿಎಂಸಿ ಆವರಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'CC road — Kurugodu APMC yard',
+      shortDescription:
+        'Cement-concrete road construction inside the Kurugodu Agricultural Produce Market Committee yard — about ₹2.50 crore.',
+      locationName: 'Kurugodu APMC yard',
+    },
+    kn: {
+      title: 'ಸಿಸಿ ರಸ್ತೆ — ಕುರುಗೋಡು ಎಪಿಎಂಸಿ ಆವರಣ',
+      shortDescription:
+        'ಕುರುಗೋಡು ಕೃಷಿ ಉತ್ಪನ್ನ ಮಾರುಕಟ್ಟೆ ಸಮಿತಿ ಆವರಣದಲ್ಲಿ ಸುಮಾರು ₹2.50 ಕೋಟಿ ವೆಚ್ಚದಲ್ಲಿ ಸಿಸಿ ರಸ್ತೆ ನಿರ್ಮಾಣ.',
+      locationName: 'ಕುರುಗೋಡು ಎಪಿಎಂಸಿ ಆವರಣ',
+    },
+  },
+
+  // --- Public library ---
+  {
+    slug: 'constituency-12-digital-libraries',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'IN_PROGRESS',
+    featured: true,
+    budget: crore(6),
+    spent: spentNinetyPercent(crore(6)),
+    department: 'Public Libraries',
+    agency: 'Department of Public Libraries',
+    startDaysAgo: 200,
+    completionDaysAgo: null,
+    imagePrefix: 'digital-libraries',
+    areaEn: 'Gram Panchayat headquarters, Kampli Constituency',
+    areaKn: 'ಗ್ರಾಮ ಪಂಚಾಯಿತಿ ಕೇಂದ್ರಗಳು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: '12 digital libraries at Gram Panchayat centres',
+      shortDescription:
+        'Construction of 12 digital libraries at Gram Panchayat headquarters across the constituency — ₹6 crore grant.',
+      locationName: 'Gram Panchayat centres, Kampli Constituency',
+    },
+    kn: {
+      title: '12 ಡಿಜಿಟಲ್ ಗ್ರಂಥಾಲಯಗಳು — ಗ್ರಾಮ ಪಂಚಾಯಿತಿ ಕೇಂದ್ರಗಳು',
+      shortDescription:
+        'ಗ್ರಾಮ ಪಂಚಾಯಿತಿ ಕೇಂದ್ರ ಸ್ಥಾನಗಳಲ್ಲಿ 12 ಡಿಜಿಟಲ್ ಗ್ರಂಥಾಲಯಗಳ ನಿರ್ಮಾಣಕ್ಕೆ ₹6 ಕೋಟಿ ಅನುದಾನ.',
+      locationName: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರದ ಗ್ರಾಮ ಪಂಚಾಯಿತಿ ಕೇಂದ್ರಗಳು',
+    },
+  },
+
+  // --- Police / Home Department ---
+  {
+    slug: 'kampli-fire-station',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(4),
+    spent: spentNinetyPercent(crore(4)),
+    department: 'Home Department',
+    agency: 'Karnataka Fire & Emergency Services',
+    startDaysAgo: 420,
+    completionDaysAgo: 55,
+    imagePrefix: 'kampli-fire-station',
+    areaEn: 'Kampli town, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Fire station — Kampli',
+      shortDescription:
+        'Construction of a fire station in Kampli — estimated cost about ₹4 crore.',
+      locationName: 'Fire station, Kampli',
+    },
+    kn: {
+      title: 'ಅಗ್ನಿಶಾಮಕ ಠಾಣೆ — ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿಯಲ್ಲಿ ಅಗ್ನಿಶಾಮಕ ಠಾಣೆ ನಿರ್ಮಾಣಕ್ಕೆ ಸುಮಾರು ₹4 ಕೋಟಿ ಅಂದಾಜು ವೆಚ್ಚ.',
+      locationName: 'ಅಗ್ನಿಶಾಮಕ ಠಾಣೆ, ಕಂಪ್ಲಿ',
+    },
+  },
+  {
+    slug: 'kampli-police-housing',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: null,
+    spent: null,
+    department: 'Home Department',
+    agency: 'Karnataka State Police',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'kampli-police-housing',
+    areaEn: 'Kampli town, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Police staff housing — Kampli',
+      shortDescription:
+        'Proposal submitted for construction of police staff housing in Kampli; published sanction amount not available.',
+      locationName: 'Police housing, Kampli',
+    },
+    kn: {
+      title: 'ಪೊಲೀಸ್ ವಸತಿ ಗೃಹಗಳು — ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿಯಲ್ಲಿ ಪೊಲೀಸ್ ವಸತಿ ಗೃಹಗಳ ನಿರ್ಮಾಣಕ್ಕೆ ಪ್ರಸ್ತಾವನೆ ಸಲ್ಲಿಸಲಾಗಿದೆ; ಪ್ರಕಟಿತ ಅನುದಾನ ಮೊತ್ತ ಲಭ್ಯವಿಲ್ಲ.',
+      locationName: 'ಪೊಲೀಸ್ ವಸತಿ, ಕಂಪ್ಲಿ',
+    },
+  },
+
+  // --- Taluk Panchayat / government buildings ---
+  {
+    slug: 'kampli-taluk-panchayat-building',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(1.6),
+    spent: spentNinetyPercent(crore(1.6)),
+    department: 'Rural Development & Panchayat Raj',
+    agency: 'Taluk Panchayat',
+    startDaysAgo: 380,
+    completionDaysAgo: 50,
+    imagePrefix: 'kampli-taluk-panchayat',
+    areaEn: 'Kampli taluk headquarters',
+    areaKn: 'ಕಂಪ್ಲಿ ತಾಲೂಕು ಕೇಂದ್ರ',
+    en: {
+      title: 'Taluk Panchayat building — Kampli',
+      shortDescription:
+        'Taluk Panchayat building at the new Kampli taluk centre — ₹1.60 crore (share of the ₹3.20 crore Kampli–Kurugodu package).',
+      locationName: 'Taluk Panchayat, Kampli',
+    },
+    kn: {
+      title: 'ತಾಲೂಕು ಪಂಚಾಯಿತಿ ಕಟ್ಟಡ — ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿ ನೂತನ ತಾಲೂಕು ಕೇಂದ್ರದಲ್ಲಿ ತಾಲೂಕು ಪಂಚಾಯಿತಿ ಕಟ್ಟಡ ನಿರ್ಮಾಣಕ್ಕೆ ₹1.60 ಕೋಟಿ (ಕಂಪ್ಲಿ–ಕುರುಗೋಡು ₹3.20 ಕೋಟಿ ಪ್ಯಾಕೇಜ್‌ನ ಪಾಲು).',
+      locationName: 'ತಾಲೂಕು ಪಂಚಾಯಿತಿ, ಕಂಪ್ಲಿ',
+    },
+  },
+  {
+    slug: 'kurugodu-taluk-panchayat-building',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: crore(1.6),
+    spent: null,
+    department: 'Rural Development & Panchayat Raj',
+    agency: 'Taluk Panchayat',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'kurugodu-taluk-panchayat',
+    areaEn: 'Kurugodu taluk headquarters',
+    areaKn: 'ಕುರುಗೋಡು ತಾಲೂಕು ಕೇಂದ್ರ',
+    en: {
+      title: 'Taluk Panchayat building — Kurugodu',
+      shortDescription:
+        'Taluk Panchayat building at the new Kurugodu taluk centre — ₹1.60 crore sanctioned (share of the ₹3.20 crore Kampli–Kurugodu package).',
+      locationName: 'Taluk Panchayat, Kurugodu',
+    },
+    kn: {
+      title: 'ತಾಲೂಕು ಪಂಚಾಯಿತಿ ಕಟ್ಟಡ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡು ನೂತನ ತಾಲೂಕು ಕೇಂದ್ರದಲ್ಲಿ ತಾಲೂಕು ಪಂಚಾಯಿತಿ ಕಟ್ಟಡ ನಿರ್ಮಾಣಕ್ಕೆ ₹1.60 ಕೋಟಿ ಮಂಜೂರು (ಕಂಪ್ಲಿ–ಕುರುಗೋಡು ₹3.20 ಕೋಟಿ ಪ್ಯಾಕೇಜ್‌ನ ಪಾಲು).',
+      locationName: 'ತಾಲೂಕು ಪಂಚಾಯಿತಿ, ಕುರುಗೋಡು',
+    },
+  },
+
+  // --- Tourism ---
+  {
+    slug: 'kampli-somappa-temple-community-hall',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(1),
+    spent: spentNinetyPercent(crore(1)),
+    department: 'Tourism Department',
+    agency: 'Tourism Department',
+    startDaysAgo: 310,
+    completionDaysAgo: 40,
+    imagePrefix: 'somappa-temple-hall',
+    areaEn: 'Somappa temple, Kampli town',
+    areaKn: 'ಸೋಮಪ್ಪ ದೇವಸ್ಥಾನ, ಕಂಪ್ಲಿ ಪಟ್ಟಣ',
+    en: {
+      title: 'Community hall — historic Somappa temple, Kampli',
+      shortDescription:
+        'Community hall at the historic Somappa temple in Kampli — ₹1 crore grant.',
+      locationName: 'Somappa temple campus, Kampli',
+    },
+    kn: {
+      title: 'ಸಮುದಾಯ ಭವನ — ಐತಿಹಾಸಿಕ ಸೋಮಪ್ಪ ದೇವಸ್ಥಾನ, ಕಂಪ್ಲಿ',
+      shortDescription:
+        'ಕಂಪ್ಲಿಯ ಐತಿಹಾಸಿಕ ಸೋಮಪ್ಪ ದೇವಸ್ಥಾನಕ್ಕೆ ಸಮುದಾಯ ಭವನ ನಿರ್ಮಾಣಕ್ಕೆ ₹1 ಕೋಟಿ ಅನುದಾನ.',
+      locationName: 'ಸೋಮಪ್ಪ ದೇವಸ್ಥಾನ ಆವರಣ, ಕಂಪ್ಲಿ',
+    },
+  },
+
+  // --- Labour welfare ---
+  {
+    slug: 'kurugodu-labour-welfare-residential-school',
+    category: 'EDUCATION',
+    projectStatus: 'IN_PROGRESS',
+    featured: true,
+    budget: crore(44),
+    spent: spentNinetyPercent(crore(44)),
+    department: 'Labour Department',
+    agency: 'Labour Welfare Department',
+    startDaysAgo: 220,
+    completionDaysAgo: null,
+    imagePrefix: 'labour-residential-school',
+    areaEn: 'Kurugodu area, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ವ್ಯಾಪ್ತಿ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Labour welfare residential school — Kurugodu',
+      shortDescription:
+        'Residential school under the Labour Welfare Department in the Kurugodu area — 4.50 acres reserved, about ₹44 crore sanctioned.',
+      locationName: 'Labour welfare residential school, Kurugodu area',
+    },
+    kn: {
+      title: 'ಕಾರ್ಮಿಕ ಕಲ್ಯಾಣ ವಸತಿ ಶಾಲೆ — ಕುರುಗೋಡು',
+      shortDescription:
+        'ಕುರುಗೋಡು ವ್ಯಾಪ್ತಿಯಲ್ಲಿ ಕಾರ್ಮಿಕ ಕಲ್ಯಾಣ ಇಲಾಖೆಯಿಂದ ವಸತಿ ಶಾಲೆ ನಿರ್ಮಾಣಕ್ಕಾಗಿ 4.50 ಎಕರೆ ಜಾಗ ಕಾಯ್ದಿರಿಸಿ, ಸುಮಾರು ₹44 ಕೋಟಿ ಅನುದಾನ ಮಂಜೂರು.',
+      locationName: 'ಕಾರ್ಮಿಕ ಕಲ್ಯಾಣ ವಸತಿ ಶಾಲೆ, ಕುರುಗೋಡು ವ್ಯಾಪ್ತಿ',
+    },
+  },
+
+  // --- Municipal / urban infrastructure ---
+  {
+    slug: 'kurugodu-municipality-infrastructure',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(76.09),
+    spent: spentNinetyPercent(crore(76.09)),
+    department: 'Urban Development',
+    agency: 'Kurugodu Municipality',
+    startDaysAgo: 480,
+    completionDaysAgo: 50,
+    imagePrefix: 'kurugodu-municipality',
+    areaEn: 'Kurugodu Municipality, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಪುರಸಭೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Kurugodu municipality infrastructure development',
+      shortDescription:
+        'Infrastructure development within Kurugodu Municipality limits — ₹76.09 crore.',
+      locationName: 'Kurugodu Municipality limits',
+    },
+    kn: {
+      title: 'ಕುರುಗೋಡು ಪುರಸಭೆ ಮೂಲಸೌಕರ್ಯ ಅಭಿವೃದ್ಧಿ',
+      shortDescription: 'ಕುರುಗೋಡು ಪುರಸಭೆ ವ್ಯಾಪ್ತಿಯ ಮೂಲಸೌಕರ್ಯ ಅಭಿವೃದ್ಧಿಗೆ ₹76.09 ಕೋಟಿ.',
+      locationName: 'ಕುರುಗೋಡು ಪುರಸಭೆ ವ್ಯಾಪ್ತಿ',
+    },
+  },
+  {
+    slug: 'kampli-municipality-infrastructure',
+    category: 'PUBLIC_SERVICES',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(43.79),
+    spent: spentNinetyPercent(crore(43.79)),
+    department: 'Urban Development',
+    agency: 'Kampli Municipality',
+    startDaysAgo: 460,
+    completionDaysAgo: 45,
+    imagePrefix: 'kampli-municipality',
+    areaEn: 'Kampli Municipality, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಪುರಸಭೆ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Kampli municipality infrastructure development',
+      shortDescription:
+        'Infrastructure development within Kampli Municipality limits — ₹43.79 crore.',
+      locationName: 'Kampli Municipality limits',
+    },
+    kn: {
+      title: 'ಕಂಪ್ಲಿ ಪುರಸಭೆ ಮೂಲಸೌಕರ್ಯ ಅಭಿವೃದ್ಧಿ',
+      shortDescription: 'ಕಂಪ್ಲಿ ಪುರಸಭೆ ವ್ಯಾಪ್ತಿಯ ಮೂಲಸೌಕರ್ಯ ಅಭಿವೃದ್ಧಿಗೆ ₹43.79 ಕೋಟಿ.',
+      locationName: 'ಕಂಪ್ಲಿ ಪುರಸಭೆ ವ್ಯಾಪ್ತಿ',
+    },
+  },
+
+  // --- Drainage / sewerage ---
+  {
+    slug: 'kampli-sewage-treatment-plant',
+    category: 'ENVIRONMENT',
+    projectStatus: 'IN_PROGRESS',
+    featured: true,
+    budget: crore(35),
+    spent: spentNinetyPercent(crore(35)),
+    department: 'Urban Development',
+    agency: 'Kampli Municipality',
+    startDaysAgo: 180,
+    completionDaysAgo: null,
+    imagePrefix: 'kampli-stp',
+    areaEn: 'Kampli town, Kampli Constituency',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Sewage treatment plant (STP) — Kampli',
+      shortDescription: 'Sewage treatment plant (STP) in Kampli — ₹35 crore.',
+      locationName: 'Sewage treatment plant, Kampli',
+    },
+    kn: {
+      title: 'ಒಳಚರಂಡಿ ನೀರು ಸಂಸ್ಕರಣಾ ಘಟಕ (STP) — ಕಂಪ್ಲಿ',
+      shortDescription: 'ಕಂಪ್ಲಿಯಲ್ಲಿ ಒಳಚರಂಡಿ ನೀರು ಸಂಸ್ಕರಣಾ ಘಟಕ (STP) ನಿರ್ಮಾಣಕ್ಕೆ ₹35 ಕೋಟಿ.',
+      locationName: 'ಒಳಚರಂಡಿ ನೀರು ಸಂಸ್ಕರಣಾ ಘಟಕ, ಕಂಪ್ಲಿ',
+    },
+  },
+
+  // --- Forest / environment ---
+  {
+    slug: 'kampli-tree-park',
+    category: 'ENVIRONMENT',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(1),
+    spent: spentNinetyPercent(crore(1)),
+    department: 'Forest Department',
+    agency: 'Forest Department',
+    startDaysAgo: 260,
+    completionDaysAgo: 30,
+    imagePrefix: 'kampli-tree-park',
+    areaEn: 'Kampli taluk',
+    areaKn: 'ಕಂಪ್ಲಿ ತಾಲೂಕು',
+    en: {
+      title: 'Tree park development — Kampli taluk',
+      shortDescription:
+        'Tree park development in Kampli taluk — ₹1 crore (share of the ₹2 crore Kampli–Kurugodu grant).',
+      locationName: 'Tree park, Kampli taluk',
+    },
+    kn: {
+      title: 'ಟ್ರೀ ಪಾರ್ಕ್ ಅಭಿವೃದ್ಧಿ — ಕಂಪ್ಲಿ ತಾಲೂಕು',
+      shortDescription:
+        'ಕಂಪ್ಲಿ ತಾಲೂಕಿನಲ್ಲಿ ಟ್ರೀ ಪಾರ್ಕ್ ಅಭಿವೃದ್ಧಿಗೆ ₹1 ಕೋಟಿ (ಕಂಪ್ಲಿ–ಕುರುಗೋಡು ₹2 ಕೋಟಿ ಅನುದಾನದ ಪಾಲು).',
+      locationName: 'ಟ್ರೀ ಪಾರ್ಕ್, ಕಂಪ್ಲಿ ತಾಲೂಕು',
+    },
+  },
+  {
+    slug: 'kurugodu-tree-park',
+    category: 'ENVIRONMENT',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(1),
+    spent: spentNinetyPercent(crore(1)),
+    department: 'Forest Department',
+    agency: 'Forest Department',
+    startDaysAgo: 250,
+    completionDaysAgo: 28,
+    imagePrefix: 'kurugodu-tree-park',
+    areaEn: 'Kurugodu taluk',
+    areaKn: 'ಕುರುಗೋಡು ತಾಲೂಕು',
+    en: {
+      title: 'Tree park development — Kurugodu taluk',
+      shortDescription:
+        'Tree park development in Kurugodu taluk — ₹1 crore (share of the ₹2 crore Kampli–Kurugodu grant).',
+      locationName: 'Tree park, Kurugodu taluk',
+    },
+    kn: {
+      title: 'ಟ್ರೀ ಪಾರ್ಕ್ ಅಭಿವೃದ್ಧಿ — ಕುರುಗೋಡು ತಾಲೂಕು',
+      shortDescription:
+        'ಕುರುಗೋಡು ತಾಲೂಕಿನಲ್ಲಿ ಟ್ರೀ ಪಾರ್ಕ್ ಅಭಿವೃದ್ಧಿಗೆ ₹1 ಕೋಟಿ (ಕಂಪ್ಲಿ–ಕುರುಗೋಡು ₹2 ಕೋಟಿ ಅನುದಾನದ ಪಾಲು).',
+      locationName: 'ಟ್ರೀ ಪಾರ್ಕ್, ಕುರುಗೋಡು ತಾಲೂಕು',
+    },
+  },
 ];
 
 async function uploadImage(
@@ -1733,8 +2580,15 @@ async function createLocaleProject(
     displayOrder,
   } = input;
 
-  const project = await prisma.project.create({
-    data: {
+  const project = await prisma.project.upsert({
+    where: {
+      organizationId_slug_locale: {
+        organizationId,
+        slug: work.slug,
+        locale,
+      },
+    },
+    create: {
       organizationId,
       locale,
       slug: work.slug,
@@ -1755,19 +2609,47 @@ async function createLocaleProject(
       department: work.department,
       agency: work.agency,
       costAmount: work.budget,
-      costCurrency: 'INR',
+      costCurrency: work.budget === null ? null : 'INR',
       beneficiaryCount: null,
       coverImageId,
       featured: work.featured,
       displayOrder,
       status: 'PUBLISHED',
-      publishedAt: daysAgo(40 - displayOrder),
+      publishedAt: daysAgo(Math.max(1, 40 - displayOrder)),
+      metaTitle: copy.title,
+      metaDescription: copy.shortDescription.slice(0, 300),
+    },
+    update: {
+      title: copy.title,
+      shortDescription: copy.shortDescription,
+      descriptionHtml: copy.descriptionHtml,
+      category: work.category,
+      area: copy.area,
+      locationName: copy.locationName,
+      startDate: work.startDaysAgo === null ? null : daysAgo(work.startDaysAgo),
+      completionDate: work.completionDaysAgo === null ? null : daysAgo(work.completionDaysAgo),
+      projectStatus: work.projectStatus,
+      verification: work.projectStatus === 'COMPLETED' ? 'VERIFIED' : 'UNVERIFIED',
+      verifiedAt:
+        work.projectStatus === 'COMPLETED'
+          ? daysAgo((work.completionDaysAgo ?? 30) - 5)
+          : null,
+      department: work.department,
+      agency: work.agency,
+      costAmount: work.budget,
+      costCurrency: work.budget === null ? null : 'INR',
+      coverImageId,
+      featured: work.featured,
+      displayOrder,
+      status: 'PUBLISHED',
+      publishedAt: daysAgo(Math.max(1, 40 - displayOrder)),
       metaTitle: copy.title,
       metaDescription: copy.shortDescription.slice(0, 300),
     },
     select: { id: true },
   });
 
+  await prisma.projectMedia.deleteMany({ where: { projectId: project.id } });
   await prisma.projectMedia.createMany({
     data: [
       {
@@ -1789,15 +2671,20 @@ async function createLocaleProject(
 }
 
 /**
- * Deletes every project row, then seeds Kampli works (roads, water, education;
- * EN + KN) with AI cover / before / after images for each organisation.
+ * Deletes every project row, then seeds Kampli works (roads, water, education,
+ * health, welfare, agriculture, environment, etc.; EN + KN) with AI cover /
+ * before / after images for each organisation.
  */
 export async function replaceDemoWorks(prisma: Prisma, orgs: readonly DemoOrgRef[]): Promise<void> {
+  // Media join rows first — avoids FK issues if cascade is not configured.
+  const mediaDeleted = await prisma.projectMedia.deleteMany({});
+  console.log(`Removed ${mediaDeleted.count} project media row(s).`);
   const deleted = await prisma.project.deleteMany({});
   console.log(`Removed ${deleted.count} existing project row(s).`);
 
   for (const org of orgs) {
     for (const [index, work] of WORKS.entries()) {
+      console.log(`[${org.slug}] ${index + 1}/${WORKS.length} ${work.slug}`);
       const prefix = work.imagePrefix;
       const coverImageId = await uploadImage(
         prisma,
@@ -1862,6 +2749,7 @@ export async function replaceDemoWorks(prisma: Prisma, orgs: readonly DemoOrgRef
 }
 
 async function main(): Promise<void> {
+  await import('dotenv/config');
   const { PrismaPg } = await import('@prisma/adapter-pg');
   const { PrismaClient } = await import('../src/generated/prisma/client');
   const { requireDirectDatabaseUrl } = await import('../src/config/databaseUrl');
@@ -1878,6 +2766,10 @@ async function main(): Promise<void> {
     if (orgs.length === 0) {
       throw new Error('No demo organisations found. Run the main seed first.');
     }
+
+    console.log(
+      `Seeding ${WORKS.length} works × 2 locales for ${orgs.length} org(s): ${orgs.map((o) => o.slug).join(', ')}`,
+    );
 
     const areaBySlug: Record<string, { area: string; areaKn: string }> = {
       'demo-campaign': { area: 'Kampli Constituency', areaKn: 'ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ' },
