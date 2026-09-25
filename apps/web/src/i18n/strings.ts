@@ -103,7 +103,9 @@ const en = {
   'quick.comingSoon': 'Coming soon',
 
   'section.work': 'Our Work',
-  'section.workSubtitle': 'Development projects across the constituency.',
+  'section.workSubtitle': 'Completed development projects across the constituency.',
+  'section.workCompletedByCategory': 'Completed works by category',
+  'section.viewCategoryWork': 'See more',
   'section.vision': 'Vision & Priorities',
   'section.visionSubtitle': 'The areas we are focused on.',
   'section.priorities': 'Focus areas',
@@ -547,7 +549,9 @@ const kn: Partial<Record<StringKey, string>> = {
 
   /* --- SECTION HEADINGS --- */
   'section.work': 'ನಮ್ಮ ಕಾರ್ಯಗಳು',
-  'section.workSubtitle': 'ಕ್ಷೇತ್ರದಾದ್ಯಂತ ಅಭಿವೃದ್ಧಿ ಯೋಜನೆಗಳು.',
+  'section.workSubtitle': 'ಕ್ಷೇತ್ರದಾದ್ಯಂತ ಪೂರ್ಣಗೊಂಡ ಅಭಿವೃದ್ಧಿ ಯೋಜನೆಗಳು.',
+  'section.workCompletedByCategory': 'ವರ್ಗವಾರು ಪೂರ್ಣಗೊಂಡ ಕಾರ್ಯಗಳು',
+  'section.viewCategoryWork': 'ಇನ್ನಷ್ಟು ನೋಡಿ',
   'section.vision': 'ದೂರದೃಷ್ಟಿ ಮತ್ತು ಆದ್ಯತೆಗಳು',
   'section.visionSubtitle': 'ನಾವು ಗಮನ ಹರಿಸುತ್ತಿರುವ ಕ್ಷೇತ್ರಗಳು.',
   'section.priorities': 'ಆದ್ಯತೆಗಳು',

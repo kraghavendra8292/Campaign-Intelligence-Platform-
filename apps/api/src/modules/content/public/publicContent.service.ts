@@ -1,4 +1,9 @@
-import { DEFAULT_LOCALE, type ContentCategory, type Locale } from '@rk/types';
+import {
+  DEFAULT_LOCALE,
+  type ContentCategory,
+  type Locale,
+  type ProjectStatus,
+} from '@rk/types';
 import type { Prisma } from '../../../generated/prisma/client';
 import { prisma } from '../../../database/prisma';
 import { AppError } from '../../../errors/AppError';
@@ -100,6 +105,8 @@ export interface PublicListArgs {
   readonly category?: ContentCategory | null;
   readonly search?: string | null;
   readonly featuredOnly?: boolean | null;
+  /** When set, only projects with this lifecycle status are returned. */
+  readonly projectStatus?: ProjectStatus | null;
 }
 
 interface Page<T> {
@@ -193,6 +200,7 @@ export const publicContentService = {
       ...publicScope(tenant, locale),
       ...(args.category ? { category: args.category } : {}),
       ...(args.featuredOnly ? { featured: true } : {}),
+      ...(args.projectStatus ? { projectStatus: args.projectStatus } : {}),
       ...searchFilter(args.search, ['title', 'shortDescription', 'area', 'locationName']),
     };
 
@@ -544,7 +552,12 @@ export const publicContentService = {
       publicContentService.candidateProfile(tenant, locale),
       publicContentService.vision(tenant, locale),
       publicContentService.priorities(tenant, locale),
-      publicContentService.projects(tenant, locale, { first: 4, featuredOnly: null }),
+      // Homepage works strip: completed projects only (grouped by category in UI).
+      publicContentService.projects(tenant, locale, {
+        first: 50,
+        featuredOnly: null,
+        projectStatus: 'COMPLETED',
+      }),
       publicContentService.achievements(tenant, locale, { first: 3 }),
       publicContentService.news(tenant, locale, { first: 3 }),
       publicContentService.events(tenant, locale, { first: 3, upcomingOnly: true }),

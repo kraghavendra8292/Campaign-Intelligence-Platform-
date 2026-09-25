@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button, Icon, type IconName } from '@rk/ui';
+import { CONTENT_CATEGORIES, type ContentCategory } from '@rk/types';
 import '../../styles/work.css';
 import { useSite } from '../../features/site/SiteContext';
 import { usePublicQuery } from '../../features/site/usePublicQuery';
@@ -18,7 +19,10 @@ import {
 import { WorkTileCard } from '../../components/site/WorkTileCard';
 import { HomeOpinionSection } from '../../components/site/HomeOpinionSection';
 import { QueryBoundary, SectionHeader, SiteEmptyState } from '../../components/site/states';
+import type { StringKey } from '../../i18n/strings';
 
+/** How many completed tiles to show under each category on the home strip. */
+const HOME_WORKS_PER_CATEGORY = 4;
 const QUICK_ACTIONS = [
   {
     to: '/work',
@@ -267,12 +271,11 @@ export function SiteHomePage() {
 }
 
 const WORK_STAT_ITEMS: Array<{
-  key: 'completed' | 'ongoing' | 'projects' | 'achievements';
+  key: 'completed' | 'projects' | 'achievements';
   icon: IconName;
-  labelKey: 'home.stats.completed' | 'home.stats.ongoing' | 'home.stats.projects' | 'home.stats.achievements';
+  labelKey: 'home.stats.completed' | 'home.stats.projects' | 'home.stats.achievements';
 }> = [
   { key: 'completed', icon: 'checkCircle', labelKey: 'home.stats.completed' },
-  { key: 'ongoing', icon: 'clock', labelKey: 'home.stats.ongoing' },
   { key: 'projects', icon: 'building', labelKey: 'home.stats.projects' },
   { key: 'achievements', icon: 'trophy', labelKey: 'home.stats.achievements' },
 ];
@@ -285,8 +288,8 @@ function HomeWorksBlock({
   achievementCount: number;
 }) {
   const { t } = useSite();
-  const workStats = summarizeWorkStats(projects);
-  const projectCount = projects.length;
+  const groups = groupCompletedWorksByCategory(projects);
+  const completedCount = projects.length;
 
   return (
     <section className="section section--works" aria-labelledby="home-work">
@@ -296,32 +299,47 @@ function HomeWorksBlock({
             <span className="works-header__icon" aria-hidden="true">
               <Icon name="building" size={1.15} />
             </span>
-            <h2 className="works-header__title" id="home-work">
-              {t('section.work')}
-            </h2>
+            <div className="works-header__copy">
+              <h2 className="works-header__title" id="home-work">
+                {t('section.work')}
+              </h2>
+              <p className="works-header__subtitle">{t('section.workSubtitle')}</p>
+            </div>
           </div>
-          <Link to="/work" className="works-header__link">
+          <Link to="/work?status=COMPLETED" className="works-header__link">
             {t('section.viewAllWork')}
             <span aria-hidden="true"> →</span>
           </Link>
         </header>
 
-        <div className="work-tile-grid">
-          {projects.slice(0, 4).map((project) => (
-            <WorkTileCard key={project.id} project={project} />
+        <div className="works-by-category">
+          {groups.map(({ category, items }) => (
+            <div key={category} className="works-category">
+              <div className="works-category__header">
+                <h3 className="works-category__title">{t(`category.${category}` as StringKey)}</h3>
+                <Link
+                  to={`/work?category=${category}&status=COMPLETED`}
+                  className="works-category__link"
+                >
+                  {t('section.viewCategoryWork')}
+                  <span aria-hidden="true"> →</span>
+                </Link>
+              </div>
+              <div className="work-tile-grid">
+                {items.slice(0, HOME_WORKS_PER_CATEGORY).map((project) => (
+                  <WorkTileCard key={project.id} project={project} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
 
-        <div className="works-stats" aria-label={t('section.work')}>
+        <div className="works-stats" aria-label={t('section.workCompletedByCategory')}>
           {WORK_STAT_ITEMS.map((item) => {
             const value =
-              item.key === 'completed'
-                ? workStats.completed
-                : item.key === 'ongoing'
-                  ? workStats.ongoing
-                  : item.key === 'projects'
-                    ? projectCount
-                    : achievementCount;
+              item.key === 'completed' || item.key === 'projects'
+                ? completedCount
+                : achievementCount;
 
             return (
               <div key={item.key} className="works-stats__item">
@@ -341,12 +359,20 @@ function HomeWorksBlock({
   );
 }
 
-function summarizeWorkStats(projects: ProjectCard[]) {
-  let completed = 0;
-  let ongoing = 0;
+function groupCompletedWorksByCategory(
+  projects: ProjectCard[],
+): Array<{ category: ContentCategory; items: ProjectCard[] }> {
+  const byCategory = new Map<ContentCategory, ProjectCard[]>();
+
   for (const project of projects) {
-    if (project.projectStatus === 'COMPLETED') completed += 1;
-    else if (project.projectStatus === 'IN_PROGRESS') ongoing += 1;
+    const category = project.category as ContentCategory;
+    const bucket = byCategory.get(category);
+    if (bucket) bucket.push(project);
+    else byCategory.set(category, [project]);
   }
-  return { completed, ongoing };
+
+  return CONTENT_CATEGORIES.filter((category) => byCategory.has(category)).map((category) => ({
+    category,
+    items: byCategory.get(category) ?? [],
+  }));
 }
