@@ -652,6 +652,277 @@ const WORKS: readonly WorkDefinition[] = [
       locationName: 'ಕುಡಿತಿನಿ SH-132 → ಗುತ್ತಿಗನೂರು–ಓರ್ವಾಯಿ ಕ್ರಾಸ್',
     },
   },
+  // --- Batch 3 (10 more PWD / major road packages) ---
+  {
+    slug: 'basarakodu-gudadooru-allansumangalamma-camp-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(2.489),
+    spent: spentNinetyPercent(crore(2.489)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 320,
+    completionDaysAgo: 25,
+    imagePrefix: 'basarakodu-gudadooru',
+    areaEn: 'Basarakodu–Gudadooru, Kampli Constituency',
+    areaKn: 'ಬಸರಕೊಡು–ಗುಡದೂರು, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Basarakodu to Gudadooru (Allansumangalamma Camp) road',
+      shortDescription:
+        'Road development from Basarakodu village toward Gudadooru up to Allansumangalamma Camp — ₹2.489 crore sanctioned.',
+      locationName: 'Basarakodu → Gudadooru / Allansumangalamma Camp',
+    },
+    kn: {
+      title: 'ಬಸರಕೊಡು–ಗುಡದೂರು (ಅಲ್ಲಂಸುಮಂಗಳಮ್ಮ ಕ್ಯಾಂಪ್) ರಸ್ತೆ',
+      shortDescription:
+        'ಬಸರಕೊಡು ಗ್ರಾಮದಿಂದ ಗುಡದೂರು ಮಾರ್ಗದ ಅಲ್ಲಂಸುಮಂಗಳಮ್ಮ ಕ್ಯಾಂಪ್‌ವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹2.489 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಬಸರಕೊಡು → ಗುಡದೂರು / ಅಲ್ಲಂಸುಮಂಗಳಮ್ಮ ಕ್ಯಾಂಪ್',
+    },
+  },
+  {
+    slug: 'kurugodu-mushkagatte-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: true,
+    budget: crore(2.5),
+    spent: spentNinetyPercent(crore(2.5)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 310,
+    completionDaysAgo: 22,
+    imagePrefix: 'kurugodu-mushkagatte',
+    areaEn: 'Kurugodu–Mushkagatte',
+    areaKn: 'ಕುರುಗೋಡು–ಮುಷ್ಕಗಟ್ಟೆ',
+    en: {
+      title: 'Kurugodu to Mushkagatte road development',
+      shortDescription:
+        'Road development from Kurugodu to Mushkagatte village — ₹2.50 crore sanctioned.',
+      locationName: 'Kurugodu → Mushkagatte',
+    },
+    kn: {
+      title: 'ಕುರುಗೋಡು–ಮುಷ್ಕಗಟ್ಟೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಕುರುಗೋಡಿನಿಂದ ಮುಷ್ಕಗಟ್ಟೆ ಗ್ರಾಮಕ್ಕೆ ಹೋಗುವ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹2.50 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಕುರುಗೋಡು → ಮುಷ್ಕಗಟ್ಟೆ',
+    },
+  },
+  {
+    slug: 'errangali-vaddatti-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(2.3911),
+    spent: spentNinetyPercent(crore(2.3911)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 300,
+    completionDaysAgo: 20,
+    imagePrefix: 'errangali-vaddatti',
+    areaEn: 'Errangali–Vaddatti',
+    areaKn: 'ಎರ್ರಂಗಳಿ–ವದ್ದಟ್ಟಿ',
+    en: {
+      title: 'Errangali to Vaddatti road development',
+      shortDescription:
+        'Road development from Errangali to Vaddatti — ₹2.3911 crore sanctioned.',
+      locationName: 'Errangali → Vaddatti',
+    },
+    kn: {
+      title: 'ಎರ್ರಂಗಳಿ–ವದ್ದಟ್ಟಿ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಎರ್ರಂಗಳಿಯಿಂದ ವದ್ದಟ್ಟಿವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹2.3911 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಎರ್ರಂಗಳಿ → ವದ್ದಟ್ಟಿ',
+    },
+  },
+  {
+    slug: 'bogikaluve-gangavathi-bypass-widening',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(2),
+    spent: spentNinetyPercent(crore(2)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 290,
+    completionDaysAgo: 18,
+    imagePrefix: 'bogikaluve-gangavathi',
+    areaEn: 'Bogikaluve — Gangavathi bypass',
+    areaKn: 'ಬೋಗಿಕಾಲುವೆ — ಗಂಗಾವತಿ ಬೈಪಾಸ್',
+    en: {
+      title: 'Bogikaluve to Gangavathi bypass road widening',
+      shortDescription:
+        'Road widening via Bogikaluve up to the Gangavathi bypass — ₹2 crore sanctioned.',
+      locationName: 'Bogikaluve → Gangavathi bypass',
+    },
+    kn: {
+      title: 'ಬೋಗಿಕಾಲುವೆ–ಗಂಗಾವತಿ ಬೈಪಾಸ್ ರಸ್ತೆ ಅಗಲೀಕರಣ',
+      shortDescription:
+        'ಬೋಗಿಕಾಲುವೆ ಮುಖಾಂತರ ಗಂಗಾವತಿ ಬೈಪಾಸ್‌ವರೆಗೆ ರಸ್ತೆ ಅಗಲೀಕರಣಕ್ಕೆ ₹2 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಬೋಗಿಕಾಲುವೆ → ಗಂಗಾವತಿ ಬೈಪಾಸ್',
+    },
+  },
+  {
+    slug: 'kampli-kuditini-sh23-km-91-93-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(2),
+    spent: spentNinetyPercent(crore(2)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 280,
+    completionDaysAgo: 15,
+    imagePrefix: 'kampli-sh23-kuditini',
+    areaEn: 'Kampli town — Kuditini SH-23',
+    areaKn: 'ಕಂಪ್ಲಿ ಪಟ್ಟಣ — ಕುಡಿತಿನಿ SH-23',
+    en: {
+      title: 'Kampli Kuditini SH-23 road (km 91.90–93.00)',
+      shortDescription:
+        'Road development on Kuditini SH-23 in Kampli town from km 91.90 to 93.00 — ₹2 crore sanctioned.',
+      locationName: 'Kuditini SH-23, km 91.90 → 93.00',
+    },
+    kn: {
+      title: 'ಕಂಪ್ಲಿ ಕುಡಿತಿನಿ SH-23 ರಸ್ತೆ (ಕಿ.ಮೀ. 91.90–93.00)',
+      shortDescription:
+        'ಕಂಪ್ಲಿ ಪಟ್ಟಣದ ಕುಡಿತಿನಿ SH-23ರ ಕಿ.ಮೀ. 91.90ರಿಂದ 93.00ರವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹2 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಕುಡಿತಿನಿ SH-23, ಕಿ.ಮೀ. 91.90 → 93.00',
+    },
+  },
+  {
+    slug: 'saibaba-temple-nelludi-kottal-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'COMPLETED',
+    featured: false,
+    budget: crore(2),
+    spent: spentNinetyPercent(crore(2)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 270,
+    completionDaysAgo: 12,
+    imagePrefix: 'saibaba-nelludi-kottal',
+    areaEn: 'Sri Sai Baba temple — Nelludi–Kottal road',
+    areaKn: 'ಶ್ರೀ ಸಾಯಿಬಾಬಾ ದೇವಸ್ಥಾನ — ನೆಲ್ಲೂಡಿ–ಕೊಟ್ಟಾಲ್ ರಸ್ತೆ',
+    en: {
+      title: 'Sri Sai Baba temple front to Nelludi–Kottal road',
+      shortDescription:
+        'Road development from in front of Sri Sai Baba temple up to the Nelludi–Kottal road — ₹2 crore sanctioned.',
+      locationName: 'Sri Sai Baba temple front → Nelludi–Kottal road',
+    },
+    kn: {
+      title: 'ಶ್ರೀ ಸಾಯಿಬಾಬಾ ದೇವಸ್ಥಾನ–ನೆಲ್ಲೂಡಿ–ಕೊಟ್ಟಾಲ್ ರಸ್ತೆ',
+      shortDescription:
+        'ಶ್ರೀ ಸಾಯಿಬಾಬಾ ದೇವಸ್ಥಾನದ ಮುಂಭಾಗದಿಂದ ನೆಲ್ಲೂಡಿ–ಕೊಟ್ಟಾಲ್ ರಸ್ತೆಯವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹2 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಶ್ರೀ ಸಾಯಿಬಾಬಾ ದೇವಸ್ಥಾನ ಮುಂಭಾಗ → ನೆಲ್ಲೂಡಿ–ಕೊಟ್ಟಾಲ್ ರಸ್ತೆ',
+    },
+  },
+  {
+    slug: 'kurugodu-dodda-basaveshwara-circle',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: crore(2),
+    spent: spentNinetyPercent(crore(2)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 80,
+    completionDaysAgo: null,
+    imagePrefix: 'kurugodu-basaveshwara-circle',
+    areaEn: 'Kurugodu town — Dodda Basaveshwara circle',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ — ದೊಡ್ಡ ಬಸವೇಶ್ವರ ವೃತ್ತ',
+    en: {
+      title: 'Kurugodu Dodda Basaveshwara circle development',
+      shortDescription:
+        'Development of Dodda Basaveshwara circle in Kurugodu town — ₹2 crore sanctioned; work is under way.',
+      locationName: 'Dodda Basaveshwara circle, Kurugodu town',
+    },
+    kn: {
+      title: 'ಕುರುಗೋಡು ದೊಡ್ಡ ಬಸವೇಶ್ವರ ವೃತ್ತ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದ ದೊಡ್ಡ ಬಸವೇಶ್ವರ ವೃತ್ತದ ಅಭಿವೃದ್ಧಿಗೆ ₹2 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ — ಕಾಮಗಾರಿ ಪ್ರಗತಿಯಲ್ಲಿದೆ.',
+      locationName: 'ದೊಡ್ಡ ಬಸವೇಶ್ವರ ವೃತ್ತ, ಕುರುಗೋಡು ಪಟ್ಟಣ',
+    },
+  },
+  {
+    slug: 'kurugodu-ayyappa-temple-petrol-bank-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'IN_PROGRESS',
+    featured: false,
+    budget: crore(2),
+    spent: spentNinetyPercent(crore(2)),
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: 70,
+    completionDaysAgo: null,
+    imagePrefix: 'kurugodu-ayyappa-petrol',
+    areaEn: 'Kurugodu town — Ayyappa temple to petrol bunk',
+    areaKn: 'ಕುರುಗೋಡು ಪಟ್ಟಣ — ಅಯ್ಯಪ್ಪಸ್ವಾಮಿ ದೇವಸ್ಥಾನ–ಪೆಟ್ರೋಲ್ ಬಂಕ್',
+    en: {
+      title: 'Kurugodu Ayyappa temple to petrol bunk road',
+      shortDescription:
+        'Road development in Kurugodu town from Sri Ayyappa Swamy temple to the petrol bunk — ₹2 crore sanctioned; work is under way.',
+      locationName: 'Sri Ayyappa Swamy temple → petrol bunk',
+    },
+    kn: {
+      title: 'ಕುರುಗೋಡು ಅಯ್ಯಪ್ಪಸ್ವಾಮಿ ದೇವಸ್ಥಾನ–ಪೆಟ್ರೋಲ್ ಬಂಕ್ ರಸ್ತೆ',
+      shortDescription:
+        'ಕುರುಗೋಡು ಪಟ್ಟಣದ ಶ್ರೀ ಅಯ್ಯಪ್ಪಸ್ವಾಮಿ ದೇವಸ್ಥಾನದಿಂದ ಪೆಟ್ರೋಲ್ ಬಂಕ್‌ವರೆಗೆ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹2 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ — ಕಾಮಗಾರಿ ಪ್ರಗತಿಯಲ್ಲಿದೆ.',
+      locationName: 'ಶ್ರೀ ಅಯ್ಯಪ್ಪಸ್ವಾಮಿ ದೇವಸ್ಥಾನ → ಪೆಟ್ರೋಲ್ ಬಂಕ್',
+    },
+  },
+  {
+    slug: 'devalapura-suggenahalli-main-road',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: crore(1.5),
+    spent: null,
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'devalapura-suggenahalli',
+    areaEn: 'Devalapura–Suggenahalli',
+    areaKn: 'ದೇವಲಾಪುರ–ಸುಗ್ಗೇನಹಳ್ಳಿ',
+    en: {
+      title: 'Devalapura to Suggenahalli main road development',
+      shortDescription:
+        'Main road development from Devalapura to Suggenahalli — ₹1.50 crore sanctioned.',
+      locationName: 'Devalapura → Suggenahalli main road',
+    },
+    kn: {
+      title: 'ದೇವಲಾಪುರ–ಸುಗ್ಗೇನಹಳ್ಳಿ ಮುಖ್ಯರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ದೇವಲಾಪುರದಿಂದ ಸುಗ್ಗೇನಹಳ್ಳಿ ಮುಖ್ಯರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹1.50 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ದೇವಲಾಪುರ → ಸುಗ್ಗೇನಹಳ್ಳಿ ಮುಖ್ಯರಸ್ತೆ',
+    },
+  },
+  {
+    slug: 'kurugodu-area-road-development',
+    category: 'INFRASTRUCTURE',
+    projectStatus: 'PLANNED',
+    featured: false,
+    budget: crore(1.5),
+    spent: null,
+    department: 'Public Works Department',
+    agency: 'Lokopayogi Ilakhe (PWD)',
+    startDaysAgo: null,
+    completionDaysAgo: null,
+    imagePrefix: 'kurugodu-area-road',
+    areaEn: 'Kurugodu area, Kampli Constituency',
+    areaKn: 'ಕುರುಗೋಡು ಭಾಗ, ಕಂಪ್ಲಿ ಕ್ಷೇತ್ರ',
+    en: {
+      title: 'Kurugodu area road development',
+      shortDescription:
+        'Additional road development package in the Kurugodu area — ₹1.50 crore sanctioned.',
+      locationName: 'Kurugodu area road stretch',
+    },
+    kn: {
+      title: 'ಕುರುಗೋಡು ಭಾಗದ ರಸ್ತೆ ಅಭಿವೃದ್ಧಿ',
+      shortDescription:
+        'ಕುರುಗೋಡು ಭಾಗದ ಮತ್ತೊಂದು ರಸ್ತೆ ಅಭಿವೃದ್ಧಿಗೆ ₹1.50 ಕೋಟಿ ಮಂಜೂರಾಗಿದೆ.',
+      locationName: 'ಕುರುಗೋಡು ಭಾಗದ ರಸ್ತೆ ಮಾರ್ಗ',
+    },
+  },
 ];
 
 async function uploadImage(
