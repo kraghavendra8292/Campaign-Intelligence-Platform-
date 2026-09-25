@@ -269,7 +269,7 @@ function SiteFooter() {
         {socialLinks.length > 0 ? (
           <ul className="site-footer__social" aria-label={t('contact.follow')}>
             {socialLinks.map((link) => {
-              const { shortLabel } = socialPlatformMeta(link.platform);
+              const { shortLabel, brand } = socialPlatformMeta(link.platform);
               return (
                 <li key={link.id}>
                   <a
@@ -278,6 +278,7 @@ function SiteFooter() {
                     rel="noopener noreferrer"
                     aria-label={link.label ?? shortLabel}
                     title={link.label ?? shortLabel}
+                    data-platform={brand}
                   >
                     <SocialPlatformIcon platform={link.platform} size={1.15} />
                     <span className="visually-hidden">{link.label ?? shortLabel}</span>

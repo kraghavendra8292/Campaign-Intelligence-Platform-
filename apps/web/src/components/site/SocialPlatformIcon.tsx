@@ -7,20 +7,27 @@ import { Icon } from '@rk/ui';
  * Platforms are free-text in the CMS; anything we do not recognise falls back
  * to a generic link mark so a typo never blanks the row.
  */
-const SOCIAL_ICONS: Record<string, { icon: IconName; shortLabel: string }> = {
-  facebook: { icon: 'facebook', shortLabel: 'Facebook' },
-  fb: { icon: 'facebook', shortLabel: 'Facebook' },
-  x: { icon: 'x', shortLabel: 'X' },
-  twitter: { icon: 'x', shortLabel: 'X' },
-  youtube: { icon: 'youtube', shortLabel: 'YouTube' },
-  yt: { icon: 'youtube', shortLabel: 'YouTube' },
-  instagram: { icon: 'instagram', shortLabel: 'Instagram' },
-  ig: { icon: 'instagram', shortLabel: 'Instagram' },
+const SOCIAL_ICONS: Record<
+  string,
+  { icon: IconName; shortLabel: string; brand: 'facebook' | 'instagram' | 'x' | 'youtube' | 'other' }
+> = {
+  facebook: { icon: 'facebook', shortLabel: 'Facebook', brand: 'facebook' },
+  fb: { icon: 'facebook', shortLabel: 'Facebook', brand: 'facebook' },
+  x: { icon: 'x', shortLabel: 'X', brand: 'x' },
+  twitter: { icon: 'x', shortLabel: 'X', brand: 'x' },
+  youtube: { icon: 'youtube', shortLabel: 'YouTube', brand: 'youtube' },
+  yt: { icon: 'youtube', shortLabel: 'YouTube', brand: 'youtube' },
+  instagram: { icon: 'instagram', shortLabel: 'Instagram', brand: 'instagram' },
+  ig: { icon: 'instagram', shortLabel: 'Instagram', brand: 'instagram' },
 };
 
-export function socialPlatformMeta(platform: string): { icon: IconName; shortLabel: string } {
+export function socialPlatformMeta(platform: string): {
+  icon: IconName;
+  shortLabel: string;
+  brand: 'facebook' | 'instagram' | 'x' | 'youtube' | 'other';
+} {
   const key = platform.trim().toLowerCase();
-  return SOCIAL_ICONS[key] ?? { icon: 'externalLink', shortLabel: platform };
+  return SOCIAL_ICONS[key] ?? { icon: 'externalLink', shortLabel: platform, brand: 'other' };
 }
 
 export function SocialPlatformIcon({

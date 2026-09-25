@@ -103,7 +103,7 @@ export function AboutPage() {
                     {data.publicContactInformation.socialLinks.length > 0 ? (
                       <ul className="social-list" aria-label={t('contact.follow')}>
                         {data.publicContactInformation.socialLinks.map((link) => {
-                          const { shortLabel } = socialPlatformMeta(link.platform);
+                          const { shortLabel, brand } = socialPlatformMeta(link.platform);
                           return (
                             <li key={link.id}>
                               <a
@@ -112,6 +112,7 @@ export function AboutPage() {
                                 target="_blank"
                                 aria-label={link.label ?? shortLabel}
                                 title={link.label ?? shortLabel}
+                                data-platform={brand}
                               >
                                 <SocialPlatformIcon platform={link.platform} />
                                 <span>{link.label ?? shortLabel}</span>
@@ -442,7 +443,7 @@ export function ContactPage() {
                     <h2 id="contact-social">{t('contact.follow')}</h2>
                     <ul className="social-list">
                       {socialLinks.map((link) => {
-                        const { shortLabel } = socialPlatformMeta(link.platform);
+                        const { shortLabel, brand } = socialPlatformMeta(link.platform);
                         return (
                           <li key={link.id}>
                             <a
@@ -451,6 +452,7 @@ export function ContactPage() {
                               target="_blank"
                               aria-label={link.label ?? shortLabel}
                               title={link.label ?? shortLabel}
+                              data-platform={brand}
                             >
                               <SocialPlatformIcon platform={link.platform} />
                               <span>{link.label ?? shortLabel}</span>
